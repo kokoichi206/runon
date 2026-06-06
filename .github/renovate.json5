@@ -1,0 +1,61 @@
+{
+  $schema: "https://docs.renovatebot.com/renovate-schema.json",
+  extends: [
+    "config:recommended",
+    "schedule:earlyMondays",
+    ":enableVulnerabilityAlertsWithLabel(security)",
+    "helpers:pinGitHubActionDigestsToSemver",
+  ],
+  timezone: "Asia/Tokyo",
+  // develop を統合ブランチとする運用のため、更新 PR は develop に向ける。
+  baseBranches: ["develop"],
+  prConcurrentLimit: 5,
+  prHourlyLimit: 2,
+  dependencyDashboard: true,
+  reviewers: ["kokoichi206"],
+  assignees: ["kokoichi206"],
+  labels: ["renovate"],
+  enabledManagers: ["npm", "github-actions"],
+  lockFileMaintenance: {
+    enabled: true,
+    schedule: ["before 5am on Monday"],
+  },
+  packageRules: [
+    {
+      // Next 16 ↔ React 19 の major lockstep。型定義もまとめて追従させる。
+      groupName: "Next.js & React",
+      groupSlug: "next-react",
+      matchPackageNames: [
+        "next",
+        "react",
+        "react-dom",
+        "@types/react",
+        "@types/react-dom",
+      ],
+      addLabels: ["frontend"],
+      separateMajorMinor: true,
+    },
+    {
+      // v3 → v4 で設計を書き換えた。postcss plugin と本体の major 合わせ必須。
+      groupName: "Tailwind CSS",
+      groupSlug: "tailwind",
+      matchPackageNames: ["tailwindcss", "@tailwindcss/postcss"],
+      addLabels: ["frontend"],
+    },
+    {
+      matchManagers: ["github-actions"],
+      addLabels: ["ci"],
+      separateMinorPatch: true,
+    },
+    {
+      // devDep の patch には automerge ラベル付与 (実マージは Renovate App 側設定)
+      matchManagers: ["npm"],
+      matchDepTypes: ["devDependencies"],
+      matchUpdateTypes: ["patch"],
+      addLabels: ["automerge"],
+    },
+  ],
+  vulnerabilityAlerts: {
+    labels: ["security", "renovate"],
+  },
+}
