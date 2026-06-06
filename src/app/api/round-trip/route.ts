@@ -1,11 +1,7 @@
 import { NextResponse } from "next/server";
 
-import {
-  computeRoundTrips,
-  RoundTripError,
-} from "@/server/usecases/compute-round-trips";
-import { serverEnv } from "@/shared/env/server-env";
-import { roundTripRequestSchema } from "@/shared/types/round-trip";
+import { roundTripHandler } from "@/server/handlers/round-trip-handler";
+import { httpStatusFor } from "@/shared/errors";
 
 // Overpass 取得 + 探索で数秒かかるため Node ランタイムで実行する。
 export const runtime = "nodejs";
@@ -19,28 +15,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: "JSON ボディが不正です。" }, { status: 400 });
   }
 
-  const parsed = roundTripRequestSchema.safeParse(body);
-  if (!parsed.success) {
+  const result = await roundTripHandler(body);
+  if (!result.ok) {
     return NextResponse.json(
-      { error: "入力が不正です。", issues: parsed.error.issues },
-      { status: 400 },
+      { error: result.error.message },
+      { status: httpStatusFor(result.error) },
     );
   }
-
-  try {
-    const result = await computeRoundTrips(parsed.data, {
-      overpassEndpoint: serverEnv.OVERPASS_ENDPOINT,
-      userAgent: serverEnv.OVERPASS_USER_AGENT,
-    });
-    return NextResponse.json(result);
-  } catch (err) {
-    if (err instanceof RoundTripError) {
-      return NextResponse.json({ error: err.message }, { status: 422 });
-    }
-    const message = err instanceof Error ? err.message : "不明なエラー";
-    return NextResponse.json(
-      { error: `計算に失敗しました: ${message}` },
-      { status: 502 },
-    );
-  }
+  return NextResponse.json(result.value);
 }

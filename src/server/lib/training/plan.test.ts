@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, diffDays, weekday } from "@/server/training/date";
-import { estimateFitness } from "@/server/training/fitness";
-import { generatePlan, summarizeByWeek } from "@/server/training/plan";
+import { addDays, diffDays, weekday } from "@/server/lib/training/date";
+import { estimateFitness } from "@/server/lib/training/fitness";
+import { generatePlan, summarizeByWeek } from "@/server/lib/training/plan";
 import {
   defaultAvailability,
   type Activity,

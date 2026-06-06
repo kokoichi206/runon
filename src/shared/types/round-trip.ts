@@ -24,6 +24,18 @@ export type RoundTripRequest = z.infer<typeof roundTripRequestSchema>;
 /** GeoJSON 順序 [lng, lat] の座標。 */
 export type LngLat = [number, number];
 
+/**
+ * Overpass `way ... out geom;` の要素。
+ * 外部 API の形だが repository（取得）と lib/osm（グラフ構築）の両方が参照するため shared に置く。
+ */
+export interface OverpassWay {
+  type: "way";
+  id: number;
+  nodes: number[];
+  geometry: { lat: number; lon: number }[];
+  tags?: Record<string, string>;
+}
+
 export interface RoundTripCandidate {
   id: string;
   /** 周回経路の全ポリライン（始点 = 終点）。GeoJSON 順 [lng, lat]。 */

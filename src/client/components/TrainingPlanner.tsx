@@ -4,13 +4,13 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTrainingStore } from "@/client/hooks/useTrainingStore";
 import { parseActivities } from "@/client/lib/parse-activities";
-import { isoToYmdLocal } from "@/server/training/date";
-import { estimateFitness } from "@/server/training/fitness";
+import { isoToYmdLocal } from "@/server/lib/training/date";
+import { estimateFitness } from "@/server/lib/training/fitness";
 import {
   buildProgression,
   type ProgressionSummary,
-} from "@/server/training/paces";
-import { generatePlan, summarizeByWeek } from "@/server/training/plan";
+} from "@/server/lib/training/paces";
+import { generatePlan, summarizeByWeek } from "@/server/lib/training/plan";
 import type {
   PlannedWorkout,
   Race,

@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { exchangeCode, STRAVA_REFRESH_COOKIE } from "@/server/strava/strava";
-import { isStravaConfigured, serverEnv } from "@/shared/env/server-env";
+import {
+  connectHandler,
+  STRAVA_REFRESH_COOKIE,
+} from "@/server/handlers/strava-handler";
+import { serverEnv } from "@/shared/env/server-env";
 
 export const runtime = "nodejs";
 
@@ -14,29 +17,25 @@ const REFRESH_MAX_AGE = 60 * 60 * 24 * 365; // 1年
 export async function GET(request: Request): Promise<NextResponse> {
   const base = baseUrl(request);
   const url = new URL(request.url);
-  const code = url.searchParams.get("code");
-  const error = url.searchParams.get("error");
   const home = new URL("/training", base);
 
-  if (error || !code || !isStravaConfigured()) {
-    home.searchParams.set("strava", error ? "denied" : "error");
+  const result = await connectHandler(
+    url.searchParams.get("code"),
+    url.searchParams.get("error"),
+  );
+  if (!result.ok) {
+    home.searchParams.set("strava", result.error.type === "unauthorized" ? "denied" : "error");
     return NextResponse.redirect(home);
   }
 
-  try {
-    const tok = await exchangeCode(code);
-    home.searchParams.set("strava", "connected");
-    const res = NextResponse.redirect(home);
-    res.cookies.set(STRAVA_REFRESH_COOKIE, tok.refresh_token, {
-      httpOnly: true,
-      sameSite: "lax",
-      path: "/",
-      maxAge: REFRESH_MAX_AGE,
-      secure: url.protocol === "https:",
-    });
-    return res;
-  } catch {
-    home.searchParams.set("strava", "error");
-    return NextResponse.redirect(home);
-  }
+  home.searchParams.set("strava", "connected");
+  const res = NextResponse.redirect(home);
+  res.cookies.set(STRAVA_REFRESH_COOKIE, result.value.refreshToken, {
+    httpOnly: true,
+    sameSite: "lax",
+    path: "/",
+    maxAge: REFRESH_MAX_AGE,
+    secure: url.protocol === "https:",
+  });
+  return res;
 }

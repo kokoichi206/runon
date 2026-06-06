@@ -1,26 +1,28 @@
-import { buildGraphFromOverpass } from "@/server/osm/build-graph";
-import {
-  fetchStreetNetwork,
-  type OverpassFetchResult,
-} from "@/server/osm/overpass";
-import type { LatLng } from "@/server/routing/geo";
+import { buildGraphFromOverpass } from "@/server/lib/osm/build-graph";
+import type { LatLng } from "@/server/lib/routing/geo";
 import {
   edgeCount,
   type NodeId,
   type StreetGraph,
-} from "@/server/routing/graph";
-import { computeReachable } from "@/server/routing/isochrone";
+} from "@/server/lib/routing/graph";
+import { computeReachable } from "@/server/lib/routing/isochrone";
 import {
   paretoLocalSearch,
   type Solution,
-} from "@/server/routing/pareto-local-search";
+} from "@/server/lib/routing/pareto-local-search";
 import {
   generatePolygons,
   refineRoute,
   routePolygon,
   snapStart,
-} from "@/server/routing/round-trip";
-import type { WalkMetrics } from "@/server/routing/walk";
+} from "@/server/lib/routing/round-trip";
+import type { WalkMetrics } from "@/server/lib/routing/walk";
+import {
+  overpassRepository,
+  type OverpassFetchResult,
+} from "@/server/repositories/overpass-repository";
+import { appError, type AppError } from "@/shared/errors";
+import { err, ok, type Result } from "@/shared/result";
 import type {
   LngLat,
   RoundTripCandidate,
@@ -44,8 +46,6 @@ export interface ComputeDeps {
   enableLocalSearch?: boolean;
 }
 
-export class RoundTripError extends Error {}
-
 function walkToLngLat(graph: StreetGraph, walk: NodeId[]): LngLat[] {
   const out: LngLat[] = [];
   for (const id of walk) {
@@ -66,32 +66,36 @@ const score = (m: WalkMetrics, k: number): number =>
 export async function computeRoundTrips(
   req: RoundTripRequest,
   deps: ComputeDeps = {},
-): Promise<RoundTripResult> {
+): Promise<Result<RoundTripResult, AppError>> {
   const computeStart = Date.now();
   const center: LatLng = { lat: req.lat, lng: req.lng };
   const radius = fetchRadiusMeters(req.targetMeters);
 
-  const fetcher =
-    deps.fetchNetwork ??
-    ((c, r, p) =>
-      fetchStreetNetwork(c, r, p, {
+  const fetched: Result<OverpassFetchResult, AppError> = deps.fetchNetwork
+    ? ok(await deps.fetchNetwork(center, radius, req.profile))
+    : await overpassRepository.fetchStreetNetwork(center, radius, req.profile, {
         endpoint: deps.overpassEndpoint,
         userAgent: deps.userAgent,
         signal: deps.signal,
-      }));
+      });
+  if (!fetched.ok) return err(fetched.error);
 
-  const { ways, fetchMs } = await fetcher(center, radius, req.profile);
+  const { ways, fetchMs } = fetched.value;
   if (ways.length === 0) {
-    throw new RoundTripError(
-      "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。",
+    return err(
+      appError.validation(
+        "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。",
+      ),
     );
   }
 
   const graph = buildGraphFromOverpass(ways, req.profile);
   const startNode = snapStart(graph, center, 400);
   if (startNode === null) {
-    throw new RoundTripError(
-      "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。",
+    return err(
+      appError.validation(
+        "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。",
+      ),
     );
   }
   const startPos = graph.nodes.get(startNode)!;
@@ -99,8 +103,10 @@ export async function computeRoundTrips(
   // 到達圏 (~k/2、少し余裕)。
   const reachable = computeReachable(graph, startNode, req.targetMeters * 0.6);
   if (reachable.dist.size < 5) {
-    throw new RoundTripError(
-      "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。",
+    return err(
+      appError.validation(
+        "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。",
+      ),
     );
   }
 
@@ -161,8 +167,10 @@ export async function computeRoundTrips(
   }
 
   if (stage1.length === 0) {
-    throw new RoundTripError(
-      "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。",
+    return err(
+      appError.validation(
+        "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。",
+      ),
     );
   }
 
@@ -248,7 +256,7 @@ export async function computeRoundTrips(
 
   if (recommendedId === "") recommendedId = candidates[0]?.id ?? "";
 
-  return {
+  return ok({
     start: [startPos.lng, startPos.lat],
     recommendedId,
     candidates,
@@ -260,5 +268,5 @@ export async function computeRoundTrips(
       overpassMs: fetchMs,
     },
     attribution: ATTRIBUTION,
-  };
+  });
 }

@@ -1,6 +1,6 @@
-import { addDays, diffDays, weekday } from "@/server/training/date";
-import { bpmRange, zoneForWorkout } from "@/server/training/heart-rate";
-import { trainingPaces, vdotFromPerformance } from "@/server/training/paces";
+import { addDays, diffDays, weekday } from "@/server/lib/training/date";
+import { bpmRange, zoneForWorkout } from "@/server/lib/training/heart-rate";
+import { trainingPaces, vdotFromPerformance } from "@/server/lib/training/paces";
 import type {
   PlanInput,
   PlannedWorkout,

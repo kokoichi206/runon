@@ -1,6 +1,6 @@
-import { dijkstra } from "@/server/routing/dijkstra";
-import { bearingDeg } from "@/server/routing/geo";
-import type { NodeId, StreetGraph } from "@/server/routing/graph";
+import { dijkstra } from "@/server/lib/routing/dijkstra";
+import { bearingDeg } from "@/server/lib/routing/geo";
+import type { NodeId, StreetGraph } from "@/server/lib/routing/graph";
 
 export interface Reachable {
   /** source から実距離 maxDistanceM 以内に到達できるノードと距離。 */

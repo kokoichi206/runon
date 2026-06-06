@@ -1,0 +1,115 @@
+import type { LatLng } from "@/server/lib/routing/geo";
+import { appError, type AppError } from "@/shared/errors";
+import { err, ok, type Result, safeTry } from "@/shared/result";
+import type { OverpassWay, Profile } from "@/shared/types/round-trip";
+
+interface OverpassResponse {
+  elements: { type: string }[];
+}
+
+/** プロファイル別の道路フィルタ（Overpass QL の way 条件）。 */
+function highwayFilter(profile: Profile): string {
+  // 徒歩/自転車のいずれでも自動車専用路や工事中などは除外する。
+  const excludedHighway =
+    "motorway|motorway_link|trunk|trunk_link|construction|proposed|abandoned|raceway|bus_guideway|escape|corridor|platform";
+  const base =
+    `way["highway"]["highway"!~"${excludedHighway}"]` +
+    `["area"!~"yes"]["access"!~"private|no"]`;
+  if (profile === "bike") {
+    // 自転車禁止と歩行者専用路を除外。
+    return `${base}["bicycle"!~"no"]["highway"!~"steps|footway|pedestrian"]`;
+  }
+  // walk: 歩行者禁止のみ除外。
+  return `${base}["foot"!~"no"]`;
+}
+
+export function buildOverpassQuery(
+  center: LatLng,
+  radiusM: number,
+  profile: Profile,
+): string {
+  const r = Math.round(radiusM);
+  const lat = center.lat.toFixed(6);
+  const lon = center.lng.toFixed(6);
+  return [
+    "[out:json][timeout:60];",
+    "(",
+    `  ${highwayFilter(profile)}(around:${r},${lat},${lon});`,
+    ");",
+    "out geom;",
+  ].join("\n");
+}
+
+export interface OverpassFetchResult {
+  ways: OverpassWay[];
+  fetchMs: number;
+}
+
+export interface OverpassFetchOptions {
+  endpoint?: string;
+  userAgent?: string;
+  signal?: AbortSignal;
+}
+
+const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
+const DEFAULT_USER_AGENT =
+  "runon/0.1 (https://github.com/kokoichi206/runon; round-trip generator)";
+
+/** Overpass API（道路網取得）への外部 I/O を担う repository。 */
+export const overpassRepository = {
+  /**
+   * 指定半径内の道路網を取得する。
+   * - User-Agent 必須（OSM の利用エチケット）
+   * - 429/504 は混雑、その他の非 2xx・ネットワーク失敗も upstream エラーとして返す
+   */
+  async fetchStreetNetwork(
+    center: LatLng,
+    radiusM: number,
+    profile: Profile,
+    options: OverpassFetchOptions = {},
+  ): Promise<Result<OverpassFetchResult, AppError>> {
+    const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
+    const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
+    const query = buildOverpassQuery(center, radiusM, profile);
+
+    const startedAt = Date.now();
+    const fetched = await safeTry(() =>
+      fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent": userAgent,
+          Accept: "application/json",
+        },
+        body: new URLSearchParams({ data: query }).toString(),
+        signal: options.signal,
+      }),
+    );
+    const fetchMs = Date.now() - startedAt;
+    if (!fetched.ok) {
+      return err(appError.upstream("Overpass への接続に失敗しました。", fetched.error));
+    }
+    const res = fetched.value;
+
+    if (res.status === 429 || res.status === 504) {
+      return err(
+        appError.upstream(
+          `Overpass が混雑しています (HTTP ${res.status})。しばらく待つか距離を小さくして再試行してください。`,
+        ),
+      );
+    }
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      return err(appError.upstream(`Overpass エラー (HTTP ${res.status}): ${body.slice(0, 200)}`));
+    }
+
+    const parsed = await safeTry(() => res.json() as Promise<OverpassResponse>);
+    if (!parsed.ok) {
+      return err(appError.upstream("Overpass 応答の解析に失敗しました。", parsed.error));
+    }
+    const ways = (parsed.value.elements ?? []).filter(
+      (e): e is OverpassWay => e.type === "way",
+    );
+    return ok({ ways, fetchMs });
+  },
+};
