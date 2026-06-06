@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useResolvedTheme } from "@/client/hooks/useResolvedTheme";
 import { useRoundTrip } from "@/client/hooks/useRoundTrip";
@@ -181,6 +181,62 @@ export function RoundTripPlanner(): React.JSX.Element {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
+  // モバイルのドラッグ開閉。シートを translateY で動かし、ハンドルを掴んで上下にドラッグできる。
+  const sheetRef = useRef<HTMLElement | null>(null);
+  const handleRef = useRef<HTMLButtonElement | null>(null);
+  // 閉じ位置 = 全高からハンドル分を引いた量（ハンドルだけ残して下へ隠す）。実測で算出。
+  const [closedOffset, setClosedOffset] = useState(0);
+  // ドラッグ中の translateY（px）。null のときは sheetOpen に従う。
+  const [dragY, setDragY] = useState<number | null>(null);
+  const dragStart = useRef<{ y: number; base: number } | null>(null);
+  const didDrag = useRef(false);
+
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    const handle = handleRef.current;
+    if (!sheet || !handle) return;
+    const measure = (): void =>
+      setClosedOffset(Math.max(0, sheet.offsetHeight - handle.offsetHeight));
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(sheet);
+    return () => ro.disconnect();
+  }, []);
+
+  const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    if (isDesktop) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragStart.current = { y: e.clientY, base: sheetOpen ? 0 : closedOffset };
+    didDrag.current = false;
+  };
+  const onHandlePointerMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    const start = dragStart.current;
+    if (!start) return;
+    if (Math.abs(e.clientY - start.y) > 6) didDrag.current = true;
+    setDragY(Math.min(closedOffset, Math.max(0, start.base + (e.clientY - start.y))));
+  };
+  const onHandlePointerEnd = (e: React.PointerEvent<HTMLButtonElement>): void => {
+    const start = dragStart.current;
+    dragStart.current = null;
+    if (start && didDrag.current) {
+      const at = Math.min(closedOffset, Math.max(0, start.base + (e.clientY - start.y)));
+      // 半分を境に最も近い状態へスナップ。
+      setSheetOpen(at < closedOffset / 2);
+    }
+    setDragY(null);
+  };
+  // タップ（ドラッグなし）はトグル。キーボード操作もこの click 経路で効く。
+  const onHandleClick = (): void => {
+    if (didDrag.current) {
+      didDrag.current = false;
+      return;
+    }
+    setSheetOpen((v) => !v);
+  };
+
+  // シートの translateY。デスクトップ（静的サイドバー）では変形しない。
+  const sheetTranslate = isDesktop ? null : (dragY ?? (sheetOpen ? 0 : closedOffset));
+
   useEffect(() => {
     if (state.status === "success") setSelectedId(state.result.recommendedId);
   }, [state]);
@@ -318,7 +374,7 @@ export function RoundTripPlanner(): React.JSX.Element {
   const sheetCollapsed = !sheetOpen && !isDesktop;
 
   return (
-    <div className="relative flex h-[calc(100dvh-var(--nav-h))] w-full flex-col md:flex-row">
+    <div className="relative flex h-[calc(100dvh-var(--nav-h))] w-full flex-col overflow-hidden md:flex-row">
       <main className="relative order-1 min-h-0 flex-1 md:order-2">
         <MapView
           start={mapStart}
@@ -333,36 +389,40 @@ export function RoundTripPlanner(): React.JSX.Element {
       </main>
 
       <aside
-        className="absolute inset-x-0 bottom-0 z-10 order-2 flex max-h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-[0_-8px_30px_rgb(0_0_0/0.25)] md:static md:order-1 md:max-h-none md:w-[380px] md:rounded-none md:border-t-0 md:border-r md:shadow-none"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        ref={sheetRef}
+        className="absolute inset-x-0 bottom-0 z-10 order-2 flex max-h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-[0_-8px_30px_rgb(0_0_0/0.25)] transition-transform duration-300 ease-out will-change-transform motion-reduce:transition-none md:static md:order-1 md:max-h-none md:w-[380px] md:rounded-none md:border-t-0 md:border-r md:shadow-none md:transform-none"
+        style={{
+          paddingBottom: "env(safe-area-inset-bottom)",
+          ...(sheetTranslate != null
+            ? {
+                transform: `translateY(${sheetTranslate}px)`,
+                transition: dragY != null ? "none" : undefined,
+              }
+            : {}),
+        }}
       >
-        {/* モバイル用ハンドル：タップでシート開閉。 */}
+        {/* モバイル用ハンドル：タップで開閉、掴んで上下にドラッグでも開閉。 */}
         <button
+          ref={handleRef}
           type="button"
-          onClick={() => setSheetOpen((v) => !v)}
+          onPointerDown={onHandlePointerDown}
+          onPointerMove={onHandlePointerMove}
+          onPointerUp={onHandlePointerEnd}
+          onPointerCancel={onHandlePointerEnd}
+          onClick={onHandleClick}
           aria-expanded={sheetOpen}
           aria-controls="rt-controls"
           aria-label={sheetOpen ? "設定パネルを閉じる" : "設定パネルを開く"}
-          className="flex min-h-11 shrink-0 flex-col items-center justify-center gap-1 px-4 pt-2.5 pb-1 md:hidden"
+          className="flex min-h-9 shrink-0 touch-none items-center justify-center px-4 md:hidden"
         >
+          {/* つまみのみ。開閉ラベルはボトムシートの慣習として省略（名前は aria-label で担保）。 */}
           <span className="h-1.5 w-10 rounded-full bg-surface-3" aria-hidden="true" />
-          <span className="text-[11px] font-medium text-muted">
-            {sheetOpen
-              ? "閉じる"
-              : result
-                ? `候補 ${result.candidates.length} 件・設定を開く`
-                : "設定を開く"}
-          </span>
         </button>
 
         <div
           id="rt-controls"
           inert={sheetCollapsed}
-          className={`flex flex-col gap-4 overflow-y-auto overscroll-contain p-4 transition-[max-height] duration-300 ease-out motion-reduce:transition-none md:max-h-none ${
-            sheetOpen
-              ? "max-h-[76dvh]"
-              : "max-h-0 overflow-hidden p-0 md:p-4"
-          }`}
+          className="flex max-h-[76dvh] flex-col gap-4 overflow-y-auto overscroll-contain p-4 md:max-h-none"
         >
           <header>
             <h1 className="font-display text-lg font-extrabold tracking-tight text-fg">
