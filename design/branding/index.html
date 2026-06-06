@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>runon — ブランド方向 比較ギャラリー</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0a0b0d;
+        --surface: #14161a;
+        --surface-2: #1b1e24;
+        --border: #262a31;
+        --text: #f3f5f8;
+        --muted: #8b93a1;
+        --radius: 16px;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN",
+          "Noto Sans JP", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: var(--bg); color: var(--text); }
+      a { color: inherit; }
+
+      header.top {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 18px;
+        padding: 14px 22px;
+        background: color-mix(in srgb, var(--bg) 86%, transparent);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        letter-spacing: -0.02em;
+        font-size: 18px;
+      }
+      .brand .dot {
+        width: 22px; height: 22px; border-radius: 7px;
+        background: conic-gradient(from 210deg, #ff5a1f, #2dd4bf, #c8ff3d, #3b82f6, #fb7185, #ff5a1f);
+      }
+      .top .sep { color: var(--muted); }
+      .jump { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+      .jump a {
+        text-decoration: none;
+        font-size: 13px;
+        color: var(--muted);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 5px 12px;
+        transition: 0.15s;
+      }
+      .jump a:hover { color: var(--text); border-color: var(--muted); background: var(--surface); }
+
+      .intro {
+        max-width: 980px;
+        margin: 32px auto 8px;
+        padding: 0 22px;
+      }
+      .intro h1 { font-size: 26px; margin: 0 0 8px; letter-spacing: -0.02em; }
+      .intro p { color: var(--muted); line-height: 1.8; margin: 6px 0; font-size: 14px; }
+      .intro .hint {
+        margin-top: 14px;
+        padding: 12px 14px;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        background: var(--surface);
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .intro .hint b { color: var(--text); }
+
+      main { max-width: 1400px; margin: 0 auto; padding: 8px 22px 80px; }
+
+      section.card {
+        margin-top: 40px;
+        scroll-margin-top: 78px;
+      }
+      .card-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px 16px;
+        padding: 14px 16px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius) var(--radius) 0 0;
+        border-bottom: none;
+      }
+      .num {
+        font-variant-numeric: tabular-nums;
+        font-weight: 800;
+        font-size: 13px;
+        color: var(--bg);
+        background: var(--accent);
+        width: 28px; height: 28px;
+        display: grid; place-items: center;
+        border-radius: 8px;
+      }
+      .card-title { font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+      .card-sub { font-size: 13px; color: var(--muted); }
+      .swatches { display: flex; gap: 6px; margin-left: auto; flex-wrap: wrap; }
+      .swatches span {
+        width: 22px; height: 22px; border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+      }
+      .open {
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--bg);
+        background: var(--accent);
+        border-radius: 999px;
+        padding: 7px 16px;
+        white-space: nowrap;
+      }
+      .open.grad { color: #1a0d14; background: linear-gradient(90deg, #fb7185, #f97316, #fbbf24); }
+      .rationale {
+        width: 100%;
+        font-size: 13px;
+        line-height: 1.8;
+        color: var(--muted);
+        margin: 0;
+      }
+      .frame-wrap {
+        border: 1px solid var(--border);
+        border-radius: 0 0 var(--radius) var(--radius);
+        overflow: hidden;
+        background: #000;
+        line-height: 0;
+      }
+      iframe {
+        width: 100%;
+        height: 1040px;
+        border: 0;
+        display: block;
+      }
+      footer {
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 20px 22px 60px;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.8;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand"><span class="dot"></span> runon <span class="sep">/</span>
+        <span style="font-weight: 600; color: var(--muted); font-size: 14px">ブランド方向 比較</span>
+      </div>
+      <nav class="jump">
+        <a href="#ember">01 Ember</a>
+        <a href="#pulse">02 Pulse</a>
+        <a href="#stride">03 Stride</a>
+        <a href="#azimuth">04 Azimuth</a>
+        <a href="#horizon">05 Horizon</a>
+      </nav>
+    </header>
+
+    <div class="intro">
+      <h1>runon のブランド方向 5案</h1>
+      <p>
+        全案とも <b style="color: var(--text)">同じ「周回路プランナー」画面・同じデータ</b>で描いています。
+        変わるのは配色・ロゴ・タイポ・質感だけ。これでブランドの違いだけを公平に比較できます。
+      </p>
+      <p>各モック内には <b style="color: var(--text)">テーマ切替（太陽/月）</b>があり、ダーク↔ライトを実際に試せます。PC表示・スマホ表示・カラーパレットも各ページに入っています。</p>
+      <div class="hint">
+        操作: 各カードの埋め込みプレビュー内でテーマ切替ボタンを押すと dark/light が切り替わります。
+        じっくり見たい案は <b>「新規タブで開く」</b> から全画面で。気に入った番号を教えてください → その配色トークンで本実装(Tailwind v4 + CARTO 地図)に落とし込みます。
+      </div>
+    </div>
+
+    <main>
+      <section class="card" id="ember" style="--accent: #ff5a1f">
+        <div class="card-head">
+          <span class="num">01</span>
+          <div>
+            <div class="card-title">Ember</div>
+            <div class="card-sub">エナジェティック・オレンジ / 躍動・熱量・スポーツ</div>
+          </div>
+          <div class="swatches">
+            <span style="background: #ff5a1f"></span><span style="background: #ffb020"></span>
+            <span style="background: #34d399"></span><span style="background: #0b0e11"></span>
+            <span style="background: #14181d"></span><span style="background: #f5f7fa"></span>
+          </div>
+          <a class="open" href="01-ember.html" target="_blank" rel="noopener">新規タブで開く ↗</a>
+          <p class="rationale">走り出す直前の高揚感を orange→amber の発光グラデで体温のように伝える。「今日も走る」に点火するスポーツ・ブランド。</p>
+        </div>
+        <div class="frame-wrap"><iframe src="01-ember.html" loading="lazy" title="Ember"></iframe></div>
+      </section>
+
+      <section class="card" id="pulse" style="--accent: #2dd4bf">
+        <div class="card-head">
+          <span class="num">02</span>
+          <div>
+            <div class="card-title">Pulse</div>
+            <div class="card-sub">クール・ティール/シアン / 地図テック・計測・データ</div>
+          </div>
+          <div class="swatches">
+            <span style="background: #2dd4bf"></span><span style="background: #22d3ee"></span>
+            <span style="background: #34d399"></span><span style="background: #0a0f14"></span>
+            <span style="background: #111a22"></span><span style="background: #eaf6f8"></span>
+          </div>
+          <a class="open" href="02-pulse.html" target="_blank" rel="noopener">新規タブで開く ↗</a>
+          <p class="rationale">GPS と地図テックの清涼感を teal→cyan のグロウと計測グリッドで表現。冷静で精密、データドリブンな信頼感。</p>
+        </div>
+        <div class="frame-wrap"><iframe src="02-pulse.html" loading="lazy" title="Pulse"></iframe></div>
+      </section>
+
+      <section class="card" id="stride" style="--accent: #c8ff3d">
+        <div class="card-head">
+          <span class="num">03</span>
+          <div>
+            <div class="card-title">Stride</div>
+            <div class="card-sub">ミニマル・モノクロ + エレクトリックライム / 端正・洗練</div>
+          </div>
+          <div class="swatches">
+            <span style="background: #c8ff3d"></span><span style="background: #a3e635"></span>
+            <span style="background: #0c0c0d"></span><span style="background: #161617"></span>
+            <span style="background: #26262a"></span><span style="background: #fafafa"></span>
+          </div>
+          <a class="open" href="03-stride.html" target="_blank" rel="noopener">新規タブで開く ↗</a>
+          <p class="rationale">モノクロの階調と広い余白で走りに集中できる静かでプレミアムな道具感。差し色 lime は要所だけに使い視線を一点へ。</p>
+        </div>
+        <div class="frame-wrap"><iframe src="03-stride.html" loading="lazy" title="Stride"></iframe></div>
+      </section>
+
+      <section class="card" id="azimuth" style="--accent: #3b82f6">
+        <div class="card-head">
+          <span class="num">04</span>
+          <div>
+            <div class="card-title">Azimuth</div>
+            <div class="card-sub">リファインド・ブルー / 信頼・堅実・万人向け</div>
+          </div>
+          <div class="swatches">
+            <span style="background: #3b82f6"></span><span style="background: #60a5fa"></span>
+            <span style="background: #22c55e"></span><span style="background: #0b1220"></span>
+            <span style="background: #131c2e"></span><span style="background: #eaf1ff"></span>
+          </div>
+          <a class="open" href="04-azimuth.html" target="_blank" rel="noopener">新規タブで開く ↗</a>
+          <p class="rationale">磨き上げた slate ブルーで信頼・堅実・読みやすさ。クセを抑え、初見のランナーでも安心して走り出せる「普通に良い」完成度。</p>
+        </div>
+        <div class="frame-wrap"><iframe src="04-azimuth.html" loading="lazy" title="Azimuth"></iframe></div>
+      </section>
+
+      <section class="card" id="horizon" style="--accent: #fb7185">
+        <div class="card-head">
+          <span class="num">05</span>
+          <div>
+            <div class="card-title">Horizon</div>
+            <div class="card-sub">サンセット・グラデーション / 大胆・モダン・記憶に残る</div>
+          </div>
+          <div class="swatches">
+            <span style="background: #fb7185"></span><span style="background: #f97316"></span>
+            <span style="background: #fbbf24"></span><span style="background: #120a14"></span>
+            <span style="background: #1c1020"></span><span style="background: #fceff6"></span>
+          </div>
+          <a class="open grad" href="05-horizon.html" target="_blank" rel="noopener">新規タブで開く ↗</a>
+          <p class="rationale">夕暮れに走り出したくなる高揚感を rose→orange→amber の鮮やかなグラデと深い夜色で。大胆でモダン、記憶に残る印象。</p>
+        </div>
+        <div class="frame-wrap"><iframe src="05-horizon.html" loading="lazy" title="Horizon"></iframe></div>
+      </section>
+    </main>
+
+    <footer>
+      runon branding exploration · 5 directions · 各案は自己完結 HTML（外部依存は Google Fonts のみ・フォールバックあり）。
+      地図はモック用の自作 SVG で、本実装では CARTO light/dark タイルに置き換えます。
+      気に入った番号（複数可・「Aのロゴ + B の配色」等の組み合わせも歓迎）を教えてください。
+    </footer>
+  </body>
+</html>

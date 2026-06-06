@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>runon — Pulse ブランド方向案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  /* ============ Design Tokens ============ */
+  :root {
+    /* Brand-stable */
+    --accent: #2DD4BF;       /* teal */
+    --accent-2: #22D3EE;     /* cyan */
+    --success: #34D399;
+    --route-glow: #22D3EE;
+
+    /* Typography */
+    --font-head: "Inter", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: "Noto Sans JP", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+    /* Spacing rhythm (8px base) */
+    --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+    --sp-5: 24px; --sp-6: 32px; --sp-7: 48px; --sp-8: 64px;
+
+    --radius-sm: 8px;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+
+    --tap: 40px;
+  }
+
+  /* ---- Dark (default) ---- */
+  [data-theme="dark"] {
+    --bg: #0A0F14;
+    --surface: #111A22;
+    --surface-2: #16222C;
+    --border: #1E2C38;
+    --text: #EAF6F8;
+    --muted: #7C95A3;
+
+    /* map tokens */
+    --map-land: #0C141B;
+    --map-block: #101C25;
+    --map-water: #0E2730;
+    --map-park: #0F2620;
+    --map-road-minor: #21323F;
+    --map-road-major: #2C4453;
+    --map-grid: rgba(124, 149, 163, 0.10);
+
+    --elev-1: 0 1px 0 rgba(255,255,255,0.03), 0 1px 2px rgba(0,0,0,0.5);
+    --elev-2: 0 6px 24px rgba(0,0,0,0.45), 0 1px 0 rgba(255,255,255,0.04) inset;
+    --elev-cta: 0 8px 28px rgba(45,212,191,0.28), 0 1px 0 rgba(255,255,255,0.18) inset;
+
+    --chip-bg: rgba(255,255,255,0.04);
+    --scrim: linear-gradient(180deg, rgba(10,15,20,0) 0%, rgba(10,15,20,0.55) 100%);
+    --radar-stroke: rgba(45,212,191,0.16);
+  }
+
+  /* ---- Light ---- */
+  [data-theme="light"] {
+    --bg: #F6FAFB;
+    --surface: #FFFFFF;
+    --surface-2: #EEF5F7;
+    --border: #DCE8EC;
+    --text: #0A1A20;
+    --muted: #5A7280;
+
+    --map-land: #EAF2F4;
+    --map-block: #E0ECEF;
+    --map-water: #CBE6EC;
+    --map-park: #D5EBDF;
+    --map-road-minor: #FFFFFF;
+    --map-road-major: #FFFFFF;
+    --map-grid: rgba(10,26,32,0.06);
+
+    --elev-1: 0 1px 2px rgba(13,40,52,0.06);
+    --elev-2: 0 8px 24px rgba(13,40,52,0.10), 0 1px 0 rgba(255,255,255,0.6) inset;
+    --elev-cta: 0 8px 24px rgba(34,211,238,0.30), 0 1px 0 rgba(255,255,255,0.5) inset;
+
+    --chip-bg: rgba(10,26,32,0.035);
+    --scrim: linear-gradient(180deg, rgba(246,250,251,0) 0%, rgba(246,250,251,0.6) 100%);
+    --radar-stroke: rgba(34,211,238,0.20);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background:
+      radial-gradient(900px 520px at 88% -8%, rgba(34,211,238,0.07), transparent 60%),
+      radial-gradient(760px 480px at -6% 4%, rgba(45,212,191,0.06), transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color .4s ease, color .3s ease;
+  }
+  h1,h2,h3,h4 { font-family: var(--font-head); line-height: 1.2; margin: 0; letter-spacing: -0.01em; }
+  .mono { font-family: var(--font-mono); font-feature-settings: "tnum" 1; }
+
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 var(--sp-5); }
+  .section { padding: var(--sp-7) 0; }
+  .section + .section { border-top: 1px solid var(--border); }
+
+  /* ============ Brand header ============ */
+  .brandbar {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: saturate(1.4) blur(14px);
+    -webkit-backdrop-filter: saturate(1.4) blur(14px);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    border-bottom: 1px solid var(--border);
+  }
+  .brandbar .wrap { display: flex; align-items: center; justify-content: space-between; height: 68px; }
+  .logo { display: flex; align-items: center; gap: var(--sp-3); }
+  .logo .wordmark { font-family: var(--font-head); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; }
+  .logo .wordmark b { color: var(--accent); font-weight: 800; }
+
+  .theme-toggle {
+    height: var(--tap); min-width: var(--tap);
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 0 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer; font-family: var(--font-head);
+    font-weight: 600; font-size: 13px;
+    box-shadow: var(--elev-1);
+    transition: border-color .2s, transform .12s, background-color .3s;
+  }
+  .theme-toggle:hover { border-color: color-mix(in srgb, var(--accent) 55%, var(--border)); }
+  .theme-toggle:active { transform: scale(.97); }
+  .theme-toggle .ic-moon { display: inline; }
+  .theme-toggle .ic-sun { display: none; }
+  [data-theme="light"] .theme-toggle .ic-moon { display: none; }
+  [data-theme="light"] .theme-toggle .ic-sun { display: inline; }
+
+  /* ============ Hero / concept ============ */
+  .hero { padding-top: var(--sp-7); padding-bottom: var(--sp-6); }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent);
+    padding: 6px 12px; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 30%, var(--border));
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent);
+    box-shadow: 0 0 0 0 color-mix(in srgb,var(--accent) 60%, transparent); animation: pulseDot 2.2s ease-out infinite; }
+  @keyframes pulseDot {
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb,var(--accent) 55%, transparent); }
+    70% { box-shadow: 0 0 0 9px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  .hero h1 { font-size: clamp(34px, 5.4vw, 60px); font-weight: 800; margin-top: var(--sp-4); }
+  .hero h1 .grad {
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .concept { font-size: clamp(16px, 2.2vw, 20px); color: var(--text); margin-top: var(--sp-4); max-width: 720px; }
+  .hero .tagline { color: var(--muted); margin-top: var(--sp-2); font-size: 15px; max-width: 720px; }
+
+  .section-label {
+    display: flex; align-items: baseline; gap: var(--sp-3); margin-bottom: var(--sp-5); flex-wrap: wrap;
+  }
+  .section-label .kicker {
+    font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); padding: 3px 9px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 9%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--border));
+  }
+  .section-label h2 { font-size: clamp(20px, 3vw, 26px); font-weight: 700; }
+  .section-label p { color: var(--muted); font-size: 14px; margin: 0; }
+
+  /* ============ App preview shell (PC) ============ */
+  .app-frame {
+    border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    background: var(--surface); box-shadow: var(--elev-2);
+  }
+  .app-topbar {
+    display: flex; align-items: center; gap: var(--sp-4);
+    height: 56px; padding: 0 var(--sp-4);
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in srgb, var(--surface) 86%, var(--bg));
+  }
+  .app-topbar .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-head); font-weight: 800; font-size: 16px; }
+  .app-topbar .brand b { color: var(--accent); }
+  .navtabs { display: flex; gap: 4px; margin-left: var(--sp-2); }
+  .navtab {
+    height: var(--tap); display: inline-flex; align-items: center; padding: 0 16px;
+    border-radius: 10px; color: var(--muted); font-family: var(--font-head); font-weight: 600; font-size: 14px;
+    border: 1px solid transparent; cursor: pointer; text-decoration: none;
+  }
+  .navtab.active {
+    color: var(--text); background: var(--surface-2);
+    border-color: color-mix(in srgb, var(--accent) 32%, var(--border));
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 14%, transparent) inset;
+  }
+  .topbar-spacer { flex: 1; }
+  .icon-btn {
+    height: var(--tap); width: var(--tap); display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 10px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer;
+    transition: border-color .2s, background-color .2s;
+  }
+  .icon-btn:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+
+  .app-body { display: grid; grid-template-columns: 360px 1fr; min-height: 660px; }
+
+  /* ---- left control panel ---- */
+  .panel { padding: var(--sp-5); border-right: 1px solid var(--border); overflow: auto; background: var(--surface); }
+  .panel h3 { font-size: 19px; font-weight: 700; }
+  .panel .sub { color: var(--muted); font-size: 13px; margin-top: 4px; margin-bottom: var(--sp-5); }
+  .field-label { font-family: var(--font-head); font-weight: 600; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: var(--sp-2); }
+
+  .chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-5); }
+  .chip {
+    min-height: var(--tap); display: inline-flex; align-items: center; gap: 6px;
+    padding: 0 14px; border-radius: 999px;
+    border: 1px solid var(--border); background: var(--chip-bg); color: var(--text);
+    font-size: 13px; cursor: pointer; transition: border-color .2s, background-color .2s, transform .1s;
+  }
+  .chip:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+  .chip:active { transform: scale(.97); }
+  .chip.active {
+    border-color: var(--accent); color: var(--text);
+    background: color-mix(in srgb, var(--accent) 12%, transparent);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent) inset;
+  }
+
+  .btn {
+    width: 100%; min-height: var(--tap); border-radius: var(--radius-sm);
+    border: 1px solid var(--border); background: var(--surface-2); color: var(--text);
+    font-family: var(--font-head); font-weight: 600; font-size: 14px; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    transition: border-color .2s, transform .1s, background-color .2s;
+  }
+  .btn:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+  .btn:active { transform: scale(.99); }
+  .btn-ghost { background: var(--chip-bg); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin: var(--sp-4) 0; }
+  .input-wrap { display: flex; flex-direction: column; gap: 6px; }
+  .input-wrap span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+  .input {
+    min-height: var(--tap); border-radius: var(--radius-sm); border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); padding: 0 12px; font-family: var(--font-mono); font-size: 15px;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+
+  /* slider */
+  .slider-block { margin: var(--sp-5) 0; }
+  .slider-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--sp-3); }
+  .slider-head .val { font-family: var(--font-mono); font-weight: 600; font-size: 22px; color: var(--accent); }
+  .slider-head .val small { color: var(--muted); font-size: 13px; font-weight: 500; }
+  input[type="range"] {
+    -webkit-appearance: none; appearance: none; width: 100%; height: 6px; border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2)) no-repeat;
+    background-size: 38% 100%;
+    background-color: var(--surface-2);
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface); border: 2px solid var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 18%, transparent), var(--elev-1);
+    cursor: pointer;
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); cursor: pointer;
+  }
+  .range-scale { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 10px; color: var(--muted); margin-top: 8px; }
+
+  .cta-primary {
+    width: 100%; min-height: 52px; border-radius: var(--radius-sm); border: none; cursor: pointer;
+    font-family: var(--font-head); font-weight: 700; font-size: 16px; letter-spacing: 0.01em;
+    color: #04231F; /* dark teal for AA on bright accent */
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    box-shadow: var(--elev-cta);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+    margin: var(--sp-4) 0 var(--sp-5);
+    transition: transform .12s, filter .2s;
+  }
+  .cta-primary:hover { filter: brightness(1.05); }
+  .cta-primary:active { transform: translateY(1px) scale(.995); }
+
+  .result-head {
+    display: flex; align-items: center; gap: 8px; padding: var(--sp-3) 0;
+    border-top: 1px dashed var(--border); margin-top: var(--sp-2);
+    font-size: 13px; color: var(--muted);
+  }
+  .result-head b { color: var(--text); }
+  .badge-rec { font-family: var(--font-mono); font-size: 11px; color: var(--accent); }
+
+  .cand { display: flex; flex-direction: column; gap: var(--sp-3); }
+  .card {
+    border: 1px solid var(--border); border-radius: var(--radius); padding: var(--sp-4);
+    background: var(--surface-2); cursor: pointer; position: relative; overflow: hidden;
+    transition: border-color .2s, transform .1s, box-shadow .2s;
+  }
+  .card:hover { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
+  .card:active { transform: scale(.995); }
+  .card .rank { font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .card .dist { font-family: var(--font-mono); font-weight: 600; font-size: 18px; margin-top: 2px; }
+  .card .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .card.selected {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 10%, var(--surface-2));
+    box-shadow: 0 0 0 1px var(--accent) inset, 0 8px 22px color-mix(in srgb, var(--accent) 18%, transparent);
+  }
+  .card.selected::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+    background: linear-gradient(180deg, var(--accent), var(--accent-2));
+  }
+  .star {
+    position: absolute; top: 12px; right: 12px; font-family: var(--font-mono); font-size: 11px;
+    color: #04231F; background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    padding: 3px 9px; border-radius: 999px; font-weight: 700;
+  }
+  .export-row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); margin-top: var(--sp-5); }
+
+  /* ---- map area ---- */
+  .map-area { position: relative; background: var(--map-land); min-height: 660px; overflow: hidden; }
+  .map-svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .map-attrib {
+    position: absolute; right: 10px; bottom: 10px; z-index: 3;
+    font-family: var(--font-mono); font-size: 10px; color: var(--muted);
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 8px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .map-hud {
+    position: absolute; left: 14px; top: 14px; z-index: 3; display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .hud-pill {
+    font-family: var(--font-mono); font-size: 11px; color: var(--text);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .hud-pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); display: inline-block; }
+
+  /* ============ Mobile preview ============ */
+  .mobile-stage {
+    display: grid; grid-template-columns: minmax(300px, 360px) 1fr; gap: var(--sp-6); align-items: center;
+  }
+  .mobile-notes { color: var(--muted); }
+  .mobile-notes h3 { color: var(--text); font-size: 18px; margin-bottom: var(--sp-3); }
+  .mobile-notes ul { padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 14px; }
+  .mobile-notes li::marker { color: var(--accent); }
+
+  .phone {
+    width: 340px; max-width: 100%; aspect-ratio: 340 / 720; margin: 0 auto;
+    border-radius: 44px; padding: 12px;
+    background: linear-gradient(160deg, color-mix(in srgb, var(--surface) 70%, var(--bg)), var(--bg));
+    border: 1px solid var(--border);
+    box-shadow: var(--elev-2), 0 0 0 2px color-mix(in srgb, var(--accent) 6%, transparent);
+    position: relative;
+  }
+  .phone-screen {
+    position: relative; width: 100%; height: 100%; border-radius: 34px; overflow: hidden;
+    background: var(--map-land); border: 1px solid var(--border);
+  }
+  .notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%); z-index: 6;
+    width: 120px; height: 26px; border-radius: 999px; background: #05080B;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .notch .cam { width: 8px; height: 8px; border-radius: 50%; background: #16323a; }
+  .notch .spk { width: 36px; height: 4px; border-radius: 999px; background: #16222C; }
+
+  .m-appbar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 5; height: 76px;
+    display: flex; align-items: flex-end; justify-content: space-between; padding: 0 14px 10px;
+    background: var(--scrim);
+  }
+  .m-appbar .m-brand { display: flex; align-items: center; gap: 7px; font-family: var(--font-head); font-weight: 800; font-size: 15px; }
+  .m-appbar .m-brand b { color: var(--accent); }
+  .m-iconbtn {
+    height: var(--tap); width: var(--tap); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+    background: color-mix(in srgb, var(--surface) 70%, transparent); border: 1px solid var(--border); color: var(--text);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+
+  .m-map { position: absolute; inset: 0; }
+  .m-fab {
+    position: absolute; right: 16px; z-index: 7; bottom: 270px;
+    height: 56px; min-width: 56px; padding: 0 18px; border-radius: 18px; border: none; cursor: pointer;
+    font-family: var(--font-head); font-weight: 700; font-size: 14px; color: #04231F;
+    background: linear-gradient(100deg, var(--accent), var(--accent-2));
+    box-shadow: var(--elev-cta);
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 6;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border-top: 1px solid var(--border); border-radius: 22px 22px 0 0;
+    padding: 10px 16px 18px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,0.35);
+  }
+  .sheet .handle { width: 40px; height: 5px; border-radius: 999px; background: var(--muted); opacity: .5; margin: 2px auto 12px; }
+  .sheet .s-title { display: flex; align-items: baseline; justify-content: space-between; }
+  .sheet .s-title h4 { font-size: 15px; font-weight: 700; }
+  .sheet .s-title span { font-family: var(--font-mono); font-size: 11px; color: var(--muted); }
+  .m-cards { display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 4px; }
+  .m-card {
+    flex: 0 0 auto; min-width: 124px; border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface-2);
+  }
+  .m-card.sel { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface-2)); box-shadow: 0 0 0 1px var(--accent) inset; }
+  .m-card .md { font-family: var(--font-mono); font-weight: 600; font-size: 15px; }
+  .m-card .mm { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .m-card .mr { font-family: var(--font-mono); font-size: 10px; color: var(--accent); }
+
+  /* ============ Palette ============ */
+  .palette-group { margin-bottom: var(--sp-6); }
+  .palette-group h4 { font-size: 13px; font-family: var(--font-mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: var(--sp-3); }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: var(--sp-3); }
+  .swatch {
+    border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; background: var(--surface);
+    box-shadow: var(--elev-1);
+  }
+  .swatch .chip-color { height: 76px; width: 100%; position: relative; }
+  .swatch .chip-color .ck {
+    position: absolute; right: 8px; bottom: 8px; font-family: var(--font-mono); font-size: 10px;
+    padding: 2px 6px; border-radius: 5px; background: rgba(0,0,0,0.35); color: #fff;
+  }
+  .swatch .info { padding: 10px 12px; }
+  .swatch .info .lbl { font-family: var(--font-head); font-weight: 600; font-size: 13px; }
+  .swatch .info .hex { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* ============ Footer ============ */
+  footer { color: var(--muted); }
+  .foot-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--sp-6); align-items: start; }
+  .foot-grid h4 { color: var(--text); font-size: 15px; margin-bottom: var(--sp-2); }
+  .font-spec { font-family: var(--font-mono); font-size: 13px; color: var(--text); }
+  .font-spec span { color: var(--muted); }
+
+  /* ============ Responsive ============ */
+  @media (max-width: 900px) {
+    .app-body { grid-template-columns: 1fr; }
+    .panel { border-right: none; border-bottom: 1px solid var(--border); }
+    .map-area, .app-body { min-height: 460px; }
+    .map-area { min-height: 420px; }
+    .mobile-stage { grid-template-columns: 1fr; }
+    .foot-grid { grid-template-columns: 1fr; }
+    .navtabs { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 var(--sp-4); }
+    .row2 { grid-template-columns: 1fr; }
+    .export-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ===== 1) Brand header ===== -->
+  <header class="brandbar">
+    <div class="wrap">
+      <div class="logo">
+        <!-- Logomark: contour/pulse waveform + location pin -->
+        <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="lg-mark" x1="4" y1="34" x2="36" y2="6" gradientUnits="userSpaceOnUse">
+              <stop stop-color="var(--accent)"/>
+              <stop offset="1" stop-color="var(--accent-2)"/>
+            </linearGradient>
+          </defs>
+          <!-- contour ring -->
+          <circle cx="20" cy="20" r="16.5" stroke="var(--accent)" stroke-opacity="0.28" stroke-width="1.4"/>
+          <!-- pulse waveform sweeping across, abstracting a running stride + heartbeat -->
+          <path d="M5 22 H12 L15 13 L19 27 L23 9 L26.5 22 H35"
+                stroke="url(#lg-mark)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          <!-- location pin nucleus -->
+          <circle cx="20" cy="22" r="3.4" fill="var(--accent-2)"/>
+          <circle cx="20" cy="22" r="6.4" stroke="var(--accent-2)" stroke-opacity="0.35" stroke-width="1.2"/>
+        </svg>
+        <span class="wordmark">run<b>on</b></span>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="テーマ切替">
+        <!-- moon (dark active) -->
+        <svg class="ic-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="currentColor"/>
+        </svg>
+        <!-- sun (light active) -->
+        <svg class="ic-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/>
+          <path d="M12 2v2.6M12 19.4V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.6M19.4 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/>
+        </svg>
+        <span id="themeLabel">Dark</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ===== 2) Concept / tagline ===== -->
+  <section class="wrap hero">
+    <span class="eyebrow"><span class="dot"></span>Brand Direction — Pulse</span>
+    <h1>計測する。<span class="grad">走りを、データで。</span></h1>
+    <p class="concept">GPS と地図テックで「いま走るべき道」を冷静に提案する、ランナーのための計測プラットフォーム。</p>
+    <p class="tagline">キー不要・無料。OpenStreetMap 上で目標距離のループを生成し、レースまでの計画を精密に組む。</p>
+  </section>
+
+  <!-- ===== 3) PC preview: 周回路プランナー ===== -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-label">
+        <span class="kicker">PC Preview</span>
+        <h2>周回路プランナー</h2>
+        <p>トップバー + 左コントロール + 地図の3要素</p>
+      </div>
+
+      <div class="app-frame">
+        <!-- app topbar -->
+        <div class="app-topbar">
+          <div class="brand">
+            <svg width="22" height="22" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <path d="M5 22 H12 L15 13 L19 27 L23 9 L26.5 22 H35" stroke="var(--accent)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+              <circle cx="20" cy="22" r="3.2" fill="var(--accent-2)"/>
+            </svg>
+            run<b>on</b>
+          </div>
+          <nav class="navtabs">
+            <a class="navtab active">周回路</a>
+            <a class="navtab">トレーニング</a>
+          </nav>
+          <div class="topbar-spacer"></div>
+          <button class="icon-btn" id="appThemeBtn" aria-label="テーマ切替">
+            <svg class="ic-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="currentColor"/></svg>
+            <svg class="ic-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v2.6M12 19.4V22M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2 12h2.6M19.4 12H22M4.2 19.8 6 18M18 6l1.8-1.8"/></svg>
+          </button>
+          <a class="icon-btn" aria-label="GitHub" href="#" onclick="return false;">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.85 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.36 1.12 2.94.86.09-.67.35-1.12.63-1.38-2.22-.26-4.55-1.14-4.55-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.71 0 0 .84-.28 2.75 1.05a9.36 9.36 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.79-4.57 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.6.69.49A10.06 10.06 0 0 0 22 12.25C22 6.58 17.52 2 12 2z"/></svg>
+          </a>
+        </div>
+
+        <!-- app body -->
+        <div class="app-body">
+          <!-- left panel -->
+          <aside class="panel">
+            <h3>周回路を作る</h3>
+            <p class="sub">目標距離のループコースを生成（OpenStreetMap）</p>
+
+            <span class="field-label">プリセット</span>
+            <div class="chips">
+              <button class="chip active">🏠 自宅</button>
+              <button class="chip">東京駅</button>
+              <button class="chip">京都駅</button>
+              <button class="chip">NYセントラルパーク</button>
+            </div>
+
+            <button class="btn btn-ghost">📍 現在地を始点にする</button>
+
+            <div class="row2">
+              <label class="input-wrap">
+                <span>LAT</span>
+                <input class="input" value="35.6810" inputmode="decimal" />
+              </label>
+              <label class="input-wrap">
+                <span>LNG</span>
+                <input class="input" value="139.7670" inputmode="decimal" />
+              </label>
+            </div>
+
+            <div class="slider-block">
+              <div class="slider-head">
+                <span class="field-label" style="margin:0;">目標距離</span>
+                <span class="val mono" id="distVal">5.0<small> km</small></span>
+              </div>
+              <input type="range" id="distRange" min="0.2" max="25" step="0.1" value="5.0" />
+              <div class="range-scale"><span>0.2</span><span>12.6</span><span>25 km</span></div>
+            </div>
+
+            <button class="cta-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+              コースを生成
+            </button>
+
+            <div class="result-head">
+              <span><b>候補 3件</b> ・ 推奨を選択中</span>
+              <span class="badge-rec">● LIVE</span>
+            </div>
+
+            <div class="cand">
+              <div class="card selected">
+                <span class="star">★ おすすめ</span>
+                <div class="rank">候補 A</div>
+                <div class="dist">5.02 km</div>
+                <div class="meta">重複 6% ・ 北回り</div>
+              </div>
+              <div class="card">
+                <div class="rank">候補 B</div>
+                <div class="dist">4.88 km</div>
+                <div class="meta">重複 12% ・ 東回り</div>
+              </div>
+              <div class="card">
+                <div class="rank">候補 C</div>
+                <div class="dist">5.15 km</div>
+                <div class="meta">重複 9% ・ 南回り</div>
+              </div>
+            </div>
+
+            <div class="export-row">
+              <button class="btn">⤓ GPXを共有</button>
+              <button class="btn">↗ Googleマップで開く</button>
+            </div>
+          </aside>
+
+          <!-- map -->
+          <div class="map-area">
+            <div class="map-hud">
+              <span class="hud-pill"><i></i> 候補A ・ 北回り</span>
+              <span class="hud-pill">5.02 km ・ 重複 6%</span>
+            </div>
+            <svg class="map-svg" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" aria-label="周回路プレビュー地図">
+              <defs>
+                <linearGradient id="routeGrad" x1="460" y1="600" x2="880" y2="280" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="var(--accent)"/>
+                  <stop offset="1" stop-color="var(--accent-2)"/>
+                </linearGradient>
+                <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="9" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+                <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+                  <path d="M48 0H0V48" fill="none" stroke="var(--map-grid)" stroke-width="1"/>
+                </pattern>
+                <radialGradient id="radarG" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="var(--radar-stroke)" stop-opacity="0.0"/>
+                  <stop offset="86%" stop-color="var(--radar-stroke)" stop-opacity="0.0"/>
+                  <stop offset="100%" stop-color="var(--radar-stroke)" stop-opacity="1"/>
+                </radialGradient>
+              </defs>
+
+              <!-- land -->
+              <rect x="0" y="0" width="1200" height="760" fill="var(--map-land)"/>
+              <!-- subtle measurement grid -->
+              <rect x="0" y="0" width="1200" height="760" fill="url(#grid)"/>
+
+              <!-- park blob -->
+              <path d="M120 120 C220 70 360 80 420 160 C470 230 420 330 320 360 C200 396 90 330 80 240 C74 186 70 156 120 120 Z" fill="var(--map-park)"/>
+              <!-- water blob -->
+              <path d="M880 540 C980 500 1120 520 1160 600 C1190 660 1120 740 1000 740 C900 740 840 690 840 620 C840 584 840 560 880 540 Z" fill="var(--map-water)"/>
+
+              <!-- block fills (faint city blocks) -->
+              <g fill="var(--map-block)" opacity="0.9">
+                <rect x="560" y="120" width="150" height="100" rx="6"/>
+                <rect x="730" y="120" width="120" height="100" rx="6"/>
+                <rect x="560" y="240" width="120" height="120" rx="6"/>
+                <rect x="700" y="240" width="160" height="120" rx="6"/>
+                <rect x="300" y="470" width="150" height="120" rx="6"/>
+                <rect x="470" y="470" width="120" height="120" rx="6"/>
+                <rect x="160" y="470" width="120" height="100" rx="6"/>
+                <rect x="930" y="160" width="180" height="120" rx="6"/>
+                <rect x="930" y="300" width="180" height="110" rx="6"/>
+              </g>
+
+              <!-- minor roads (thin) -->
+              <g stroke="var(--map-road-minor)" stroke-width="3" fill="none" opacity="0.9">
+                <path d="M0 200 H1200"/><path d="M0 360 H1200"/><path d="M0 470 H1200"/><path d="M0 600 H1200"/>
+                <path d="M180 0 V760"/><path d="M450 0 V760"/><path d="M700 0 V760"/><path d="M860 0 V760"/><path d="M1010 0 V760"/>
+                <path d="M0 90 H560"/><path d="M640 700 H1200"/>
+                <path d="M300 0 V470"/><path d="M560 240 V760"/>
+              </g>
+
+              <!-- major roads (thicker) -->
+              <g stroke="var(--map-road-major)" stroke-width="9" fill="none" stroke-linecap="round">
+                <path d="M0 290 C200 290 280 300 460 460 C620 600 760 660 1200 660"/>
+                <path d="M520 0 C520 200 600 260 700 360 C800 460 820 620 820 760"/>
+              </g>
+
+              <!-- other candidates (thin, low opacity) -->
+              <path d="M540 360 C600 300 700 320 760 380 S840 520 760 560 S620 600 560 540 S500 420 540 360 Z"
+                    fill="none" stroke="var(--accent-2)" stroke-width="2.4" opacity="0.34" stroke-dasharray="6 7"/>
+              <path d="M500 400 C560 340 640 340 700 400 S780 520 700 560 S560 580 520 520 S460 460 500 400 Z"
+                    fill="none" stroke="var(--accent)" stroke-width="2.4" opacity="0.30" stroke-dasharray="6 7"/>
+
+              <!-- selected route glow underlay -->
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="var(--route-glow)" stroke-width="14" opacity="0.32" filter="url(#glow)"/>
+              <!-- selected route -->
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="url(#routeGrad)" stroke-width="5" stroke-linecap="round"/>
+
+              <!-- start pin -->
+              <g>
+                <circle cx="520" cy="380" r="16" fill="var(--accent)" opacity="0.18"/>
+                <circle cx="520" cy="380" r="8" fill="var(--accent)" stroke="var(--bg)" stroke-width="3"/>
+              </g>
+            </svg>
+            <div class="map-attrib">© OpenStreetMap contributors · © CARTO</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 4) Mobile preview ===== -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-label">
+        <span class="kicker">Mobile Preview</span>
+        <h2>スマホ体験</h2>
+        <p>地図フルブリード + ボトムシート + フローティングCTA</p>
+      </div>
+
+      <div class="mobile-stage">
+        <div class="phone">
+          <div class="notch"><span class="cam"></span><span class="spk"></span></div>
+          <div class="phone-screen">
+            <!-- full-bleed map -->
+            <div class="m-map">
+              <svg class="map-svg" viewBox="0 0 400 720" preserveAspectRatio="xMidYMid slice" aria-label="モバイル地図">
+                <defs>
+                  <linearGradient id="mRoute" x1="80" y1="520" x2="320" y2="220" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="var(--accent)"/><stop offset="1" stop-color="var(--accent-2)"/>
+                  </linearGradient>
+                  <filter id="mGlow" x="-40%" y="-40%" width="180%" height="180%">
+                    <feGaussianBlur stdDeviation="7" result="b"/>
+                    <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <pattern id="mGrid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M40 0H0V40" fill="none" stroke="var(--map-grid)" stroke-width="1"/>
+                  </pattern>
+                </defs>
+                <rect x="0" y="0" width="400" height="720" fill="var(--map-land)"/>
+                <rect x="0" y="0" width="400" height="720" fill="url(#mGrid)"/>
+                <!-- park / water -->
+                <path d="M30 90 C90 60 170 70 200 130 C224 180 190 240 120 250 C50 260 10 210 10 160 C10 124 12 108 30 90 Z" fill="var(--map-park)"/>
+                <path d="M270 560 C330 540 400 560 400 620 L400 720 L240 720 C240 660 230 590 270 560 Z" fill="var(--map-water)"/>
+                <!-- blocks -->
+                <g fill="var(--map-block)" opacity="0.9">
+                  <rect x="220" y="120" width="90" height="80" rx="5"/>
+                  <rect x="320" y="120" width="70" height="80" rx="5"/>
+                  <rect x="220" y="220" width="80" height="90" rx="5"/>
+                  <rect x="110" y="430" width="90" height="90" rx="5"/>
+                  <rect x="220" y="430" width="80" height="90" rx="5"/>
+                </g>
+                <!-- minor roads -->
+                <g stroke="var(--map-road-minor)" stroke-width="3" fill="none" opacity="0.9">
+                  <path d="M0 200 H400"/><path d="M0 320 H400"/><path d="M0 430 H400"/><path d="M0 560 H400"/>
+                  <path d="M110 0 V720"/><path d="M220 0 V720"/><path d="M310 0 V720"/>
+                </g>
+                <!-- major roads -->
+                <g stroke="var(--map-road-major)" stroke-width="7" fill="none" stroke-linecap="round">
+                  <path d="M0 260 C100 260 150 280 220 360 C300 450 340 520 400 540"/>
+                  <path d="M170 0 C170 160 210 230 250 320 C290 420 280 560 280 720"/>
+                </g>
+                <!-- other candidates -->
+                <path d="M150 320 C190 280 250 290 280 330 S320 430 270 450 S190 470 160 430 S120 360 150 320 Z" fill="none" stroke="var(--accent-2)" stroke-width="2" opacity="0.34" stroke-dasharray="5 6"/>
+                <!-- selected glow + route -->
+                <path d="M140 330 C170 280 230 270 270 300 S330 380 305 440 S230 510 180 480 S110 410 120 360 S120 350 140 330 Z" fill="none" stroke="var(--route-glow)" stroke-width="11" opacity="0.34" filter="url(#mGlow)"/>
+                <path d="M140 330 C170 280 230 270 270 300 S330 380 305 440 S230 510 180 480 S110 410 120 360 S120 350 140 330 Z" fill="none" stroke="url(#mRoute)" stroke-width="4.5" stroke-linecap="round"/>
+                <!-- pin -->
+                <circle cx="140" cy="330" r="13" fill="var(--accent)" opacity="0.18"/>
+                <circle cx="140" cy="330" r="7" fill="var(--accent)" stroke="var(--bg)" stroke-width="2.5"/>
+              </svg>
+            </div>
+
+            <!-- app bar -->
+            <div class="m-appbar">
+              <span class="m-brand">
+                <svg width="18" height="18" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M5 22 H12 L15 13 L19 27 L23 9 L26.5 22 H35" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                run<b>on</b>
+              </span>
+              <button class="m-iconbtn" aria-label="テーマ">
+                <svg class="ic-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="currentColor"/></svg>
+                <svg class="ic-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="currentColor" stroke="none"/><path d="M12 3v2M12 19v2M5 5l1.4 1.4M17.6 17.6 19 19M3 12h2M19 12h2M5 19l1.4-1.4M17.6 6.4 19 5"/></svg>
+              </button>
+            </div>
+
+            <!-- floating CTA -->
+            <button class="m-fab">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+              生成
+            </button>
+
+            <!-- bottom sheet -->
+            <div class="sheet">
+              <div class="handle"></div>
+              <div class="s-title">
+                <h4>候補 3件 ・ 推奨を選択中</h4>
+                <span>5.0 km</span>
+              </div>
+              <div class="m-cards">
+                <div class="m-card sel">
+                  <div class="mr">★ おすすめ</div>
+                  <div class="md">5.02 km</div>
+                  <div class="mm">重複 6% ・ 北回り</div>
+                </div>
+                <div class="m-card">
+                  <div class="mr">候補 B</div>
+                  <div class="md">4.88 km</div>
+                  <div class="mm">重複 12% ・ 東回り</div>
+                </div>
+                <div class="m-card">
+                  <div class="mr">候補 C</div>
+                  <div class="md">5.15 km</div>
+                  <div class="mm">重複 9% ・ 南回り</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-notes">
+          <h3>モバイル UX の狙い</h3>
+          <ul>
+            <li>地図を主役にフルブリード表示。計測している実感を最前面に。</li>
+            <li>下からせり上がるボトムシートで候補を横スワイプ比較。ハンドルで高さ調整。</li>
+            <li>親指の届く右下にフローティング生成 CTA。タップターゲットは 56px。</li>
+            <li>アッパー部はスクリムで地図上でも文字可読性を確保。</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 5) Palette ===== -->
+  <section class="section">
+    <div class="wrap">
+      <div class="section-label">
+        <span class="kicker">Color System</span>
+        <h2>カラーパレット</h2>
+        <p>Dark / Light 両対応・主要トークン</p>
+      </div>
+
+      <div class="palette-group">
+        <h4>Brand accents</h4>
+        <div class="swatches">
+          <div class="swatch"><div class="chip-color" style="background:linear-gradient(135deg,#2DD4BF,#22D3EE)"><span class="ck">teal→cyan</span></div><div class="info"><div class="lbl">Route gradient</div><div class="hex">#2DD4BF → #22D3EE</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#2DD4BF"><span class="ck">AAA</span></div><div class="info"><div class="lbl">Accent / Teal</div><div class="hex">#2DD4BF</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#22D3EE"><span class="ck">glow</span></div><div class="info"><div class="lbl">Accent 2 / Cyan</div><div class="hex">#22D3EE</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#34D399"><span class="ck">state</span></div><div class="info"><div class="lbl">Success</div><div class="hex">#34D399</div></div></div>
+        </div>
+      </div>
+
+      <div class="palette-group">
+        <h4>Dark theme</h4>
+        <div class="swatches">
+          <div class="swatch"><div class="chip-color" style="background:#0A0F14"></div><div class="info"><div class="lbl">Background</div><div class="hex">#0A0F14</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#111A22"></div><div class="info"><div class="lbl">Surface</div><div class="hex">#111A22</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#16222C"></div><div class="info"><div class="lbl">Surface 2</div><div class="hex">#16222C</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#1E2C38"></div><div class="info"><div class="lbl">Border</div><div class="hex">#1E2C38</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#EAF6F8"><span class="ck" style="background:rgba(0,0,0,0.5)">on dark</span></div><div class="info"><div class="lbl">Text</div><div class="hex">#EAF6F8</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#7C95A3"></div><div class="info"><div class="lbl">Muted</div><div class="hex">#7C95A3</div></div></div>
+        </div>
+      </div>
+
+      <div class="palette-group">
+        <h4>Light theme</h4>
+        <div class="swatches">
+          <div class="swatch"><div class="chip-color" style="background:#F6FAFB"><span class="ck">bg</span></div><div class="info"><div class="lbl">Background</div><div class="hex">#F6FAFB</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#FFFFFF"><span class="ck">surface</span></div><div class="info"><div class="lbl">Surface</div><div class="hex">#FFFFFF</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#DCE8EC"></div><div class="info"><div class="lbl">Border</div><div class="hex">#DCE8EC</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#0A1A20"><span class="ck">on light</span></div><div class="info"><div class="lbl">Text</div><div class="hex">#0A1A20</div></div></div>
+          <div class="swatch"><div class="chip-color" style="background:#5A7280"></div><div class="info"><div class="lbl">Muted</div><div class="hex">#5A7280</div></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 6) Footer ===== -->
+  <footer class="section">
+    <div class="wrap foot-grid">
+      <div>
+        <h4>Pulse が狙う印象</h4>
+        <p>GPS と地図テックの清涼感を、teal→cyan のグロウと計測グリッドで表現。冷静・精密・データドリブンな信頼感を、ランナーが一目で感じ取れるブランドを目指す。</p>
+      </div>
+      <div>
+        <h4>Typography</h4>
+        <p class="font-spec">Inter <span>/ 見出し・UI（精密な sans）</span></p>
+        <p class="font-spec">Noto Sans JP <span>/ 日本語本文</span></p>
+        <p class="font-spec">JetBrains Mono <span>/ 数値・座標・距離</span></p>
+      </div>
+    </div>
+  </footer>
+
+<script>
+  (function () {
+    var html = document.documentElement;
+    var label = document.getElementById('themeLabel');
+
+    function apply(theme) {
+      html.setAttribute('data-theme', theme);
+      if (label) label.textContent = theme === 'dark' ? 'Dark' : 'Light';
+    }
+    function toggle() {
+      apply(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    var t1 = document.getElementById('themeToggle');
+    var t2 = document.getElementById('appThemeBtn');
+    if (t1) t1.addEventListener('click', toggle);
+    if (t2) t2.addEventListener('click', toggle);
+
+    // distance slider -> value display + fill width
+    var range = document.getElementById('distRange');
+    var out = document.getElementById('distVal');
+    function syncRange() {
+      var v = parseFloat(range.value);
+      out.innerHTML = v.toFixed(1) + '<small> km</small>';
+      var pct = ((v - range.min) / (range.max - range.min)) * 100;
+      range.style.backgroundSize = pct + '% 100%';
+    }
+    if (range) { range.addEventListener('input', syncRange); syncRange(); }
+
+    // candidate selection (PC)
+    document.querySelectorAll('.cand .card').forEach(function (c) {
+      c.addEventListener('click', function () {
+        document.querySelectorAll('.cand .card').forEach(function (x) { x.classList.remove('selected'); });
+        c.classList.add('selected');
+      });
+    });
+
+    // preset chips
+    document.querySelectorAll('.chips .chip').forEach(function (c) {
+      c.addEventListener('click', function () {
+        document.querySelectorAll('.chips .chip').forEach(function (x) { x.classList.remove('active'); });
+        c.classList.add('active');
+      });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,0 +1,253 @@
+@import "tailwindcss";
+
+/*
+ * runon デザインシステム — Ember (energetic orange)
+ *
+ * テーマは「セマンティックトークン + CSS 変数」で実装する。
+ * 各コンポーネントは bg-surface / text-fg / border-border のような意味クラスだけを使い、
+ * 実際の色は :root(dark) と [data-theme="light"] が供給する CSS 変数で切り替わる。
+ * → テーマ切替は <html data-theme> 属性 1 つの変更で完結し、dark: の撒き散らしが不要。
+ */
+
+/* 属性ベースの dark: variant を有効化（prefers-color-scheme でなく data-theme に連動させるため）。 */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+  /* セマンティック色（値は下の :root / [data-theme] が供給）。 */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-hairline: var(--hairline);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-2: var(--accent-2);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-border: var(--accent-soft-border);
+  --color-accent-soft-fg: var(--accent-soft-fg);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-fg: var(--success-fg);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-warn-fg: var(--warn-fg);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-fg: var(--danger-fg);
+
+  /* トレーニング種別のカテゴリ色（ラベルと併記して使う）。 */
+  --color-cat-easy: var(--cat-easy);
+  --color-cat-long: var(--cat-long);
+  --color-cat-hard: var(--cat-hard);
+  --color-cat-race: var(--cat-race);
+  --color-hr: var(--hr);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue",
+    Arial, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-display:
+    "Sora", ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+/* ヘッダー高さ（SiteNav と planner の calc で共有する単一ソース。テーマ非依存）。 */
+:root {
+  --nav-h: 3.5rem;
+}
+
+/* ---- ダーク（ブランド既定） ---- */
+:root,
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg: #0b0e11;
+  --surface: #14181d;
+  --surface-2: #1b2128;
+  --surface-3: #232a31;
+  --border: #2a323b;
+  --hairline: #1e242b;
+  --fg: #f5f7fa;
+  --muted: #9aa7b4;
+  /* faint も「読ませる補足」に使うため AA(surface-2 上で 4.5:1) を満たす明度に。 */
+  --faint: #7e8b99;
+
+  --accent: #ff5a1f;
+  --accent-hover: #ff6e3c;
+  --accent-2: #ffb020;
+  --accent-fg: #1a0e07;
+  --accent-soft: rgb(255 90 31 / 0.14);
+  --accent-soft-border: rgb(255 90 31 / 0.42);
+  --accent-soft-fg: #ff8a5c;
+
+  --success: #34d399;
+  --success-soft: rgb(52 211 153 / 0.15);
+  --success-fg: #6ee7b7;
+  --warn: #fbbf24;
+  --warn-soft: rgb(251 191 36 / 0.15);
+  --warn-fg: #fcd34d;
+  --danger: #f87171;
+  --danger-soft: rgb(248 113 113 / 0.15);
+  --danger-fg: #fca5a5;
+
+  --cat-easy: #60a5fa;
+  --cat-long: #a78bfa;
+  --cat-hard: #fb923c;
+  --cat-race: #f87171;
+  --hr: #fb7185;
+}
+
+/* ---- ライト ---- */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --bg: #fbfaf8;
+  --surface: #ffffff;
+  --surface-2: #f5f1eb;
+  --surface-3: #ece6dd;
+  --border: #e4ddd3;
+  --hairline: #efeae2;
+  --fg: #15110d;
+  --muted: #5e564c;
+  /* surface-2/accent-soft/warn-soft の上でも AA を満たすよう一段暗く。 */
+  --faint: #6f685d;
+
+  /* ライトでは白背景に乗るため、オレンジを一段深めて AA コントラストを確保。 */
+  --accent: #d9480f;
+  --accent-hover: #b83c0b;
+  --accent-2: #b5740a;
+  --accent-fg: #ffffff;
+  --accent-soft: #fff1e8;
+  --accent-soft-border: #f6c3a3;
+  --accent-soft-fg: #c0420b;
+
+  --success: #15924f;
+  --success-soft: #dcfce7;
+  --success-fg: #15803d;
+  --warn: #b45309;
+  --warn-soft: #fef3c7;
+  --warn-fg: #92400e;
+  --danger: #dc2626;
+  --danger-soft: #fee2e2;
+  --danger-fg: #b91c1c;
+
+  --cat-easy: #2563eb;
+  --cat-long: #7c3aed;
+  --cat-hard: #c2410c;
+  /* warn-soft 行の上でも AA を満たすよう少し濃く。 */
+  --cat-race: #c81e1e;
+  --hr: #e11d48;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    /* 狭幅でヘッダ等がわずかに溢れてもページ全体に横スクロールを波及させない。 */
+    overflow-x: clip;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    /* テーマ切替を滑らかに（reduced-motion では無効化）。 */
+    transition:
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  /* キーボード操作時のみ可視フォーカスリング。 */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* レンジ/チェックボックスをブランド色に。 */
+  input[type="range"],
+  input[type="checkbox"] {
+    accent-color: var(--accent);
+  }
+
+  /*
+   * Tailwind v4 の Preflight はボタンの cursor を default にする。
+   * Web アプリとしては「押せる感」が欲しいので、クリック可能要素は pointer に戻す（1か所で横断管理）。
+   */
+  button:not(:disabled),
+  [role="button"]:not(:disabled),
+  summary,
+  select:not(:disabled),
+  label:has(> input[type="checkbox"]:not(:disabled)),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled),
+  input[type="file"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  /* 押せない状態は not-allowed で明示（色以外の手がかり）。 */
+  button:disabled,
+  [role="button"][aria-disabled="true"] {
+    cursor: not-allowed;
+  }
+
+  /* スクロールバー（ダークで白く浮かないように）。 */
+  * {
+    scrollbar-color: var(--surface-3) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--surface-3);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--faint);
+  }
+
+  /* MapLibre のコントロール/帰属をテーマに馴染ませる（ダーク時に白浮きしない）。 */
+  [data-theme="dark"] .maplibregl-ctrl-group {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  [data-theme="dark"] .maplibregl-ctrl-group button + button {
+    border-top-color: var(--border);
+  }
+  [data-theme="dark"] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+    filter: invert(1) hue-rotate(180deg) brightness(1.1);
+  }
+  [data-theme="dark"] .maplibregl-ctrl-attrib {
+    background: rgb(20 24 29 / 0.8);
+    color: var(--muted);
+  }
+  [data-theme="dark"] .maplibregl-ctrl-attrib a {
+    color: var(--accent-soft-fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body {
+      transition: none;
+    }
+  }
+}

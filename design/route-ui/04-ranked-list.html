@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>runon — 周回路比較 案D ランク付きリスト + 個別表示トグル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#0b0e11; --surface:#14181d; --surface-2:#1b2128; --surface-3:#232a31; --border:#2a323b;
+    --fg:#f5f7fa; --muted:#9aa7b4; --faint:#7e8b99; --accent:#ff5a1f; --accent-2:#ffb020; --success:#34d399;
+    --rA:#ff5a1f; --rB:#22d3ee; --rC:#a78bfa;
+    --shadow: 0 18px 50px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; padding:0; }
+  body {
+    font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+    background:#3a3f45;
+    color: var(--fg);
+    min-height: 100vh;
+    display:flex; flex-direction:column; align-items:center;
+    padding: 22px 12px 48px;
+    line-height: 1.5;
+  }
+
+  /* ---- ページ上部の案説明 ---- */
+  .page-head {
+    width: 100%;
+    max-width: 560px;
+    margin-bottom: 18px;
+    color:#e8ecf1;
+  }
+  .page-head .badge {
+    display:inline-block;
+    font-size: 11px; font-weight:700; letter-spacing:.08em;
+    color:#0b0e11; background: var(--accent-2);
+    padding: 3px 9px; border-radius: 999px;
+    margin-bottom: 8px;
+  }
+  .page-head h1 { font-size: 18px; margin: 0 0 6px; font-weight:900; }
+  .page-head p { font-size: 13px; margin: 2px 0; color:#c4ccd4; }
+  .page-head p .k { color: var(--accent-2); font-weight:700; }
+
+  /* ---- 端末フレーム ---- */
+  .device {
+    position: relative;
+    width: 390px;
+    max-width: 100%;
+    height: 760px;
+    background: var(--bg);
+    border-radius: 44px;
+    box-shadow: var(--shadow);
+    border: 10px solid #05070a;
+    overflow: hidden;
+  }
+  .notch {
+    position:absolute; top:0; left:50%; transform: translateX(-50%);
+    width: 150px; height: 26px; background:#05070a;
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    z-index: 60;
+  }
+
+  .app {
+    position:absolute; inset:0;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  /* ---- アプリバー ---- */
+  .appbar {
+    position:absolute; top:0; left:0; right:0;
+    height: 54px;
+    padding: 0 14px;
+    display:flex; align-items:center; gap: 10px;
+    background: linear-gradient(180deg, rgba(11,14,17,.96), rgba(11,14,17,.72));
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    padding-top: 6px;
+  }
+  .logo { display:flex; align-items:center; gap:7px; }
+  .logo .mark {
+    width: 22px; height:22px; border-radius:50%;
+    border: 3px solid var(--accent);
+    border-right-color: transparent;
+    transform: rotate(-35deg);
+  }
+  .logo .name { font-weight:900; font-size:16px; letter-spacing:.01em; }
+
+  .tabs { display:flex; gap:4px; margin-left: 10px; }
+  .tab {
+    font-size: 12px; font-weight:700;
+    color: var(--faint);
+    padding: 6px 10px; border-radius: 999px;
+    cursor:pointer; border:1px solid transparent;
+    background: transparent;
+  }
+  .tab.active { color: var(--fg); background: var(--surface-2); border-color: var(--border); }
+
+  .appbar .spacer { flex:1; }
+  .icon-btn {
+    width: 36px; height:36px; border-radius:10px;
+    display:flex; align-items:center; justify-content:center;
+    color: var(--muted); cursor:pointer;
+    border:1px solid var(--border); background: var(--surface);
+  }
+  .icon-btn svg { width:18px; height:18px; }
+
+  /* ---- 地図 ---- */
+  .map {
+    position:absolute; top:0; left:0; right:0; bottom:0;
+    background: radial-gradient(120% 80% at 50% 0%, #10151b 0%, #0b0e11 70%);
+  }
+  .map svg { width:100%; height:100%; display:block; }
+
+  .route-path { fill:none; stroke-linecap:round; stroke-linejoin:round; transition: opacity .25s ease, stroke-width .25s ease; }
+  .route-path.ghost { opacity:.22; stroke-dasharray: 5 7; }
+  .route-path.hidden { opacity:0; pointer-events:none; }
+  .route-path.dim { opacity:.5; }
+  .route-path.focus { opacity:1; }
+
+  .attrib {
+    position:absolute; right:8px; bottom: 8px;
+    font-size: 9px; color: rgba(154,167,180,.6);
+    background: rgba(11,14,17,.5);
+    padding: 2px 6px; border-radius: 6px;
+    z-index: 12; pointer-events:none;
+  }
+
+  .drag-hint {
+    position:absolute; left:50%; transform: translateX(-50%);
+    bottom: calc(18vh + 14px);
+    font-size: 11px; color: var(--muted);
+    background: rgba(27,33,40,.85);
+    border:1px solid var(--border);
+    padding: 5px 12px; border-radius: 999px;
+    z-index: 30; pointer-events:none;
+    transition: opacity .3s ease;
+    white-space: nowrap;
+  }
+
+  /* ---- ボトムシート ---- */
+  .sheet {
+    position:absolute; left:0; right:0; bottom:0;
+    height: 100%;
+    background: var(--surface);
+    border-top-left-radius: 22px; border-top-right-radius: 22px;
+    box-shadow: 0 -14px 40px rgba(0,0,0,.5);
+    z-index: 40;
+    display:flex; flex-direction:column;
+    will-change: transform;
+    touch-action: none;
+  }
+  .sheet.animate { transition: transform .25s cubic-bezier(.22,.61,.36,1); }
+
+  .handle-zone {
+    flex: 0 0 auto;
+    padding: 10px 16px 10px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .handle-zone:active { cursor: grabbing; }
+  .grabber {
+    width: 42px; height: 5px; border-radius: 999px;
+    background: var(--surface-3);
+    margin: 0 auto 10px;
+  }
+  .summary {
+    display:flex; align-items:center; gap: 8px;
+    font-size: 13px;
+  }
+  .summary .lead {
+    display:inline-flex; align-items:center; gap:6px;
+    font-weight:700; color: var(--fg);
+  }
+  .summary .dotA { width:9px;height:9px;border-radius:2px;background:var(--rA); display:inline-block; }
+  .summary .sep { color: var(--faint); }
+  .summary .muted { color: var(--muted); }
+  .summary .recalc {
+    margin-left:auto;
+    font-size: 11px; font-weight:700; color: var(--accent-2);
+    border:1px solid var(--border); background: var(--surface-2);
+    padding: 4px 9px; border-radius: 999px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:4px;
+    white-space:nowrap;
+  }
+  .summary .recalc svg { width:12px; height:12px; }
+
+  /* ---- シート本文(スクロール領域) ---- */
+  .sheet-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 14px 26px;
+    touch-action: pan-y;
+  }
+  .sheet-body::-webkit-scrollbar { width: 0; }
+
+  /* コントロール: 地図表示トグル + 方位フィルタ */
+  .controls {
+    display:flex; flex-direction:column; gap: 10px;
+    padding: 6px 0 12px;
+    position: sticky; top: 0;
+    background: linear-gradient(180deg, var(--surface) 80%, rgba(20,24,29,0));
+    z-index: 5;
+  }
+  .control-row { display:flex; align-items:center; gap: 8px; }
+  .control-label { font-size: 11px; color: var(--faint); font-weight:700; min-width: 64px; }
+
+  .seg {
+    display:inline-flex; background: var(--surface-2);
+    border:1px solid var(--border); border-radius: 10px;
+    padding: 2px; gap:2px;
+  }
+  .seg button {
+    font-size: 11px; font-weight:700;
+    color: var(--muted);
+    background: transparent; border:none;
+    padding: 6px 11px; border-radius: 8px; cursor:pointer;
+    min-height: 30px;
+  }
+  .seg button.on { color: var(--fg); background: var(--surface-3); }
+
+  .chips { display:flex; gap:6px; flex-wrap:wrap; }
+  .chip {
+    font-size: 11px; font-weight:700; color: var(--muted);
+    background: var(--surface-2); border:1px solid var(--border);
+    padding: 6px 11px; border-radius: 999px; cursor:pointer;
+    min-height: 30px; display:inline-flex; align-items:center; gap:5px;
+  }
+  .chip.on { color: var(--fg); border-color: var(--accent); background: rgba(255,90,31,.12); }
+  .chip .cnt { color: var(--faint); font-weight:500; }
+  .chip.on .cnt { color: var(--accent-2); }
+
+  .list-meta {
+    display:flex; align-items:center; justify-content:space-between;
+    font-size: 11px; color: var(--faint);
+    margin: 2px 2px 8px;
+  }
+  .list-meta .legend-toggle {
+    color: var(--muted); cursor:pointer; font-weight:700;
+    display:inline-flex; align-items:center; gap:5px;
+  }
+
+  /* ---- 候補カード ---- */
+  .card {
+    position: relative;
+    background: var(--surface-2);
+    border:1px solid var(--border);
+    border-radius: 16px;
+    margin-bottom: 10px;
+    overflow:hidden;
+    cursor:pointer;
+    transition: border-color .18s ease, background .18s ease;
+  }
+  .card.selected { border-color: var(--sel-color, var(--accent)); background: var(--surface-3); }
+  .card:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+
+  /* 左側カラーバー */
+  .card .strip {
+    position:absolute; left:0; top:0; bottom:0; width: 4px;
+    background: var(--row-color);
+  }
+  .card.row-hidden .strip { opacity:.3; }
+
+  /* プライマリ(おすすめA) */
+  .card.primary { padding: 14px 14px 14px 18px; }
+  .primary .top {
+    display:flex; align-items:flex-start; gap: 10px;
+  }
+  .rank-pill {
+    flex:0 0 auto;
+    width: 26px; height: 26px; border-radius: 8px;
+    display:flex; align-items:center; justify-content:center;
+    font-size: 13px; font-weight:900;
+    color:#0b0e11;
+    background: var(--row-color);
+  }
+  .card.row-hidden .rank-pill { opacity:.45; }
+  .primary .head-text { flex:1 1 auto; min-width:0; }
+  .primary .km {
+    font-size: 26px; font-weight:900; line-height:1.1;
+    letter-spacing:-.01em;
+  }
+  .primary .km span.unit { font-size: 13px; font-weight:700; color: var(--muted); margin-left:3px; }
+  .reco-badge {
+    display:inline-flex; align-items:center; gap:4px;
+    font-size: 10px; font-weight:800; letter-spacing:.04em;
+    color:#0b0e11; background: var(--accent-2);
+    padding: 3px 8px; border-radius: 999px;
+    margin-top: 4px;
+  }
+
+  .eye-btn {
+    flex:0 0 auto;
+    width: 38px; height: 38px; border-radius: 10px;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer; border:1px solid var(--border);
+    background: var(--surface);
+    color: var(--accent-2);
+  }
+  .eye-btn svg { width: 19px; height: 19px; }
+  .eye-btn.off { color: var(--faint); background: var(--surface-2); }
+
+  /* メトリクスグリッド(プライマリ展開部) */
+  .metrics {
+    display:grid; grid-template-columns: repeat(4, 1fr);
+    gap: 8px; margin-top: 14px;
+  }
+  .metric {
+    background: var(--surface); border:1px solid var(--border);
+    border-radius: 10px; padding: 8px 6px; text-align:center;
+  }
+  .metric .mv { font-size: 14px; font-weight:800; }
+  .metric .ml { font-size: 9.5px; color: var(--faint); margin-top:2px; font-weight:600; }
+  .metric .mv.good { color: var(--success); }
+
+  .actions {
+    display:flex; gap: 8px; margin-top: 12px;
+  }
+  .btn {
+    flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+    font-size: 12.5px; font-weight:800;
+    padding: 11px 8px; border-radius: 11px; cursor:pointer;
+    border:1px solid var(--border);
+    min-height: 42px;
+  }
+  .btn svg { width:15px; height:15px; }
+  .btn.primary-btn { color:#0b0e11; background: var(--accent); border-color: var(--accent); }
+  .btn.ghost-btn { color: var(--fg); background: var(--surface); }
+
+  /* コンパクト行(B/C) */
+  .card.compact { padding: 11px 12px 11px 16px; }
+  .compact .row {
+    display:flex; align-items:center; gap: 10px;
+  }
+  .compact .rank-pill { width: 22px; height:22px; font-size:11px; border-radius:7px; }
+  .compact .info { flex:1 1 auto; min-width:0; }
+  .compact .info .line1 {
+    display:flex; align-items:baseline; gap:7px;
+  }
+  .compact .info .km2 { font-size: 16px; font-weight:900; }
+  .compact .info .km2 .unit { font-size:10px; font-weight:700; color:var(--muted); margin-left:2px; }
+  .compact .info .dir { font-size: 11px; color: var(--muted); font-weight:700; }
+  .compact .info .line2 { font-size: 10.5px; color: var(--faint); margin-top:1px; }
+  .compact.row-hidden .info { opacity:.5; }
+  .compact .eye-btn { width: 34px; height:34px; }
+  .compact .eye-btn svg { width:17px; height:17px; }
+
+  .card.row-hidden { background: var(--surface); }
+
+  /* 凡例 */
+  .legend {
+    display:flex; gap: 14px; flex-wrap:wrap;
+    font-size: 10.5px; color: var(--muted);
+    padding: 8px 4px 4px;
+  }
+  .legend.collapsed { display:none; }
+  .legend .li { display:inline-flex; align-items:center; gap:5px; }
+  .legend .sw { width:14px; height:4px; border-radius:2px; }
+
+  .empty-note {
+    text-align:center; font-size:11px; color:var(--faint);
+    padding: 18px 8px; display:none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheet.animate { transition: none !important; }
+    .route-path { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="page-head">
+    <span class="badge">案 D</span>
+    <h1>ランク付きリスト + 個別表示トグル</h1>
+    <p><span class="k">狙い:</span> 情報量を保ちつつ、見たいルートだけ地図に残せる。比較表に近い精密派向け。</p>
+    <p><span class="k">操作:</span> 行タップで選択(フォーカス)。各行の 👁 で地図描画を個別ON/OFF。上部トグルで「全部/選択のみ」、チップで方位フィルタ。</p>
+  </div>
+
+  <div class="device">
+    <div class="notch"></div>
+    <div class="app">
+
+      <!-- アプリバー -->
+      <div class="appbar">
+        <div class="logo">
+          <div class="mark"></div>
+          <div class="name">runon</div>
+        </div>
+        <div class="tabs">
+          <button class="tab active" type="button">周回路</button>
+          <button class="tab" type="button">トレーニング</button>
+        </div>
+        <div class="spacer"></div>
+        <div class="icon-btn" title="テーマ" aria-label="テーマ切替">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- 地図 -->
+      <div class="map">
+        <svg viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <!-- 公園/水域ブロブ -->
+          <defs>
+            <radialGradient id="parkG" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#16241c"/><stop offset="100%" stop-color="#0f1814"/>
+            </radialGradient>
+            <radialGradient id="waterG" cx="50%" cy="50%" r="60%">
+              <stop offset="0%" stop-color="#11212b"/><stop offset="100%" stop-color="#0d181f"/>
+            </radialGradient>
+          </defs>
+          <path d="M40 30 C90 10 150 24 160 70 C168 110 120 140 70 130 C20 120 10 55 40 30 Z" fill="url(#parkG)"/>
+          <path d="M250 180 C300 160 360 184 356 224 C352 264 300 280 262 268 C212 252 214 200 250 180 Z" fill="url(#waterG)"/>
+          <path d="M300 20 C340 14 372 36 366 64 C360 92 318 96 296 80 C272 62 274 28 300 20 Z" fill="url(#parkG)"/>
+
+          <!-- 道路網(細い) -->
+          <g stroke="#222a32" stroke-width="6" stroke-linecap="round" fill="none" opacity=".9">
+            <path d="M0 90 H390"/><path d="M0 165 H390"/><path d="M0 235 H390"/>
+            <path d="M70 0 V300"/><path d="M165 0 V300"/><path d="M255 0 V300"/><path d="M325 0 V300"/>
+          </g>
+          <g stroke="#1a2128" stroke-width="3" stroke-linecap="round" fill="none" opacity=".8">
+            <path d="M0 50 H390"/><path d="M0 128 H390"/><path d="M0 200 H390"/><path d="M0 270 H390"/>
+            <path d="M30 0 V300"/><path d="M115 0 V300"/><path d="M210 0 V300"/><path d="M290 0 V300"/><path d="M360 0 V300"/>
+          </g>
+
+          <!-- ルート3本 -->
+          <path id="pathA" class="route-path" stroke="var(--rA)" stroke-width="5"
+            d="M120 80 C160 50 250 60 290 110 S320 210 250 240 S130 250 100 190 S80 110 120 80 Z"/>
+          <path id="pathB" class="route-path" stroke="var(--rB)" stroke-width="4"
+            d="M150 70 C210 50 270 95 280 150 S250 235 180 238 S110 210 112 150 S100 90 150 70 Z"/>
+          <path id="pathC" class="route-path" stroke="var(--rC)" stroke-width="4"
+            d="M108 120 C150 88 230 86 268 122 S300 200 240 232 S128 240 110 182 S88 132 108 120 Z"/>
+
+          <!-- 始点ピン -->
+          <g>
+            <circle cx="120" cy="80" r="9" fill="var(--rA)" opacity=".25"/>
+            <circle cx="120" cy="80" r="5" fill="var(--rA)" stroke="#0b0e11" stroke-width="2"/>
+          </g>
+        </svg>
+        <div class="attrib">© OpenStreetMap · © CARTO</div>
+      </div>
+
+      <div class="drag-hint" id="dragHint">↑ ハンドルを摘んで上下にドラッグ</div>
+
+      <!-- ボトムシート -->
+      <div class="sheet" id="sheet">
+        <div class="handle-zone" id="handle">
+          <div class="grabber"></div>
+          <div class="summary">
+            <span class="lead"><span class="dotA"></span>候補3件</span>
+            <span class="sep">·</span>
+            <span class="muted">おすすめ A 5.02km</span>
+            <button class="recalc" type="button" id="recalcBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 3v5h-5"/>
+              </svg>
+              再計算
+            </button>
+          </div>
+        </div>
+
+        <div class="sheet-body" id="sheetBody">
+          <!-- コントロール -->
+          <div class="controls">
+            <div class="control-row">
+              <span class="control-label">地図表示</span>
+              <div class="seg" id="mapMode">
+                <button type="button" class="on" data-mode="all">全部</button>
+                <button type="button" data-mode="selected">選択のみ</button>
+              </div>
+            </div>
+            <div class="control-row">
+              <span class="control-label">方位</span>
+              <div class="chips" id="dirChips">
+                <button type="button" class="chip on" data-dir="N">北 <span class="cnt">1</span></button>
+                <button type="button" class="chip on" data-dir="E">東 <span class="cnt">1</span></button>
+                <button type="button" class="chip on" data-dir="S">南 <span class="cnt">1</span></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="list-meta">
+            <span id="visCount">表示中 3 / 3 本</span>
+            <span class="legend-toggle" id="legendToggle">凡例を表示</span>
+          </div>
+
+          <div class="legend collapsed" id="legend">
+            <span class="li"><span class="sw" style="background:var(--rA)"></span>A 北回り</span>
+            <span class="li"><span class="sw" style="background:var(--rB)"></span>B 東回り</span>
+            <span class="li"><span class="sw" style="background:var(--rC)"></span>C 南回り</span>
+          </div>
+
+          <!-- リスト -->
+          <div id="cardList"></div>
+
+          <div class="empty-note" id="emptyNote">条件に合う候補がありません。方位フィルタを見直してください。</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- データ(固定) ----
+  var ROUTES = [
+    { id:"A", rank:1, color:"var(--rA)", km:"5.02", overlap:"6%", dir:"北回り", dirKey:"N", err:"±12m", reco:true,  primary:true,  pathId:"pathA" },
+    { id:"B", rank:2, color:"var(--rB)", km:"4.88", overlap:"12%", dir:"東回り", dirKey:"E", err:"±18m", reco:false, primary:false, pathId:"pathB" },
+    { id:"C", rank:3, color:"var(--rC)", km:"5.15", overlap:"9%", dir:"南回り", dirKey:"S", err:"±15m", reco:false, primary:false, pathId:"pathC" }
+  ];
+
+  // ---- 状態 ----
+  var state = {
+    selected: "A",
+    mapMode: "all",              // "all" | "selected"
+    dirFilter: { N:true, E:true, S:true },
+    eyeOn: { A:true, B:true, C:true }   // 個別表示トグル
+  };
+
+  var cardList = document.getElementById("cardList");
+  var visCount = document.getElementById("visCount");
+  var emptyNote = document.getElementById("emptyNote");
+
+  function isFilteredOut(r) { return !state.dirFilter[r.dirKey]; }
+
+  // 地図に実際に線を描くか
+  function pathVisible(r) {
+    if (isFilteredOut(r)) return false;       // 方位フィルタで除外
+    if (!state.eyeOn[r.id]) return false;     // 👁 でOFF
+    if (state.mapMode === "selected" && r.id !== state.selected) return false;
+    return true;
+  }
+
+  var EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.9 4.2A10.9 10.9 0 0 1 12 4c6.4 0 10 7 10 7a18 18 0 0 1-3.2 4.1M6.6 6.6A18 18 0 0 0 2 11s3.6 7 10 7a10.9 10.9 0 0 0 4-.8"/><path d="M3 3l18 18"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/></svg>';
+  var GPX_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 11l5 5 5-5"/><path d="M5 21h14"/></svg>';
+  var EXT_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7"/><path d="M9 7h8v8"/></svg>';
+
+  // ---- カード描画 ----
+  function renderCards() {
+    cardList.innerHTML = "";
+    var shownCount = 0;
+
+    ROUTES.forEach(function (r) {
+      var filteredOut = isFilteredOut(r);
+      if (filteredOut) return; // フィルタ除外はリストから消す
+      shownCount++;
+
+      var card = document.createElement("div");
+      card.className = "card " + (r.primary ? "primary" : "compact");
+      card.tabIndex = 0;
+      card.setAttribute("role", "button");
+      card.style.setProperty("--row-color", r.color);
+      card.style.setProperty("--sel-color", r.color);
+      if (r.id === state.selected) card.classList.add("selected");
+      if (!state.eyeOn[r.id]) card.classList.add("row-hidden");
+
+      var eyeCls = state.eyeOn[r.id] ? "eye-btn" : "eye-btn off";
+      var eyeSvg = state.eyeOn[r.id] ? EYE_OPEN : EYE_OFF;
+      var eyeLabel = state.eyeOn[r.id] ? "地図で非表示にする" : "地図で表示する";
+
+      if (r.primary) {
+        card.innerHTML =
+          '<span class="strip"></span>' +
+          '<div class="top">' +
+            '<div class="rank-pill">' + r.rank + '</div>' +
+            '<div class="head-text">' +
+              '<div class="km">' + r.km + '<span class="unit">km</span></div>' +
+              '<div class="reco-badge">★ おすすめ · ' + r.dir + '</div>' +
+            '</div>' +
+            '<button type="button" class="' + eyeCls + '" data-eye="' + r.id + '" aria-label="' + eyeLabel + '">' + eyeSvg + '</button>' +
+          '</div>' +
+          '<div class="metrics">' +
+            '<div class="metric"><div class="mv">' + r.km + '</div><div class="ml">距離 km</div></div>' +
+            '<div class="metric"><div class="mv good">' + r.overlap + '</div><div class="ml">重複</div></div>' +
+            '<div class="metric"><div class="mv">' + r.err + '</div><div class="ml">誤差</div></div>' +
+            '<div class="metric"><div class="mv">' + r.dir.replace("回り","") + '</div><div class="ml">方位</div></div>' +
+          '</div>' +
+          '<div class="actions">' +
+            '<button type="button" class="btn primary-btn" data-act="gpx" data-id="' + r.id + '">' + GPX_ICON + 'GPXを共有</button>' +
+            '<button type="button" class="btn ghost-btn" data-act="open" data-id="' + r.id + '">' + EXT_ICON + 'Googleで開く</button>' +
+          '</div>';
+      } else {
+        var selectedDetail = (r.id === state.selected) ?
+          '<div class="actions">' +
+            '<button type="button" class="btn primary-btn" data-act="gpx" data-id="' + r.id + '">' + GPX_ICON + 'GPXを共有</button>' +
+            '<button type="button" class="btn ghost-btn" data-act="open" data-id="' + r.id + '">' + EXT_ICON + 'Googleで開く</button>' +
+          '</div>' : '';
+
+        card.innerHTML =
+          '<span class="strip"></span>' +
+          '<div class="row">' +
+            '<div class="rank-pill">' + r.rank + '</div>' +
+            '<div class="info">' +
+              '<div class="line1"><span class="km2">' + r.km + '<span class="unit">km</span></span><span class="dir">' + r.dir + '</span></div>' +
+              '<div class="line2">重複 ' + r.overlap + ' · 誤差 ' + r.err + '</div>' +
+            '</div>' +
+            '<button type="button" class="' + eyeCls + '" data-eye="' + r.id + '" aria-label="' + eyeLabel + '">' + eyeSvg + '</button>' +
+          '</div>' +
+          selectedDetail;
+      }
+
+      // 行タップ = 選択(フォーカス)
+      card.addEventListener("click", function (e) {
+        if (e.target.closest("[data-eye]")) return;
+        if (e.target.closest("[data-act]")) return;
+        select(r.id);
+      });
+      card.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); select(r.id); }
+      });
+
+      cardList.appendChild(card);
+    });
+
+    // 👁 / アクションのバインド
+    cardList.querySelectorAll("[data-eye]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleEye(b.getAttribute("data-eye"));
+      });
+    });
+    cardList.querySelectorAll("[data-act]").forEach(function (b) {
+      b.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var act = b.getAttribute("data-act");
+        var id = b.getAttribute("data-id");
+        flash(b, act === "gpx" ? "GPX を共有（デモ）" : "Google マップで開く（デモ）");
+      });
+    });
+
+    emptyNote.style.display = (shownCount === 0) ? "block" : "none";
+  }
+
+  function flash(btn, msg) {
+    var orig = btn.innerHTML;
+    btn.innerHTML = msg;
+    btn.disabled = true;
+    setTimeout(function () { btn.innerHTML = orig; btn.disabled = false; }, 1100);
+  }
+
+  // ---- 地図反映 ----
+  function renderMap() {
+    ROUTES.forEach(function (r) {
+      var el = document.getElementById(r.pathId);
+      if (!el) return;
+      el.className.baseVal = "route-path";
+      var visible = pathVisible(r);
+
+      if (!visible) {
+        el.classList.add("hidden");
+        return;
+      }
+      var isSel = (r.id === state.selected);
+      if (state.mapMode === "selected") {
+        el.classList.add("focus");
+        el.style.strokeWidth = "6";
+      } else {
+        // 全部表示: 選択=強調, 他=ゴースト
+        if (isSel) { el.classList.add("focus"); el.style.strokeWidth = "6"; }
+        else { el.classList.add("ghost"); el.style.strokeWidth = (r.primary ? "5" : "4"); }
+      }
+    });
+  }
+
+  // ---- カウント/凡例 ----
+  function renderCount() {
+    var total = ROUTES.filter(function (r) { return !isFilteredOut(r); }).length;
+    var shown = ROUTES.filter(function (r) { return pathVisible(r); }).length;
+    visCount.textContent = "地図に表示中 " + shown + " / " + total + " 本";
+  }
+
+  // ---- アクション ----
+  function select(id) {
+    state.selected = id;
+    // 選択したら自動で表示ONに(精密派でも選択は必ず見たい想定)
+    state.eyeOn[id] = true;
+    renderAll();
+  }
+  function toggleEye(id) {
+    state.eyeOn[id] = !state.eyeOn[id];
+    renderAll();
+  }
+  function renderAll() { renderCards(); renderMap(); renderCount(); }
+
+  // ---- コントロール: 地図表示モード ----
+  document.getElementById("mapMode").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-mode]");
+    if (!b) return;
+    state.mapMode = b.getAttribute("data-mode");
+    this.querySelectorAll("button").forEach(function (x) { x.classList.remove("on"); });
+    b.classList.add("on");
+    renderMap(); renderCount();
+  });
+
+  // ---- コントロール: 方位フィルタ ----
+  document.getElementById("dirChips").addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    var d = b.getAttribute("data-dir");
+    state.dirFilter[d] = !state.dirFilter[d];
+    b.classList.toggle("on", state.dirFilter[d]);
+    // 選択中が消えたら、表示可能な先頭へフォーカス移動
+    var sel = ROUTES.find(function (r) { return r.id === state.selected; });
+    if (sel && isFilteredOut(sel)) {
+      var first = ROUTES.find(function (r) { return !isFilteredOut(r); });
+      if (first) state.selected = first.id;
+    }
+    renderAll();
+  });
+
+  // ---- 凡例トグル ----
+  var legend = document.getElementById("legend");
+  var legendToggle = document.getElementById("legendToggle");
+  legendToggle.addEventListener("click", function () {
+    var collapsed = legend.classList.toggle("collapsed");
+    legendToggle.textContent = collapsed ? "凡例を表示" : "凡例を隠す";
+  });
+
+  // ---- 再計算(デモ) ----
+  document.getElementById("recalcBtn").addEventListener("click", function (e) {
+    e.stopPropagation();
+    var btn = this;
+    var orig = btn.innerHTML;
+    btn.innerHTML = "計算中…";
+    btn.disabled = true;
+    setTimeout(function () { btn.innerHTML = orig; btn.disabled = false; }, 900);
+  });
+
+  // =========================================================
+  //  ドラッグ式ボトムシート
+  // =========================================================
+  var sheet = document.getElementById("sheet");
+  var handle = document.getElementById("handle");
+  var sheetBody = document.getElementById("sheetBody");
+  var dragHint = document.getElementById("dragHint");
+
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function deviceH() { return sheet.parentElement.clientHeight; }
+
+  // スナップ位置(露出量 → translateY)
+  // PEEK: 露出 18vh / MID: 55vh / FULL: アプリバー直下(露出 ~ height-54)
+  function snapPoints() {
+    var H = deviceH();
+    var sheetH = sheet.offsetHeight; // = H(100%)
+    var peekExpose = H * 0.18;
+    var midExpose  = H * 0.55;
+    var fullExpose = H - 50; // アプリバー(54)直下まで
+    return {
+      PEEK: sheetH - peekExpose,
+      MID:  sheetH - midExpose,
+      FULL: sheetH - fullExpose
+    };
+  }
+
+  var currentSnap = "PEEK";
+  var currentY = 0;
+
+  function applyY(y, animate) {
+    currentY = y;
+    if (animate && !reduceMotion) sheet.classList.add("animate");
+    else sheet.classList.remove("animate");
+    sheet.style.transform = "translateY(" + y + "px)";
+  }
+
+  function snapTo(name, animate) {
+    var pts = snapPoints();
+    currentSnap = name;
+    applyY(pts[name], animate !== false);
+    // FULL/MID 以外ではヒントを残す
+    dragHint.style.opacity = (name === "PEEK") ? "1" : "0";
+  }
+
+  function nearestSnap(y, velocity) {
+    var pts = snapPoints();
+    var order = ["FULL", "MID", "PEEK"]; // y小→大
+    // フリック(速度)で1段送り
+    if (Math.abs(velocity) > 0.6) {
+      var idx = order.indexOf(currentSnap);
+      if (velocity < 0 && idx > 0) return order[idx - 1]; // 上方向(yが減る)= 上の段
+      if (velocity > 0 && idx < order.length - 1) return order[idx + 1];
+    }
+    // 最近傍
+    var best = "PEEK", bestD = Infinity;
+    order.forEach(function (n) {
+      var d = Math.abs(pts[n] - y);
+      if (d < bestD) { bestD = d; best = n; }
+    });
+    return best;
+  }
+
+  // ドラッグ処理(ハンドル領域のみ)
+  var dragging = false, startPointerY = 0, startY = 0, lastY = 0, lastT = 0, velocity = 0;
+
+  handle.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    startPointerY = e.clientY;
+    startY = currentY;
+    lastY = e.clientY; lastT = performance.now(); velocity = 0;
+    sheet.classList.remove("animate");
+    handle.setPointerCapture(e.pointerId);
+    movedDuringDrag = false;
+  });
+
+  var movedDuringDrag = false;
+
+  handle.addEventListener("pointermove", function (e) {
+    if (!dragging) return;
+    var dy = e.clientY - startPointerY;
+    if (Math.abs(dy) > 3) movedDuringDrag = true;
+    var pts = snapPoints();
+    var y = startY + dy;
+    // 範囲クランプ(FULL〜PEEKの間 + 少しのラバーバンド)
+    var min = pts.FULL - 24, max = pts.PEEK + 40;
+    if (y < min) y = min;
+    if (y > max) y = max;
+    applyY(y, false);
+    // 速度算出
+    var now = performance.now();
+    var dt = now - lastT;
+    if (dt > 0) velocity = (e.clientY - lastY) / dt; // px/ms
+    lastY = e.clientY; lastT = now;
+    dragHint.style.opacity = "0";
+  });
+
+  function endDrag(e) {
+    if (!dragging) return;
+    dragging = false;
+    try { handle.releasePointerCapture(e.pointerId); } catch (_) {}
+    if (!movedDuringDrag) return; // タップは click ハンドラに任せる
+    var target = nearestSnap(currentY, velocity);
+    snapTo(target, true);
+  }
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+
+  // ハンドルのタップ = PEEK <-> FULL トグル
+  handle.addEventListener("click", function () {
+    if (movedDuringDrag) return; // ドラッグ後のclickは無視
+    snapTo(currentSnap === "PEEK" ? "FULL" : "PEEK", true);
+  });
+
+  // スクロールとドラッグの競合回避:
+  // sheet-body は touch-action: pan-y で通常スクロール。ハンドルは touch-action: none。
+  // body 内でのスクロールはシートのドラッグに干渉しない(pointerdown を handle に限定しているため)。
+
+  // 初期化
+  function init() {
+    renderAll();
+    // レイアウト確定後にスナップ
+    requestAnimationFrame(function () {
+      snapTo("PEEK", false);
+      requestAnimationFrame(function () { snapTo("PEEK", false); });
+    });
+  }
+
+  window.addEventListener("resize", function () {
+    snapTo(currentSnap, false);
+  });
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+  } else {
+    init();
+  }
+})();
+</script>
+</body>
+</html>

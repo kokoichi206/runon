@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>runon — Azimuth ブランド方向案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+JP:wght@400;500;700;800&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Azimuth — refined-blue brand direction for runon
+     Color tokens live as CSS variables, overridden per [data-theme].
+     ============================================================ */
+
+  :root {
+    /* type */
+    --font-sans: "Inter", "Noto Sans JP", -apple-system, BlinkMacSystemFont,
+      "Segoe UI", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    --font-ja: "Noto Sans JP", "Inter", -apple-system, BlinkMacSystemFont,
+      "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+
+    /* shared accents (theme-independent base, tuned per theme below) */
+    --accent: #3B82F6;
+    --accent-2: #60A5FA;
+    --accent-strong: #2563EB;
+    --success: #22C55E;
+
+    /* radii / spacing rhythm */
+    --r-xs: 8px;
+    --r-sm: 10px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --tap: 40px;
+
+    --maxw: 1200px;
+  }
+
+  /* ---------- DARK (default) ---------- */
+  [data-theme="dark"] {
+    --bg: #0B1220;
+    --bg-grad-a: #0B1220;
+    --bg-grad-b: #0E1626;
+    --surface: #131C2E;
+    --surface-2: #1A2740;
+    --surface-3: #213152;
+    --border: #22304A;
+    --border-soft: #1B2740;
+    --text: #EAF1FF;
+    --muted: #8597B5;
+    --faint: #5E6F8E;
+
+    --accent: #3B82F6;
+    --accent-2: #60A5FA;
+    --accent-strong: #2563EB;
+    --on-accent: #FFFFFF;
+    --accent-tint: rgba(59, 130, 246, 0.14);
+    --accent-line: rgba(96, 165, 250, 0.45);
+
+    /* map tokens */
+    --map-land: #0E1828;
+    --map-land-2: #122036;
+    --map-block: #15233B;
+    --map-water: #102A4A;
+    --map-park: #143524;
+    --map-road-minor: rgba(133, 151, 181, 0.18);
+    --map-road-major: rgba(160, 178, 208, 0.34);
+    --route-a: #60A5FA;
+    --route-b: #3B82F6;
+    --route-glow: rgba(59, 130, 246, 0.55);
+    --route-ghost: rgba(133, 151, 181, 0.35);
+
+    --shadow-1: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-2: 0 18px 50px rgba(0,0,0,.5);
+    --shadow-cta: 0 8px 22px rgba(37, 99, 235, .45);
+    --ring: rgba(96, 165, 250, .55);
+
+    --swatch-stroke: rgba(255,255,255,.10);
+  }
+
+  /* ---------- LIGHT ---------- */
+  [data-theme="light"] {
+    --bg: #F7F9FC;
+    --bg-grad-a: #F7F9FC;
+    --bg-grad-b: #EEF2F9;
+    --surface: #FFFFFF;
+    --surface-2: #F1F5FB;
+    --surface-3: #E7EEF8;
+    --border: #E2E8F2;
+    --border-soft: #ECF0F7;
+    --text: #0B1220;
+    --muted: #5A6B86;
+    --faint: #8595AE;
+
+    --accent: #2563EB;
+    --accent-2: #3B82F6;
+    --accent-strong: #1D4ED8;
+    --on-accent: #FFFFFF;
+    --accent-tint: rgba(37, 99, 235, 0.10);
+    --accent-line: rgba(37, 99, 235, 0.30);
+
+    --map-land: #EAF0F8;
+    --map-land-2: #E1EAF5;
+    --map-block: #DCE6F3;
+    --map-water: #C3DBF3;
+    --map-park: #D2E7D2;
+    --map-road-minor: rgba(90, 107, 134, 0.22);
+    --map-road-major: rgba(60, 80, 110, 0.32);
+    --route-a: #2563EB;
+    --route-b: #3B82F6;
+    --route-glow: rgba(37, 99, 235, 0.38);
+    --route-ghost: rgba(90, 107, 134, 0.40);
+
+    --shadow-1: 0 1px 2px rgba(16,32,64,.06), 0 8px 24px rgba(16,32,64,.08);
+    --shadow-2: 0 18px 50px rgba(16,32,64,.14);
+    --shadow-cta: 0 8px 20px rgba(37, 99, 235, .30);
+    --ring: rgba(37, 99, 235, .40);
+
+    --swatch-stroke: rgba(11,18,32,.10);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-ja);
+    background:
+      radial-gradient(1200px 700px at 80% -10%, var(--accent-tint), transparent 60%),
+      linear-gradient(180deg, var(--bg-grad-a), var(--bg-grad-b));
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.6;
+    min-height: 100vh;
+    transition: background-color .35s ease, color .35s ease;
+  }
+
+  .wrap {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 0 24px 72px;
+  }
+
+  /* ===================== brand header (of this mock) ===================== */
+  .mock-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    backdrop-filter: saturate(160%) blur(14px);
+    -webkit-backdrop-filter: saturate(160%) blur(14px);
+    background: color-mix(in srgb, var(--bg) 72%, transparent);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .mock-header__inner {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand__wordmark {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .brand__wordmark b { color: var(--accent-2); }
+
+  .theme-toggle {
+    height: var(--tap);
+    min-width: var(--tap);
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    font-family: var(--font-ja);
+    font-size: 13px;
+    font-weight: 600;
+    transition: border-color .2s, background-color .2s, transform .08s;
+  }
+  .theme-toggle:hover { border-color: var(--accent-line); }
+  .theme-toggle:active { transform: translateY(1px); }
+  .theme-toggle .ico-sun { display: none; }
+  .theme-toggle .ico-moon { display: inline-flex; }
+  [data-theme="light"] .theme-toggle .ico-sun { display: inline-flex; }
+  [data-theme="light"] .theme-toggle .ico-moon { display: none; }
+  .theme-toggle__label::after { content: "ダーク"; }
+  [data-theme="light"] .theme-toggle__label::after { content: "ライト"; }
+
+  /* ===================== hero / concept ===================== */
+  .hero {
+    padding: 56px 0 26px;
+  }
+  .hero__eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent-2);
+    background: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+    padding: 6px 12px;
+    border-radius: 999px;
+  }
+  .hero__name {
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: clamp(40px, 7vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -0.03em;
+    margin: 22px 0 6px;
+  }
+  .hero__name .dir {
+    background: linear-gradient(120deg, var(--accent-2), var(--accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .hero__concept {
+    font-size: clamp(17px, 2.4vw, 21px);
+    font-weight: 500;
+    color: var(--text);
+    max-width: 720px;
+    margin: 8px 0 4px;
+  }
+  .hero__tagline {
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 680px;
+  }
+
+  /* ===================== section scaffolding ===================== */
+  .section { margin-top: 56px; }
+  .section__head {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+  .section__num {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent-2);
+    letter-spacing: 0.08em;
+  }
+  .section__title {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+  .section__sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-left: auto;
+  }
+
+  /* device frame label */
+  .frame-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+  .frame-tag .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--accent-tint); }
+
+  /* ===================== PC preview window chrome ===================== */
+  .browser {
+    border: 1px solid var(--border);
+    border-radius: var(--r-xl);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+  }
+  .browser__bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .browser__dots { display: flex; gap: 7px; }
+  .browser__dots i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+  .browser__dots i:nth-child(1) { background: #ED6A5E; }
+  .browser__dots i:nth-child(2) { background: #F4BE4F; }
+  .browser__dots i:nth-child(3) { background: #61C554; }
+  .browser__url {
+    margin-left: 10px;
+    flex: 1;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    color: var(--muted);
+    font-size: 12px;
+    font-family: var(--font-sans);
+    padding: 6px 12px;
+    border-radius: 999px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ===================== app top bar ===================== */
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 12px 18px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .app-brand {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-family: var(--font-sans);
+    font-weight: 800;
+    font-size: 17px;
+    letter-spacing: -0.02em;
+  }
+  .app-nav { display: flex; gap: 6px; margin-left: 8px; }
+  .app-tab {
+    height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    padding: 0 16px;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: color .2s, background-color .2s, border-color .2s;
+  }
+  .app-tab:hover { color: var(--text); background: var(--surface-2); }
+  .app-tab.is-active {
+    color: var(--accent-2);
+    background: var(--accent-tint);
+    border-color: var(--accent-line);
+  }
+  .app-topbar__right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: var(--tap);
+    height: var(--tap);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    cursor: pointer;
+    transition: border-color .2s, background-color .2s, color .2s;
+  }
+  .icon-btn:hover { border-color: var(--accent-line); color: var(--accent-2); }
+
+  /* ===================== app layout (panel + map) ===================== */
+  .app-body {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: 620px;
+  }
+
+  .panel {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 20px;
+    overflow: auto;
+    max-height: 700px;
+  }
+  .panel__title {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 18px;
+    margin: 0 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .panel__hint { font-size: 12.5px; color: var(--muted); margin: 0 0 18px; }
+
+  .field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--faint);
+    margin: 18px 0 9px;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    height: var(--tap);
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .2s, background-color .2s, color .2s;
+  }
+  .chip:hover { border-color: var(--accent-line); }
+  .chip.is-active {
+    border-color: var(--accent);
+    background: var(--accent-tint);
+    color: var(--accent-2);
+    font-weight: 600;
+  }
+
+  .btn {
+    width: 100%;
+    min-height: var(--tap);
+    border-radius: var(--r-md);
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    color: var(--text);
+    font-family: var(--font-ja);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: border-color .2s, background-color .2s, transform .08s, box-shadow .2s;
+  }
+  .btn:hover { border-color: var(--accent-line); }
+  .btn:active { transform: translateY(1px); }
+  .btn--ghost { margin-top: 12px; }
+
+  .btn--cta {
+    margin-top: 18px;
+    min-height: 52px;
+    border: none;
+    color: var(--on-accent);
+    font-weight: 700;
+    font-size: 16px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-strong));
+    box-shadow: var(--shadow-cta);
+  }
+  .btn--cta:hover { filter: brightness(1.05); }
+
+  .latlng { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    padding: 10px 12px;
+  }
+  .input small { display: block; font-size: 10px; color: var(--faint); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 2px; }
+  .input .val { font-family: var(--font-sans); font-size: 15px; font-weight: 600; color: var(--text); }
+
+  /* slider */
+  .slider-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .slider-val {
+    font-family: var(--font-sans);
+    font-weight: 700;
+    font-size: 17px;
+    color: var(--accent-2);
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--accent) 0 19%, var(--surface-3) 19% 100%);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent), 0 2px 8px rgba(0,0,0,.4);
+  }
+  input[type="range"]::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    border: 3px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .range-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--faint); margin-top: 6px; }
+
+  .divider { height: 1px; background: var(--border); margin: 22px 0 18px; }
+
+  .result-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .result-head b { color: var(--text); }
+
+  .cand {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    background: var(--surface-2);
+    padding: 13px 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color .2s, background-color .2s, box-shadow .2s, transform .08s;
+    position: relative;
+  }
+  .cand:hover { border-color: var(--accent-line); transform: translateY(-1px); }
+  .cand__top { display: flex; align-items: center; gap: 9px; }
+  .cand__badge {
+    width: 26px; height: 26px;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: var(--font-sans);
+    font-weight: 800; font-size: 13px;
+    background: var(--surface-3); color: var(--muted);
+  }
+  .cand__dist { font-family: var(--font-sans); font-weight: 700; font-size: 16px; }
+  .cand__meta { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; }
+  .cand__star {
+    margin-left: auto;
+    font-size: 11px; font-weight: 700;
+    color: var(--accent-2);
+    background: var(--accent-tint);
+    border: 1px solid var(--accent-line);
+    padding: 3px 8px; border-radius: 999px;
+  }
+  .cand.is-selected {
+    border-color: var(--accent);
+    background: linear-gradient(180deg, var(--accent-tint), transparent);
+    box-shadow: 0 0 0 1px var(--accent), 0 10px 26px var(--route-glow);
+  }
+  .cand.is-selected .cand__badge { background: var(--accent); color: var(--on-accent); }
+
+  .export-row { display: flex; gap: 10px; margin-top: 16px; }
+  .export-row .btn { margin: 0; font-size: 13px; }
+
+  /* ===================== map ===================== */
+  .map {
+    position: relative;
+    background: var(--map-land);
+    overflow: hidden;
+  }
+  .map svg { display: block; width: 100%; height: 100%; }
+  .map__attrib {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    font-size: 10px;
+    font-family: var(--font-sans);
+    color: var(--muted);
+    background: color-mix(in srgb, var(--surface) 78%, transparent);
+    border: 1px solid var(--border-soft);
+    padding: 3px 8px;
+    border-radius: 6px;
+    backdrop-filter: blur(4px);
+  }
+  .map__chip {
+    position: absolute;
+    left: 14px; top: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 600;
+    color: var(--text);
+    background: color-mix(in srgb, var(--surface) 80%, transparent);
+    border: 1px solid var(--border);
+    padding: 8px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(6px);
+  }
+  .map__chip .swatch { width: 14px; height: 14px; border-radius: 4px; background: linear-gradient(135deg, var(--accent-2), var(--accent)); box-shadow: 0 0 10px var(--route-glow); }
+
+  /* ===================== mobile preview ===================== */
+  .mobile-stage {
+    display: flex;
+    justify-content: center;
+    padding: 8px 0 0;
+  }
+  .phone {
+    width: 340px;
+    max-width: 92vw;
+    aspect-ratio: 340 / 720;
+    border-radius: 42px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-2);
+    padding: 12px;
+    position: relative;
+  }
+  .phone__screen {
+    position: relative;
+    width: 100%; height: 100%;
+    border-radius: 32px;
+    overflow: hidden;
+    background: var(--map-land);
+    border: 1px solid var(--border-soft);
+  }
+  .phone__notch {
+    position: absolute;
+    top: 10px; left: 50%;
+    transform: translateX(-50%);
+    width: 130px; height: 26px;
+    background: var(--bg);
+    border-radius: 0 0 16px 16px;
+    z-index: 6;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+  }
+  .phone__notch i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+  .phone__notch .speaker { width: 38px; height: 5px; border-radius: 999px; background: var(--border); }
+
+  .m-map { position: absolute; inset: 0; }
+  .m-map svg { width: 100%; height: 100%; display: block; }
+
+  .m-appbar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    z-index: 5;
+    padding: 40px 16px 12px;
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bg) 86%, transparent), transparent);
+  }
+  .m-appbar .app-brand { font-size: 15px; }
+  .m-appbar__spacer { flex: 1; }
+  .m-appbar .icon-btn { width: 36px; height: 36px; background: color-mix(in srgb, var(--surface) 78%, transparent); backdrop-filter: blur(6px); }
+
+  .m-fab {
+    position: absolute;
+    right: 16px;
+    bottom: 200px;
+    z-index: 7;
+    width: 52px; height: 52px;
+    border-radius: 16px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-strong));
+    color: var(--on-accent);
+    box-shadow: var(--shadow-cta);
+    display: inline-flex; align-items: center; justify-content: center;
+    cursor: pointer;
+  }
+
+  .m-sheet {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    z-index: 8;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-radius: 22px 22px 0 0;
+    padding: 8px 16px 18px;
+    box-shadow: 0 -14px 40px rgba(0,0,0,.28);
+  }
+  .m-sheet__handle {
+    width: 40px; height: 5px; border-radius: 999px;
+    background: var(--border);
+    margin: 4px auto 12px;
+  }
+  .m-sheet__row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .m-sheet__title { font-family: var(--font-sans); font-weight: 700; font-size: 15px; }
+  .m-sheet__pill { font-size: 11px; font-weight: 700; color: var(--accent-2); background: var(--accent-tint); border: 1px solid var(--accent-line); padding: 3px 9px; border-radius: 999px; }
+  .m-cand {
+    display: flex; align-items: center; gap: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2);
+    border-radius: var(--r-sm);
+    padding: 10px 12px;
+    margin-bottom: 8px;
+  }
+  .m-cand.is-selected { border-color: var(--accent); background: var(--accent-tint); box-shadow: 0 0 0 1px var(--accent); }
+  .m-cand__badge { width: 24px; height: 24px; border-radius: 7px; display: inline-flex; align-items: center; justify-content: center; font-family: var(--font-sans); font-weight: 800; font-size: 12px; background: var(--surface-3); color: var(--muted); }
+  .m-cand.is-selected .m-cand__badge { background: var(--accent); color: var(--on-accent); }
+  .m-cand__dist { font-family: var(--font-sans); font-weight: 700; font-size: 14px; }
+  .m-cand__meta { font-size: 11px; color: var(--muted); }
+  .m-cand__star { margin-left: auto; font-size: 13px; color: var(--accent-2); }
+  .m-cta {
+    width: 100%;
+    min-height: var(--tap);
+    margin-top: 4px;
+    border: none; border-radius: var(--r-md);
+    background: linear-gradient(135deg, var(--accent-2), var(--accent-strong));
+    color: var(--on-accent);
+    font-family: var(--font-ja);
+    font-weight: 700; font-size: 14px;
+    box-shadow: var(--shadow-cta);
+    cursor: pointer;
+  }
+
+  /* ===================== palette ===================== */
+  .pal-group { margin-bottom: 26px; }
+  .pal-group__label {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-sans);
+    font-size: 12px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .pal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+    gap: 12px;
+  }
+  .swatch {
+    border: 1px solid var(--border);
+    border-radius: var(--r-md);
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .swatch__chip { height: 64px; border-bottom: 1px solid var(--swatch-stroke); }
+  .swatch__meta { padding: 9px 11px; }
+  .swatch__use { font-size: 12px; font-weight: 600; color: var(--text); }
+  .swatch__hex { font-family: var(--font-sans); font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-top: 1px; }
+
+  /* ===================== footer ===================== */
+  .footer {
+    margin-top: 64px;
+    border-top: 1px solid var(--border-soft);
+    padding-top: 28px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 24px;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+  .footer__block { max-width: 560px; }
+  .footer__k { font-family: var(--font-sans); font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-2); margin-bottom: 6px; }
+  .footer__fonts { font-family: var(--font-sans); font-weight: 600; font-size: 15px; color: var(--text); }
+  .footer__desc { font-size: 14px; color: var(--muted); margin-top: 4px; }
+  .footer__brand { display: flex; align-items: center; gap: 10px; opacity: .9; }
+
+  /* ===================== responsive ===================== */
+  @media (max-width: 860px) {
+    .app-body { grid-template-columns: 1fr; }
+    .panel { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+    .map { min-height: 340px; }
+    .app-nav { display: none; }
+    .browser__url { display: none; }
+    .section__sub { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px 56px; }
+    .mock-header__inner { padding: 12px 16px; }
+    .theme-toggle__label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ 1) brand header of this mock ============ -->
+  <header class="mock-header">
+    <div class="mock-header__inner">
+      <div class="brand">
+        <!-- ORIGINAL logo mark: azimuth/compass + loop + position pin -->
+        <svg width="34" height="34" viewBox="0 0 48 48" fill="none" aria-label="runon logo" role="img">
+          <defs>
+            <linearGradient id="lg-mark" x1="6" y1="6" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+              <stop stop-color="var(--accent-2)"/>
+              <stop offset="1" stop-color="var(--accent-strong)"/>
+            </linearGradient>
+          </defs>
+          <!-- loop ring -->
+          <circle cx="24" cy="24" r="18" stroke="url(#lg-mark)" stroke-width="3.2" fill="none" opacity="0.55"/>
+          <!-- compass / azimuth needle pointing NE -->
+          <path d="M24 10 L31 30 L24 26 L17 30 Z" fill="url(#lg-mark)"/>
+          <!-- position pin core -->
+          <circle cx="24" cy="24" r="3.4" fill="var(--bg)" stroke="url(#lg-mark)" stroke-width="2.4"/>
+        </svg>
+        <div class="brand__wordmark">run<b>on</b></div>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button" aria-label="テーマ切替">
+        <span class="ico-moon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="currentColor"/></svg>
+        </span>
+        <span class="ico-sun" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2" fill="currentColor" stroke="none"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.5 4.5l2 2M17.5 17.5l2 2M19.5 4.5l-2 2M6.5 17.5l-2 2"/></svg>
+        </span>
+        <span class="theme-toggle__label"></span>
+      </button>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- ============ 2) brand name / concept / tagline ============ -->
+    <section class="hero">
+      <span class="hero__eyebrow">Brand Direction 04 · Azimuth</span>
+      <h1 class="hero__name">runon <span class="dir">Azimuth</span></h1>
+      <p class="hero__concept">磨き上げた青で、迷わず走り出せる信頼のランニング体験。</p>
+      <p class="hero__tagline">堅実・読みやすさ・万人向け。誰のスマホでもそのまま馴染む、プロダクトとして最も「普通に良い」完成度の方向案です。</p>
+    </section>
+
+    <!-- ============ 3) PC preview ============ -->
+    <section class="section">
+      <div class="section__head">
+        <span class="section__num">03</span>
+        <h2 class="section__title">PC プレビュー — 周回路プランナー</h2>
+        <span class="section__sub">トップバー + 左コントロール + 地図</span>
+      </div>
+      <div class="frame-tag"><span class="dot"></span> Desktop / 1200px</div>
+
+      <div class="browser">
+        <div class="browser__bar">
+          <div class="browser__dots"><i></i><i></i><i></i></div>
+          <div class="browser__url">app.runon.run/loop</div>
+        </div>
+
+        <!-- app top bar -->
+        <div class="app-topbar">
+          <div class="app-brand">
+            <svg width="22" height="22" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+              <circle cx="24" cy="24" r="18" stroke="var(--accent-2)" stroke-width="3.2" fill="none" opacity="0.55"/>
+              <path d="M24 10 L31 30 L24 26 L17 30 Z" fill="var(--accent)"/>
+              <circle cx="24" cy="24" r="3.4" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.4"/>
+            </svg>
+            run<span style="color:var(--accent-2)">on</span>
+          </div>
+          <nav class="app-nav">
+            <span class="app-tab is-active">周回路</span>
+            <span class="app-tab">トレーニング</span>
+          </nav>
+          <div class="app-topbar__right">
+            <button class="icon-btn" type="button" aria-label="テーマ切替" data-app-theme>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="currentColor"/></svg>
+            </button>
+            <button class="icon-btn" type="button" aria-label="GitHub">
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.9 1.57 2.36 1.12 2.93.85.09-.66.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.06 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.3.1-2.7 0 0 .84-.28 2.75 1.05a9.3 9.3 0 0 1 5 0c1.91-1.33 2.75-1.05 2.75-1.05.55 1.4.2 2.44.1 2.7.64.72 1.03 1.63 1.03 2.75 0 3.93-2.34 4.8-4.57 5.05.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.82 0 .27.18.6.69.49A10.04 10.04 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- panel + map -->
+        <div class="app-body">
+          <aside class="panel">
+            <h3 class="panel__title">周回路を作る</h3>
+            <p class="panel__hint">目標距離のループコースを生成（OpenStreetMap）</p>
+
+            <span class="field-label">プリセット</span>
+            <div class="chips">
+              <button class="chip is-active" type="button">🏠 自宅</button>
+              <button class="chip" type="button">東京駅</button>
+              <button class="chip" type="button">京都駅</button>
+              <button class="chip" type="button">NYセントラルパーク</button>
+            </div>
+
+            <button class="btn btn--ghost" type="button">📍 現在地を始点にする</button>
+
+            <span class="field-label">始点座標</span>
+            <div class="latlng">
+              <div class="input"><small>Lat</small><span class="val">35.6810</span></div>
+              <div class="input"><small>Lng</small><span class="val">139.7670</span></div>
+            </div>
+
+            <span class="field-label">目標距離</span>
+            <div class="slider-row">
+              <span style="font-size:13px;color:var(--muted)">ループ周長</span>
+              <span class="slider-val" id="distVal">5.0 km</span>
+            </div>
+            <input type="range" id="distSlider" min="0.2" max="25" step="0.1" value="5.0" />
+            <div class="range-scale"><span>0.2 km</span><span>25 km</span></div>
+
+            <button class="btn btn--cta" type="button">コースを生成</button>
+
+            <div class="divider"></div>
+
+            <div class="result-head">候補 <b>3件</b> ・ 推奨を選択中</div>
+
+            <div class="cand is-selected">
+              <div class="cand__top">
+                <span class="cand__badge">A</span>
+                <span class="cand__dist">5.02 km</span>
+                <span class="cand__star">★ おすすめ</span>
+              </div>
+              <p class="cand__meta">重複 6% ・ 北回り</p>
+            </div>
+            <div class="cand">
+              <div class="cand__top">
+                <span class="cand__badge">B</span>
+                <span class="cand__dist">4.88 km</span>
+              </div>
+              <p class="cand__meta">重複 12% ・ 東回り</p>
+            </div>
+            <div class="cand">
+              <div class="cand__top">
+                <span class="cand__badge">C</span>
+                <span class="cand__dist">5.15 km</span>
+              </div>
+              <p class="cand__meta">重複 9% ・ 南回り</p>
+            </div>
+
+            <div class="export-row">
+              <button class="btn" type="button">⤓ GPXを共有</button>
+              <button class="btn" type="button">↗ Googleマップで開く</button>
+            </div>
+          </aside>
+
+          <!-- map -->
+          <div class="map">
+            <div class="map__chip"><span class="swatch"></span> 選択中: A · 北回り 5.02 km</div>
+            <svg viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" aria-label="周回路プレビュー地図">
+              <defs>
+                <linearGradient id="routeGrad" x1="0" y1="0" x2="1200" y2="760" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="var(--route-a)"/>
+                  <stop offset="1" stop-color="var(--route-b)"/>
+                </linearGradient>
+                <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="11" result="b"/>
+                  <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
+              </defs>
+
+              <!-- land -->
+              <rect x="0" y="0" width="1200" height="760" fill="var(--map-land)"/>
+              <!-- soft land variation blocks -->
+              <rect x="60" y="60" width="320" height="220" rx="10" fill="var(--map-land-2)" opacity="0.6"/>
+              <rect x="820" y="430" width="300" height="260" rx="10" fill="var(--map-land-2)" opacity="0.6"/>
+              <rect x="430" y="540" width="260" height="180" rx="10" fill="var(--map-block)" opacity="0.55"/>
+              <rect x="900" y="80" width="240" height="160" rx="10" fill="var(--map-block)" opacity="0.5"/>
+
+              <!-- park blob -->
+              <path d="M120 470 C160 410 280 410 330 460 S380 600 300 640 S140 650 110 580 S90 520 120 470 Z" fill="var(--map-park)" opacity="0.85"/>
+              <!-- water blob -->
+              <path d="M930 250 C1000 210 1110 240 1140 320 S1120 470 1030 470 S900 410 900 340 S890 280 930 250 Z" fill="var(--map-water)" opacity="0.9"/>
+
+              <!-- minor roads (grid-ish) -->
+              <g stroke="var(--map-road-minor)" stroke-width="2" fill="none">
+                <path d="M0 140 H1200"/><path d="M0 250 H1200"/><path d="M0 360 H1200"/>
+                <path d="M0 470 H1200"/><path d="M0 580 H1200"/><path d="M0 680 H1200"/>
+                <path d="M150 0 V760"/><path d="M320 0 V760"/><path d="M490 0 V760"/>
+                <path d="M660 0 V760"/><path d="M830 0 V760"/><path d="M1000 0 V760"/>
+                <path d="M40 40 L380 300"/><path d="M760 60 L1040 360"/><path d="M120 700 L520 420"/>
+              </g>
+
+              <!-- major roads -->
+              <g stroke="var(--map-road-major)" stroke-width="6" fill="none" stroke-linecap="round">
+                <path d="M0 415 C260 380 560 460 1200 405"/>
+                <path d="M575 0 C540 260 640 520 600 760"/>
+                <path d="M80 720 C360 560 720 700 1130 540"/>
+              </g>
+
+              <!-- ghost candidate routes -->
+              <path d="M540 360 C600 300 700 320 760 380 S840 520 760 560 S620 600 560 540 S500 420 540 360 Z"
+                    fill="none" stroke="var(--route-ghost)" stroke-width="2.5" stroke-dasharray="7 7" opacity="0.7"/>
+              <path d="M500 400 C560 340 640 340 700 400 S780 520 700 560 S560 580 520 520 S460 460 500 400 Z"
+                    fill="none" stroke="var(--route-ghost)" stroke-width="2.5" stroke-dasharray="7 7" opacity="0.7"/>
+
+              <!-- selected route glow underlay -->
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="var(--route-glow)" stroke-width="14" filter="url(#glow)" opacity="0.9"/>
+              <!-- selected route -->
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="url(#routeGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- start marker pin -->
+              <g transform="translate(520,380)">
+                <circle r="13" fill="var(--route-glow)" opacity="0.7"/>
+                <circle r="8" fill="var(--accent)" stroke="#fff" stroke-width="3"/>
+              </g>
+            </svg>
+            <div class="map__attrib">© OpenStreetMap contributors · © CARTO</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4) mobile preview ============ -->
+    <section class="section">
+      <div class="section__head">
+        <span class="section__num">04</span>
+        <h2 class="section__title">スマホ プレビュー — モバイル UX</h2>
+        <span class="section__sub">フルブリード地図 + ボトムシート + FAB</span>
+      </div>
+      <div class="frame-tag"><span class="dot"></span> Mobile / 340px</div>
+
+      <div class="mobile-stage">
+        <div class="phone">
+          <div class="phone__notch"><i></i><span class="speaker"></span></div>
+          <div class="phone__screen">
+
+            <!-- full-bleed map -->
+            <div class="m-map">
+              <svg viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" aria-label="モバイル地図">
+                <rect x="0" y="0" width="1200" height="760" fill="var(--map-land)"/>
+                <rect x="40" y="60" width="360" height="240" rx="12" fill="var(--map-land-2)" opacity="0.6"/>
+                <rect x="800" y="80" width="320" height="200" rx="12" fill="var(--map-block)" opacity="0.5"/>
+                <path d="M90 460 C140 400 270 400 320 460 S370 600 290 640 S120 650 90 580 S60 510 90 460 Z" fill="var(--map-park)" opacity="0.85"/>
+                <path d="M920 360 C990 320 1110 350 1140 430 S1110 560 1020 560 S890 500 890 430 S880 390 920 360 Z" fill="var(--map-water)" opacity="0.9"/>
+                <g stroke="var(--map-road-minor)" stroke-width="3" fill="none">
+                  <path d="M0 170 H1200"/><path d="M0 320 H1200"/><path d="M0 470 H1200"/><path d="M0 620 H1200"/>
+                  <path d="M200 0 V760"/><path d="M450 0 V760"/><path d="M700 0 V760"/><path d="M950 0 V760"/>
+                </g>
+                <g stroke="var(--map-road-major)" stroke-width="8" fill="none" stroke-linecap="round">
+                  <path d="M0 420 C300 380 600 470 1200 410"/>
+                  <path d="M560 0 C520 280 640 520 600 760"/>
+                </g>
+                <!-- ghosts -->
+                <path d="M540 360 C600 300 700 320 760 380 S840 520 760 560 S620 600 560 540 S500 420 540 360 Z" fill="none" stroke="var(--route-ghost)" stroke-width="3" stroke-dasharray="8 8" opacity="0.65"/>
+                <path d="M500 400 C560 340 640 340 700 400 S780 520 700 560 S560 580 520 520 S460 460 500 400 Z" fill="none" stroke="var(--route-ghost)" stroke-width="3" stroke-dasharray="8 8" opacity="0.65"/>
+                <!-- selected -->
+                <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z" fill="none" stroke="var(--route-glow)" stroke-width="16" filter="url(#glow)" opacity="0.9"/>
+                <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z" fill="none" stroke="url(#routeGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+                <g transform="translate(520,380)"><circle r="15" fill="var(--route-glow)" opacity="0.7"/><circle r="9" fill="var(--accent)" stroke="#fff" stroke-width="3.5"/></g>
+              </svg>
+            </div>
+
+            <!-- app bar -->
+            <div class="m-appbar">
+              <div class="app-brand">
+                <svg width="20" height="20" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                  <circle cx="24" cy="24" r="18" stroke="var(--accent-2)" stroke-width="3.2" fill="none" opacity="0.55"/>
+                  <path d="M24 10 L31 30 L24 26 L17 30 Z" fill="var(--accent)"/>
+                  <circle cx="24" cy="24" r="3.4" fill="var(--surface)" stroke="var(--accent)" stroke-width="2.4"/>
+                </svg>
+                run<span style="color:var(--accent-2)">on</span>
+              </div>
+              <div class="m-appbar__spacer"></div>
+              <button class="icon-btn" type="button" aria-label="テーマ切替" data-app-theme>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z" fill="currentColor"/></svg>
+              </button>
+            </div>
+
+            <!-- FAB -->
+            <button class="m-fab" type="button" aria-label="現在地">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="7.5"/><path d="M12 1.5v3M12 19.5v3M1.5 12h3M19.5 12h3" stroke-linecap="round"/></svg>
+            </button>
+
+            <!-- bottom sheet -->
+            <div class="m-sheet">
+              <div class="m-sheet__handle"></div>
+              <div class="m-sheet__row">
+                <span class="m-sheet__title">周回路を作る</span>
+                <span class="m-sheet__pill">3件 ・ 5.0 km</span>
+              </div>
+
+              <div class="m-cand is-selected">
+                <span class="m-cand__badge">A</span>
+                <div>
+                  <div class="m-cand__dist">5.02 km</div>
+                  <div class="m-cand__meta">重複 6% ・ 北回り</div>
+                </div>
+                <span class="m-cand__star">★</span>
+              </div>
+              <div class="m-cand">
+                <span class="m-cand__badge">B</span>
+                <div>
+                  <div class="m-cand__dist">4.88 km</div>
+                  <div class="m-cand__meta">重複 12% ・ 東回り</div>
+                </div>
+              </div>
+
+              <button class="m-cta" type="button">コースを生成</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5) palette ============ -->
+    <section class="section">
+      <div class="section__head">
+        <span class="section__num">05</span>
+        <h2 class="section__title">カラーパレット</h2>
+        <span class="section__sub">主要トークン / dark · light · accent</span>
+      </div>
+
+      <div class="pal-group">
+        <div class="pal-group__label">🌙 Dark theme</div>
+        <div class="pal-grid">
+          <div class="swatch"><div class="swatch__chip" style="background:#0B1220"></div><div class="swatch__meta"><div class="swatch__use">背景 / bg</div><div class="swatch__hex">#0B1220</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#131C2E"></div><div class="swatch__meta"><div class="swatch__use">サーフェス</div><div class="swatch__hex">#131C2E</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#1A2740"></div><div class="swatch__meta"><div class="swatch__use">サーフェス2</div><div class="swatch__hex">#1A2740</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#22304A"></div><div class="swatch__meta"><div class="swatch__use">ボーダー</div><div class="swatch__hex">#22304A</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#EAF1FF"></div><div class="swatch__meta"><div class="swatch__use">テキスト</div><div class="swatch__hex">#EAF1FF</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#8597B5"></div><div class="swatch__meta"><div class="swatch__use">ミュート</div><div class="swatch__hex">#8597B5</div></div></div>
+        </div>
+      </div>
+
+      <div class="pal-group">
+        <div class="pal-group__label">☀️ Light theme</div>
+        <div class="pal-grid">
+          <div class="swatch"><div class="swatch__chip" style="background:#F7F9FC"></div><div class="swatch__meta"><div class="swatch__use">背景 / bg</div><div class="swatch__hex">#F7F9FC</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#FFFFFF"></div><div class="swatch__meta"><div class="swatch__use">サーフェス</div><div class="swatch__hex">#FFFFFF</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#E2E8F2"></div><div class="swatch__meta"><div class="swatch__use">ボーダー</div><div class="swatch__hex">#E2E8F2</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#0B1220"></div><div class="swatch__meta"><div class="swatch__use">テキスト</div><div class="swatch__hex">#0B1220</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#5A6B86"></div><div class="swatch__meta"><div class="swatch__use">ミュート</div><div class="swatch__hex">#5A6B86</div></div></div>
+        </div>
+      </div>
+
+      <div class="pal-group">
+        <div class="pal-group__label">🎯 Accent &amp; status</div>
+        <div class="pal-grid">
+          <div class="swatch"><div class="swatch__chip" style="background:#3B82F6"></div><div class="swatch__meta"><div class="swatch__use">アクセント</div><div class="swatch__hex">#3B82F6</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#60A5FA"></div><div class="swatch__meta"><div class="swatch__use">アクセント2</div><div class="swatch__hex">#60A5FA</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#2563EB"></div><div class="swatch__meta"><div class="swatch__use">アクセント強</div><div class="swatch__hex">#2563EB</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:#22C55E"></div><div class="swatch__meta"><div class="swatch__use">成功 / success</div><div class="swatch__hex">#22C55E</div></div></div>
+          <div class="swatch"><div class="swatch__chip" style="background:linear-gradient(135deg,#60A5FA,#2563EB)"></div><div class="swatch__meta"><div class="swatch__use">ルート（青グラデ）</div><div class="swatch__hex">#60A5FA→#2563EB</div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 6) footer ============ -->
+    <footer class="footer">
+      <div class="footer__block">
+        <div class="footer__k">Typography</div>
+        <div class="footer__fonts">Inter × Noto Sans JP</div>
+        <div class="footer__desc">見出しも本文も素直で読みやすい sans を採用。数値・距離は Inter、日本語 UI は Noto Sans JP が綺麗に支える。</div>
+      </div>
+      <div class="footer__block">
+        <div class="footer__k">Intended impression</div>
+        <div class="footer__desc">磨き上げた slate ブルーで「信頼・堅実・読みやすさ」を伝える万人向けの方向。クセを抑え、初見でも安心して走り出せるプロダクトらしい完成度を狙う。</div>
+      </div>
+      <div class="footer__brand">
+        <svg width="26" height="26" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <circle cx="24" cy="24" r="18" stroke="var(--accent-2)" stroke-width="3.2" fill="none" opacity="0.55"/>
+          <path d="M24 10 L31 30 L24 26 L17 30 Z" fill="var(--accent)"/>
+          <circle cx="24" cy="24" r="3.4" fill="var(--bg)" stroke="var(--accent)" stroke-width="2.4"/>
+        </svg>
+        <div class="brand__wordmark" style="font-size:18px">run<b>on</b></div>
+      </div>
+    </footer>
+
+  </div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+
+    function toggleTheme() {
+      var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+    }
+
+    document.getElementById("themeToggle").addEventListener("click", toggleTheme);
+    Array.prototype.forEach.call(document.querySelectorAll("[data-app-theme]"), function (b) {
+      b.addEventListener("click", toggleTheme);
+    });
+
+    // distance slider -> value + filled track
+    var slider = document.getElementById("distSlider");
+    var out = document.getElementById("distVal");
+    function syncSlider() {
+      var v = parseFloat(slider.value);
+      out.textContent = v.toFixed(1) + " km";
+      var pct = ((v - slider.min) / (slider.max - slider.min)) * 100;
+      slider.style.background =
+        "linear-gradient(90deg, var(--accent) 0 " + pct + "%, var(--surface-3) " + pct + "% 100%)";
+    }
+    slider.addEventListener("input", syncSlider);
+    syncSlider();
+
+    // candidate selection (PC)
+    Array.prototype.forEach.call(document.querySelectorAll(".panel .cand"), function (c) {
+      c.addEventListener("click", function () {
+        document.querySelectorAll(".panel .cand").forEach(function (x) { x.classList.remove("is-selected"); });
+        c.classList.add("is-selected");
+      });
+    });
+
+    // preset chips
+    Array.prototype.forEach.call(document.querySelectorAll(".chips .chip"), function (ch) {
+      ch.addEventListener("click", function () {
+        document.querySelectorAll(".chips .chip").forEach(function (x) { x.classList.remove("is-active"); });
+        ch.classList.add("is-active");
+      });
+    });
+  })();
+</script>
+</body>
+</html>
