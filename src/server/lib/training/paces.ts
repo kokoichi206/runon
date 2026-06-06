@@ -1,4 +1,4 @@
-import { isoToYmdLocal, parseYmd } from "@/server/training/date";
+import { isoToYmdLocal, parseYmd } from "@/server/lib/training/date";
 import type { Activity } from "@/shared/types/training";
 
 /**

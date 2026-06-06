@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { bpmRange, hrZones, observedMaxHr, zoneForWorkout } from "@/server/training/heart-rate";
+import { bpmRange, hrZones, observedMaxHr, zoneForWorkout } from "@/server/lib/training/heart-rate";
 import type { Activity } from "@/shared/types/training";
 
 const act = (maxHr: number | null): Activity => ({

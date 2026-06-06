@@ -5,7 +5,7 @@ import {
   predictTimeSec,
   trainingPaces,
   vdotFromPerformance,
-} from "@/server/training/paces";
+} from "@/server/lib/training/paces";
 
 describe("VDOT モデル", () => {
   it("5K 20:00 の VDOT は ~49.8（Daniels テーブル一致）", () => {

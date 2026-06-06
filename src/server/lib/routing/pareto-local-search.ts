@@ -1,10 +1,10 @@
-import { neighbors, type NodeId, type StreetGraph } from "@/server/routing/graph";
+import { neighbors, type NodeId, type StreetGraph } from "@/server/lib/routing/graph";
 import {
   dominates,
   evaluateWalk,
   removeOutAndBack,
   type WalkMetrics,
-} from "@/server/routing/walk";
+} from "@/server/lib/routing/walk";
 
 export interface Solution {
   walk: NodeId[];

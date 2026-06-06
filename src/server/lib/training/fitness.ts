@@ -1,6 +1,6 @@
-import { isoToYmdLocal, parseYmd } from "@/server/training/date";
-import { observedMaxHr } from "@/server/training/heart-rate";
-import { estimateCurrentVdot } from "@/server/training/paces";
+import { isoToYmdLocal, parseYmd } from "@/server/lib/training/date";
+import { observedMaxHr } from "@/server/lib/training/heart-rate";
+import { estimateCurrentVdot } from "@/server/lib/training/paces";
 import type { Activity, Fitness } from "@/shared/types/training";
 
 /** 走力推定のデフォルト（履歴が無い/少ない場合の控えめな初期値）。 */

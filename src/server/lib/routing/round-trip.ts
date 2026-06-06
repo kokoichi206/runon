@@ -1,17 +1,17 @@
-import { shortestPath } from "@/server/routing/dijkstra";
+import { shortestPath } from "@/server/lib/routing/dijkstra";
 import {
   destinationPoint,
   haversineMeters,
   type LatLng,
-} from "@/server/routing/geo";
+} from "@/server/lib/routing/geo";
 import {
   nearestNode,
   undirectedEdgeKey,
   type NodeId,
   type StreetGraph,
-} from "@/server/routing/graph";
-import type { Reachable } from "@/server/routing/isochrone";
-import { evaluateWalk, removeOutAndBack, type WalkMetrics } from "@/server/routing/walk";
+} from "@/server/lib/routing/graph";
+import type { Reachable } from "@/server/lib/routing/isochrone";
+import { evaluateWalk, removeOutAndBack, type WalkMetrics } from "@/server/lib/routing/walk";
 
 export interface PolygonSpec {
   /** 頂点列（vertices[0] は始点 start と一致）。 */

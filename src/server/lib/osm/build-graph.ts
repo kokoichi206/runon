@@ -2,9 +2,9 @@ import {
   addArc,
   addNode,
   type StreetGraph,
-} from "@/server/routing/graph";
-import { createGraph } from "@/server/routing/graph";
-import type { OverpassWay } from "@/server/osm/overpass";
+} from "@/server/lib/routing/graph";
+import { createGraph } from "@/server/lib/routing/graph";
+import type { OverpassWay } from "@/shared/types/round-trip";
 import type { Profile } from "@/shared/types/round-trip";
 
 type Direction = "both" | "forward" | "reverse";

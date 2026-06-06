@@ -4,7 +4,7 @@ import {
   walkLengthMeters,
   type NodeId,
   type StreetGraph,
-} from "@/server/routing/graph";
+} from "@/server/lib/routing/graph";
 
 /**
  * 閉じた歩行 S の評価値。論文 Definition 6 の 2 目的。

@@ -1,4 +1,4 @@
-import { haversineMeters, type LatLng } from "@/server/routing/geo";
+import { haversineMeters, type LatLng } from "@/server/lib/routing/geo";
 
 /**
  * 論文の有向・弧重み付きストリートグラフ G = (V, A, w)。

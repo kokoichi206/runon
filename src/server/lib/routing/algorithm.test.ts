@@ -1,26 +1,26 @@
 import { describe, expect, it } from "vitest";
 
-import type { OverpassWay } from "@/server/osm/overpass";
-import { buildGraphFromOverpass } from "@/server/osm/build-graph";
-import { dijkstra, shortestPath } from "@/server/routing/dijkstra";
+import type { OverpassWay } from "@/shared/types/round-trip";
+import { buildGraphFromOverpass } from "@/server/lib/osm/build-graph";
+import { dijkstra, shortestPath } from "@/server/lib/routing/dijkstra";
 import {
   bearingDeg,
   destinationPoint,
   haversineMeters,
   type LatLng,
-} from "@/server/routing/geo";
-import { computeReachable } from "@/server/routing/isochrone";
-import { generateNeighbors } from "@/server/routing/pareto-local-search";
+} from "@/server/lib/routing/geo";
+import { computeReachable } from "@/server/lib/routing/isochrone";
+import { generateNeighbors } from "@/server/lib/routing/pareto-local-search";
 import {
   generatePolygons,
   routePolygon,
   snapStart,
-} from "@/server/routing/round-trip";
+} from "@/server/lib/routing/round-trip";
 import {
   dominates,
   evaluateWalk,
   removeOutAndBack,
-} from "@/server/routing/walk";
+} from "@/server/lib/routing/walk";
 import { computeRoundTrips } from "@/server/usecases/compute-round-trips";
 
 // 50m 間隔の格子状ストリートを Overpass way 群として合成する。
@@ -228,13 +228,16 @@ describe("computeRoundTrips (E2E, Overpass モック注入)", () => {
       lat: ORIGIN.lat + 20 * (50 / 111320),
       lng: ORIGIN.lng + 20 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))),
     };
-    const result = await computeRoundTrips(
+    const computed = await computeRoundTrips(
       { lat: center.lat, lng: center.lng, targetMeters: 1200, profile: "walk" },
       {
         enableLocalSearch: true,
         fetchNetwork: async () => ({ ways, fetchMs: 0 }),
       },
     );
+    expect(computed.ok).toBe(true);
+    if (!computed.ok) throw new Error(computed.error.message);
+    const result = computed.value;
     expect(result.candidates.length).toBeGreaterThan(0);
     const best = result.candidates[0]!;
     // 最良候補は目標 1200m に近い（detour 補正で ±15% 以内）、重複は 45% 以下

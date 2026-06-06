@@ -76,9 +76,12 @@ src/
     components/  SiteNav / ThemeToggle / Logo / MapView / RoundTripPlanner / TrainingPlanner
     hooks/       useRoundTrip / useTrainingStore / useResolvedTheme
     lib/         theme.ts（テーマ管理） / map-style.ts（CARTO 切替 + ルート色）
-  server/
-    osm/ routing/ training/ strava/ usecases/   取得・計算・計画ロジック
-  shared/        env / types（Zod スキーマ）
+  server/              handler / usecase / repository の一方向レイヤリング
+    handlers/    route.ts から呼ぶ薄い入口（入力検証 + usecase 呼び出し）
+    usecases/    オーケストレーション（compute-round-trips / strava）
+    repositories/ 外部I/O（overpass / strava）。fetch を包み Result<T, AppError> を返す
+    lib/         純粋ドメイン（routing / training / osm のグラフ構築。外部I/Oなし）
+  shared/        env / errors（AppError）/ result（Result, safeTry）/ types（Zod スキーマ）
 public/          og.png / icons/（PWA アイコン）
 design/branding/ ブランド比較モック（探索用）
 ```

@@ -3,7 +3,7 @@ import {
   walkLengthMeters,
   type NodeId,
   type StreetGraph,
-} from "@/server/routing/graph";
+} from "@/server/lib/routing/graph";
 
 /** 距離キーの最小ヒープ。Dijkstra の優先度付きキュー。 */
 class MinHeap {
