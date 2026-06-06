@@ -1,0 +1,79 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      # package.json の packageManager フィールドから自動的にバージョンを読み込む
+      # https://github.com/pnpm/action-setup#version
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+
+      # package.json の devEngines.runtime.version から Node.js バージョンを読み込む
+      - name: Get Node.js version
+        id: node-version
+        run: echo "version=$(jq -r '.devEngines.runtime.version' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Vercel 本番 build で型エラーを握りつぶさないよう、PR の関門として
+      # tsc --noEmit を必ず通す。
+      - name: Type check
+        run: pnpm run type-check
+
+      # 周回路アルゴリズム等の回帰検知（vitest）
+      - name: Test
+        run: pnpm run test
+
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      NODE_OPTIONS: "--max-old-space-size=4096"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      # package.json の packageManager フィールドから自動的にバージョンを読み込む
+      # https://github.com/pnpm/action-setup#version
+      - name: Setup pnpm
+        uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+
+      # package.json の devEngines.runtime.version から Node.js バージョンを読み込む
+      - name: Get Node.js version
+        id: node-version
+        run: echo "version=$(jq -r '.devEngines.runtime.version' package.json)" >> $GITHUB_OUTPUT
+
+      - name: Setup Node.js
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ steps.node-version.outputs.version }}
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 環境変数はすべて任意 (src/shared/env/server-env.ts が全 optional) のため
+      # build 時の .env 注入は不要。
+      - name: Build check
+        run: pnpm run build
