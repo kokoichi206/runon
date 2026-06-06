@@ -5,6 +5,9 @@
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# Storybook
+/storybook-static
 .env*.local
 
 # 誤って作られた pnpm ストアの stray ディレクトリ

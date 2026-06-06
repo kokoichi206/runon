@@ -41,6 +41,10 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
+      # Storybook browser テスト実行に必要な Playwright ブラウザをインストール
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install chromium
+
       # 周回路アルゴリズム等の回帰検知（vitest）
       - name: Test
         run: pnpm run test
