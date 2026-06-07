@@ -4,11 +4,18 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTrainingStore } from "@/client/hooks/useTrainingStore";
 import { parseActivities } from "@/client/lib/parse-activities";
+import { generateTrainingPlanAction } from "@/server/handlers/actions/training";
+import { type TrainingPlanResult } from "@/shared/training/compute-plan";
 import { isoToYmdLocal } from "@/shared/training/date";
 import { estimateFitness } from "@/shared/training/fitness";
-import { buildProgression, type ProgressionSummary } from "@/shared/training/paces";
-import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
-import type { PlannedWorkout, Race, TrainingPhase } from "@/shared/types/training";
+import { type ProgressionSummary } from "@/shared/training/paces";
+import { summarizeByWeek } from "@/shared/training/plan";
+import type {
+  PlannedWorkout,
+  Race,
+  TrainingPhase,
+  TrainingPlanRequest,
+} from "@/shared/types/training";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 const RACE_PRESETS = [
@@ -173,35 +180,57 @@ export function TrainingPlanner(): React.JSX.Element {
     [store.races, store.selectedRaceId]
   );
 
-  const plan = useMemo<PlannedWorkout[]>(() => {
-    if (!selectedRace) return [];
-    return generatePlan({
-      startDate: today,
-      race: selectedRace,
-      fitness,
-      availability: store.availability,
-      runsPerWeek: store.runsPerWeek,
-      skippedDates: store.skippedDates,
-    });
-  }, [selectedRace, today, fitness, store.availability, store.runsPerWeek, store.skippedDates]);
-
   const availableDayCount = useMemo(
     () => store.availability.filter((d) => d.isPracticeDay && d.maxMinutes > 0).length,
     [store.availability]
   );
 
-  const weeks = useMemo(() => summarizeByWeek(plan), [plan]);
+  // 計画生成はサービス境界（既定: Server Action）越しに行う。将来 LLM 等で重くなっても
+  // UI を変えずに済むよう、結果は非同期で受け取る。fitness は軽量なのでローカルのまま。
+  const [planResult, setPlanResult] = useState<TrainingPlanResult | null>(null);
+  const [planLoading, setPlanLoading] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
 
-  // 目標タイムが設定されたレースなら「伸ばし方」サマリを作る。
-  const progression = useMemo(() => {
-    if (!selectedRace?.goalTimeSec || weeks.length === 0) return null;
-    return buildProgression(
-      fitness.currentVdot,
-      selectedRace.goalTimeSec,
-      selectedRace.distanceKm,
-      weeks.length
-    );
-  }, [selectedRace, fitness.currentVdot, weeks.length]);
+  useEffect(() => {
+    if (!selectedRace) {
+      setPlanResult(null);
+      setPlanError(null);
+      setPlanLoading(false);
+      return;
+    }
+    const req: TrainingPlanRequest = {
+      today,
+      race: selectedRace,
+      fitness,
+      availability: store.availability,
+      runsPerWeek: store.runsPerWeek,
+      skippedDates: store.skippedDates,
+    };
+    let cancelled = false;
+    setPlanLoading(true);
+    // 連続編集（曜日トグル / 週回数スライダー）でのサーバー往復を抑えるため軽くデバウンスする。
+    const timer = setTimeout(() => {
+      void generateTrainingPlanAction(req).then((result) => {
+        if (cancelled) return;
+        if (result.ok) {
+          setPlanResult(result.value);
+          setPlanError(null);
+        } else {
+          setPlanResult(null);
+          setPlanError(result.error.message);
+        }
+        setPlanLoading(false);
+      });
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [selectedRace, today, fitness, store.availability, store.runsPerWeek, store.skippedDates]);
+
+  const plan: PlannedWorkout[] = planResult?.plan ?? [];
+  const weeks = planResult?.weeks ?? [];
+  const progression = planResult?.progression ?? null;
 
   const onCsv = async (file: File) => {
     setCsvError(null);
@@ -509,7 +538,22 @@ export function TrainingPlanner(): React.JSX.Element {
             </p>
           )}
 
-          {selectedRace && plan.length === 0 && (
+          {selectedRace && planLoading && plan.length === 0 && (
+            <p
+              className="rounded border border-border bg-surface-2 p-4 text-sm text-muted"
+              aria-live="polite"
+            >
+              練習メニューを作成中…
+            </p>
+          )}
+
+          {selectedRace && planError && (
+            <p className="rounded border border-danger/30 bg-danger-soft p-4 text-sm text-danger-fg">
+              {planError}
+            </p>
+          )}
+
+          {selectedRace && !planLoading && !planError && plan.length === 0 && (
             <p className="rounded border border-warn/30 bg-warn-soft p-4 text-sm text-warn-fg">
               選択中のレース日が過去です。未来の日付のレースを選んでください。
             </p>
