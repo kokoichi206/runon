@@ -259,8 +259,9 @@ export function snapStart(
   graph: StreetGraph,
   start: LatLng,
   maxSnapMeters = 500,
+  allowed?: Set<NodeId>,
 ): NodeId | null {
-  const node = nearestNode(graph, start);
+  const node = nearestNode(graph, start, allowed);
   if (node === null) return null;
   const d = haversineMeters(start, graph.nodes.get(node)!);
   return d <= maxSnapMeters ? node : null;

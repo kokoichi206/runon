@@ -76,16 +76,67 @@ export function edgeCount(graph: StreetGraph): number {
   return n;
 }
 
-/** 指定座標に最も近いノード（線形走査）。グラフは局所的で小さいため十分高速。 */
-export function nearestNode(graph: StreetGraph, pos: LatLng): NodeId | null {
+/**
+ * 指定座標に最も近いノード（線形走査）。グラフは局所的で小さいため十分高速。
+ * allowed を渡すとその集合内のノードのみを対象にする（例: 最大連結成分への再スナップ）。
+ */
+export function nearestNode(
+  graph: StreetGraph,
+  pos: LatLng,
+  allowed?: Set<NodeId>,
+): NodeId | null {
   let best: NodeId | null = null;
   let bestDist = Infinity;
   for (const [id, p] of graph.nodes) {
+    if (allowed && !allowed.has(id)) continue;
     const d = haversineMeters(pos, p);
     if (d < bestDist) {
       bestDist = d;
       best = id;
     }
+  }
+  return best;
+}
+
+/**
+ * 弧の向きを無視した連結成分のうち最大のものを返す。
+ * 始点が切り離された小成分（海沿いの遊歩道断片など）へ誤スナップするのを避けるために使う。
+ */
+export function largestComponent(graph: StreetGraph): Set<NodeId> {
+  const undirected = new Map<NodeId, NodeId[]>();
+  const link = (a: NodeId, b: NodeId): void => {
+    let l = undirected.get(a);
+    if (l === undefined) {
+      l = [];
+      undirected.set(a, l);
+    }
+    l.push(b);
+  };
+  for (const [from, arcs] of graph.adjacency) {
+    for (const arc of arcs) {
+      link(from, arc.to);
+      link(arc.to, from);
+    }
+  }
+
+  const seen = new Set<NodeId>();
+  let best = new Set<NodeId>();
+  for (const startId of graph.nodes.keys()) {
+    if (seen.has(startId)) continue;
+    const comp = new Set<NodeId>([startId]);
+    const queue: NodeId[] = [startId];
+    let head = 0;
+    while (head < queue.length) {
+      const u = queue[head++]!;
+      for (const v of undirected.get(u) ?? []) {
+        if (!comp.has(v)) {
+          comp.add(v);
+          queue.push(v);
+        }
+      }
+    }
+    for (const n of comp) seen.add(n);
+    if (comp.size > best.size) best = comp;
   }
   return best;
 }
