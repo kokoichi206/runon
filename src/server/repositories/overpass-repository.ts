@@ -7,11 +7,18 @@ interface OverpassResponse {
   elements: { type: string }[];
 }
 
-/** プロファイル別の道路フィルタ（Overpass QL の way 条件）。 */
-function highwayFilter(profile: Profile): string {
+/**
+ * プロファイル別の道路フィルタ（Overpass QL の way 条件）。
+ * coarse=true（長距離）では走路価値の低い細道（駐車場通路 service・階段 steps・未舗装 track）も
+ * 除外し、グラフの辺数を抑えて計算量を下げる（公園/河川敷の遊歩道 footway/path は温存）。
+ */
+function highwayFilter(profile: Profile, coarse: boolean): string {
   // 徒歩/自転車のいずれでも自動車専用路や工事中などは除外する。
-  const excludedHighway =
+  const baseExcluded =
     "motorway|motorway_link|trunk|trunk_link|construction|proposed|abandoned|raceway|bus_guideway|escape|corridor|platform";
+  const excludedHighway = coarse
+    ? `${baseExcluded}|service|track|steps`
+    : baseExcluded;
   const base =
     `way["highway"]["highway"!~"${excludedHighway}"]` +
     `["area"!~"yes"]["access"!~"private|no"]`;
@@ -27,6 +34,7 @@ export function buildOverpassQuery(
   center: LatLng,
   radiusM: number,
   profile: Profile,
+  coarse = false,
 ): string {
   const r = Math.round(radiusM);
   const lat = center.lat.toFixed(6);
@@ -34,7 +42,7 @@ export function buildOverpassQuery(
   return [
     "[out:json][timeout:60];",
     "(",
-    `  ${highwayFilter(profile)}(around:${r},${lat},${lon});`,
+    `  ${highwayFilter(profile, coarse)}(around:${r},${lat},${lon});`,
     ");",
     "out geom;",
   ].join("\n");
@@ -49,6 +57,8 @@ export interface OverpassFetchOptions {
   endpoint?: string;
   userAgent?: string;
   signal?: AbortSignal;
+  /** 長距離向けに細道（service/track/steps）も除外して辺数を抑える。 */
+  coarse?: boolean;
 }
 
 const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
@@ -70,7 +80,7 @@ export const overpassRepository = {
   ): Promise<Result<OverpassFetchResult, AppError>> {
     const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
     const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
-    const query = buildOverpassQuery(center, radiusM, profile);
+    const query = buildOverpassQuery(center, radiusM, profile, options.coarse ?? false);
 
     const startedAt = Date.now();
     const fetched = await safeTry(() =>

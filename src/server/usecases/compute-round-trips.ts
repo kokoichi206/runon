@@ -2,6 +2,7 @@ import { buildGraphFromOverpass } from "@/server/lib/osm/build-graph";
 import type { LatLng } from "@/server/lib/routing/geo";
 import {
   edgeCount,
+  largestComponent,
   type NodeId,
   type StreetGraph,
 } from "@/server/lib/routing/graph";
@@ -68,6 +69,11 @@ export async function computeRoundTrips(
   deps: ComputeDeps = {},
 ): Promise<Result<RoundTripResult, AppError>> {
   const computeStart = Date.now();
+  // 全体のウォールクロック上限。超過したら以降の探索を打ち切り、その時点のベスト候補を返す
+  // （本番の関数 60s 制限を超えないための保険）。
+  const deadline = computeStart + 40_000;
+  // 長距離は探索が距離²で膨らむため、粗いグラフ + 探索量削減で間に合わせる。
+  const isLong = req.targetMeters >= 10_000;
   const center: LatLng = { lat: req.lat, lng: req.lng };
   const radius = fetchRadiusMeters(req.targetMeters);
 
@@ -77,6 +83,7 @@ export async function computeRoundTrips(
         endpoint: deps.overpassEndpoint,
         userAgent: deps.userAgent,
         signal: deps.signal,
+        coarse: isLong,
       });
   if (!fetched.ok) return err(fetched.error);
 
@@ -90,7 +97,7 @@ export async function computeRoundTrips(
   }
 
   const graph = buildGraphFromOverpass(ways, req.profile);
-  const startNode = snapStart(graph, center, 400);
+  let startNode = snapStart(graph, center, 400);
   if (startNode === null) {
     return err(
       appError.validation(
@@ -98,10 +105,28 @@ export async function computeRoundTrips(
       ),
     );
   }
-  const startPos = graph.nodes.get(startNode)!;
+  let startPos = graph.nodes.get(startNode)!;
 
   // 到達圏 (~k/2、少し余裕)。
-  const reachable = computeReachable(graph, startNode, req.targetMeters * 0.6);
+  let reachable = computeReachable(graph, startNode, req.targetMeters * 0.6);
+
+  // 始点が切り離された小成分（海沿いの遊歩道断片など）に乗ると、到達圏が目標の半周にも
+  // 満たない。その場合は最大連結成分の最寄りノードへ再スナップして救済する。
+  const maxReachMeters = (r: typeof reachable): number => {
+    let m = 0;
+    for (const d of r.dist.values()) if (d > m) m = d;
+    return m;
+  };
+  if (maxReachMeters(reachable) < req.targetMeters * 0.45) {
+    const main = largestComponent(graph);
+    const better = snapStart(graph, center, 2000, main);
+    if (better !== null && better !== startNode) {
+      startNode = better;
+      startPos = graph.nodes.get(startNode)!;
+      reachable = computeReachable(graph, startNode, req.targetMeters * 0.6);
+    }
+  }
+
   if (reachable.dist.size < 5) {
     return err(
       appError.validation(
@@ -138,6 +163,8 @@ export async function computeRoundTrips(
     startPos,
     req.targetMeters / detour,
     reachable.baseBearingDeg,
+    // 長距離は候補(多角形)を 24→12 に削減して Stage1 を軽くする。
+    isLong ? { bearingCount: 6, aspects: [[1, 1], [1.4, 0.7]] } : undefined,
   );
 
   const stage1: {
@@ -146,6 +173,7 @@ export async function computeRoundTrips(
     bearingDeg: number;
   }[] = [];
   for (const polygon of polygons) {
+    if (Date.now() > deadline) break; // 締切超過時は集まった分で打ち切る
     const routed = refineRoute(
       graph,
       startNode,
@@ -154,7 +182,7 @@ export async function computeRoundTrips(
       req.targetMeters,
       reachable,
       5,
-      2,
+      isLong ? 1 : 2, // 長距離は精緻化反復を減らす
       0.06,
     );
     if (routed) {
@@ -179,15 +207,18 @@ export async function computeRoundTrips(
   const stage1Signatures = new Map<string, NodeId[]>();
   for (const s of stage1) stage1Signatures.set(sigOf(s.sol.metrics), s.waypointNodes);
 
-  // Stage 2: パレート局所探索。
+  // Stage 2: パレート局所探索。残り時間で予算化し、巨大グラフでは BFS の訪問数とカット数を抑える。
   const initial = stage1.map((s) => s.sol);
+  const stage2Budget = Math.min(5000, deadline - Date.now() - 500);
   const front =
-    deps.enableLocalSearch === false
+    deps.enableLocalSearch === false || stage2Budget < 1000
       ? initial
       : paretoLocalSearch(graph, startNode, req.targetMeters, initial, {
           maxIterations: 250,
           maxArchive: 40,
-          timeBudgetMs: 5000,
+          timeBudgetMs: stage2Budget,
+          maxVisits: 40_000,
+          maxCutVertices: isLong ? 12 : 24,
         });
 
   // 最適解 (f1≈0,f2≈0) はほぼ全候補を支配しフロントが小さくなるため、

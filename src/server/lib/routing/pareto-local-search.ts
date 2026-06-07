@@ -34,12 +34,15 @@ function bfsResidualTree(
   graph: StreetGraph,
   ui: NodeId,
   removedArcs: Set<string>,
+  maxVisits: number,
 ): Map<NodeId, NodeId> {
   const parent = new Map<NodeId, NodeId>();
   const visited = new Set<NodeId>([ui]);
   const queue: NodeId[] = [ui];
   let head = 0;
   while (head < queue.length) {
+    // 巨大グラフでの全探索を防ぐ訪問上限。近傍の再接続は局所で十分。
+    if (visited.size >= maxVisits) break;
     const u = queue[head++]!;
     if (u === DUMMY) continue; // シンク
     for (const arc of neighbors(graph, u)) {
@@ -80,6 +83,10 @@ export interface NeighborOptions {
   maxCutVertices?: number;
   /** カット頂点ごとに採用する区間終点 uj の最大数。 */
   maxSegmentTargets?: number;
+  /** bfsResidualTree が訪問するノード上限（巨大グラフでの暴走防止）。 */
+  maxVisits?: number;
+  /** 絶対時刻(ms)。これを過ぎたら近傍生成を打ち切る（1反復の長すぎ防止）。 */
+  deadline?: number;
 }
 
 /**
@@ -98,6 +105,8 @@ export function generateNeighbors(
 ): Solution[] {
   const maxCuts = opts.maxCutVertices ?? 24;
   const maxTargets = opts.maxSegmentTargets ?? 6;
+  const maxVisits = opts.maxVisits ?? Number.POSITIVE_INFINITY;
+  const deadline = opts.deadline;
   const removedArcs = arcsOf(walk);
   const len = walk.length;
   const out: Solution[] = [];
@@ -107,8 +116,9 @@ export function generateNeighbors(
   const cutStride = Math.max(1, Math.floor((len - 1) / cutCount));
 
   for (let i = 0; i < len - 1; i += cutStride) {
+    if (deadline !== undefined && Date.now() > deadline) break;
     const ui = walk[i]!;
-    const parent = bfsResidualTree(graph, ui, removedArcs);
+    const parent = bfsResidualTree(graph, ui, removedArcs, maxVisits);
 
     // (a) 区間置換: j を i+1..len-1 から等間隔に最大 maxTargets 個。
     const jCandidates: number[] = [];
@@ -204,6 +214,8 @@ export function paretoLocalSearch(
   const maxArchive = opts.maxArchive ?? 40;
   const timeBudgetMs = opts.timeBudgetMs ?? 4000;
   const startedAt = Date.now();
+  // 反復間だけでなく近傍生成の内側でも見る締切。巨大グラフで1反復が予算を大きく超えるのを防ぐ。
+  const deadline = startedAt + timeBudgetMs;
 
   const archive: Solution[] = [];
   const unvisited: Solution[] = [];
@@ -215,7 +227,7 @@ export function paretoLocalSearch(
 
   let iterations = 0;
   while (unvisited.length > 0 && iterations < maxIterations) {
-    if (Date.now() - startedAt > timeBudgetMs) break;
+    if (Date.now() > deadline) break;
     iterations++;
     const current = unvisited.shift()!;
     const sig = signatureOf(current.metrics);
@@ -227,7 +239,7 @@ export function paretoLocalSearch(
       current.walk,
       startNode,
       targetMeters,
-      opts,
+      { ...opts, deadline },
     );
     for (const nb of neighborsList) {
       if (visited.has(signatureOf(nb.metrics))) continue;
