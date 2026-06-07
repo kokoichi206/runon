@@ -34,7 +34,7 @@ function bfsResidualTree(
   graph: StreetGraph,
   ui: NodeId,
   removedArcs: Set<string>,
-  maxVisits: number,
+  maxVisits: number
 ): Map<NodeId, NodeId> {
   const parent = new Map<NodeId, NodeId>();
   const visited = new Set<NodeId>([ui]);
@@ -57,11 +57,7 @@ function bfsResidualTree(
   return parent;
 }
 
-function pathTo(
-  parent: Map<NodeId, NodeId>,
-  ui: NodeId,
-  target: NodeId,
-): NodeId[] | null {
+function pathTo(parent: Map<NodeId, NodeId>, ui: NodeId, target: NodeId): NodeId[] | null {
   if (target === ui) return [ui];
   const path: NodeId[] = [target];
   let cur = target;
@@ -101,7 +97,7 @@ export function generateNeighbors(
   walk: NodeId[],
   startNode: NodeId,
   targetMeters: number,
-  opts: NeighborOptions = {},
+  opts: NeighborOptions = {}
 ): Solution[] {
   const maxCuts = opts.maxCutVertices ?? 24;
   const maxTargets = opts.maxSegmentTargets ?? 6;
@@ -155,17 +151,14 @@ function finalize(
   graph: StreetGraph,
   walk: NodeId[],
   startNode: NodeId,
-  targetMeters: number,
+  targetMeters: number
 ): Solution | null {
   if (walk.length < 3) return null;
   if (walk[0] !== startNode || walk[walk.length - 1] !== startNode) return null;
   const trimmed = removeOutAndBack(walk, startNode);
   if (trimmed.length < 3) return null;
   const metrics = evaluateWalk(graph, trimmed, targetMeters);
-  if (
-    metrics.lengthMeters < targetMeters * 0.3 ||
-    metrics.lengthMeters > targetMeters * 3
-  ) {
+  if (metrics.lengthMeters < targetMeters * 0.3 || metrics.lengthMeters > targetMeters * 3) {
     return null;
   }
   return { walk: trimmed, metrics };
@@ -208,7 +201,7 @@ export function paretoLocalSearch(
   startNode: NodeId,
   targetMeters: number,
   initial: Solution[],
-  opts: ParetoLocalSearchOptions = {},
+  opts: ParetoLocalSearchOptions = {}
 ): Solution[] {
   const maxIterations = opts.maxIterations ?? 300;
   const maxArchive = opts.maxArchive ?? 40;
@@ -234,13 +227,10 @@ export function paretoLocalSearch(
     if (visited.has(sig)) continue;
     visited.add(sig);
 
-    const neighborsList = generateNeighbors(
-      graph,
-      current.walk,
-      startNode,
-      targetMeters,
-      { ...opts, deadline },
-    );
+    const neighborsList = generateNeighbors(graph, current.walk, startNode, targetMeters, {
+      ...opts,
+      deadline,
+    });
     for (const nb of neighborsList) {
       if (visited.has(signatureOf(nb.metrics))) continue;
       if (tryInsert(archive, nb)) {

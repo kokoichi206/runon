@@ -14,13 +14,12 @@ export function useResolvedTheme(): ResolvedTheme {
   const [theme, setTheme] = useState<ResolvedTheme>(() =>
     typeof document !== "undefined" && document.documentElement.dataset.theme === "light"
       ? "light"
-      : "dark",
+      : "dark"
   );
 
   useEffect(() => {
     const el = document.documentElement;
-    const read = (): ResolvedTheme =>
-      el.dataset.theme === "light" ? "light" : "dark";
+    const read = (): ResolvedTheme => (el.dataset.theme === "light" ? "light" : "dark");
     setTheme(read());
 
     const observer = new MutationObserver(() => setTheme(read()));

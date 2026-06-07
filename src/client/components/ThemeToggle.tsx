@@ -2,12 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import {
-  applyTheme,
-  readStoredMode,
-  storeMode,
-  type ThemeMode,
-} from "@/client/lib/theme";
+import { applyTheme, readStoredMode, storeMode, type ThemeMode } from "@/client/lib/theme";
 
 const OPTIONS: { mode: ThemeMode; label: string; icon: React.JSX.Element }[] = [
   {
@@ -15,7 +10,16 @@ const OPTIONS: { mode: ThemeMode; label: string; icon: React.JSX.Element }[] = [
     label: "端末の設定に合わせる",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-4 w-4">
-        <rect x="3" y="4" width="18" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <rect
+          x="3"
+          y="4"
+          width="18"
+          height="12"
+          rx="2"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+        />
         <path d="M8 20h8M12 16v4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
       </svg>
     ),
@@ -97,9 +101,7 @@ export function ThemeToggle(): React.JSX.Element {
             aria-pressed={active}
             title={o.label}
             className={`grid h-9 w-9 place-items-center rounded-full transition-colors ${
-              active
-                ? "bg-accent text-accent-fg"
-                : "text-muted hover:bg-surface-3 hover:text-fg"
+              active ? "bg-accent text-accent-fg" : "text-muted hover:bg-surface-3 hover:text-fg"
             }`}
           >
             {o.icon}

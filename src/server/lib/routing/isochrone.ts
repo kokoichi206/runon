@@ -18,7 +18,7 @@ export interface Reachable {
 export function computeReachable(
   graph: StreetGraph,
   source: NodeId,
-  maxDistanceM: number,
+  maxDistanceM: number
 ): Reachable {
   const { dist } = dijkstra(graph, source, { maxDistanceM });
 

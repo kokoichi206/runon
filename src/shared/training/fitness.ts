@@ -1,6 +1,6 @@
-import { isoToYmdLocal, parseYmd } from "@/server/lib/training/date";
-import { observedMaxHr } from "@/server/lib/training/heart-rate";
-import { estimateCurrentVdot } from "@/server/lib/training/paces";
+import { isoToYmdLocal, parseYmd } from "@/shared/training/date";
+import { observedMaxHr } from "@/shared/training/heart-rate";
+import { estimateCurrentVdot } from "@/shared/training/paces";
 import type { Activity, Fitness } from "@/shared/types/training";
 
 /** 走力推定のデフォルト（履歴が無い/少ない場合の控えめな初期値）。 */
@@ -20,13 +20,8 @@ const FALLBACK: Fitness = {
  *
  * 履歴が空なら控えめな既定値を返す（推測で過大評価しない）。
  */
-export function estimateFitness(
-  activities: Activity[],
-  nowMs: number,
-): Fitness {
-  const runs = activities.filter(
-    (a) => a.distanceKm > 0 && a.durationSec > 0,
-  );
+export function estimateFitness(activities: Activity[], nowMs: number): Fitness {
+  const runs = activities.filter((a) => a.distanceKm > 0 && a.durationSec > 0);
   if (runs.length === 0) return { ...FALLBACK };
 
   const within = (days: number) =>
@@ -39,9 +34,7 @@ export function estimateFitness(
   const weeklyKm = last4w.length > 0 ? km4w / 4 : FALLBACK.weeklyKm;
 
   const longestKm =
-    last8w.length > 0
-      ? Math.max(...last8w.map((a) => a.distanceKm))
-      : FALLBACK.longestKm;
+    last8w.length > 0 ? Math.max(...last8w.map((a) => a.distanceKm)) : FALLBACK.longestKm;
 
   // 距離加重の平均ペース（実測タイムから算出）。イージーは実測よりやや緩める。
   const paceSource = last8w.length > 0 ? last8w : runs;

@@ -1,6 +1,6 @@
-import { addDays, diffDays, weekday } from "@/server/lib/training/date";
-import { bpmRange, zoneForWorkout } from "@/server/lib/training/heart-rate";
-import { trainingPaces, vdotFromPerformance } from "@/server/lib/training/paces";
+import { addDays, diffDays, weekday } from "@/shared/training/date";
+import { bpmRange, zoneForWorkout } from "@/shared/training/heart-rate";
+import { trainingPaces, vdotFromPerformance } from "@/shared/training/paces";
 import type {
   PlanInput,
   PlannedWorkout,
@@ -42,10 +42,7 @@ function combinations<T>(arr: T[], k: number): T[][] {
   if (k <= 0) return [[]];
   if (k > arr.length) return [];
   const [head, ...rest] = arr;
-  return [
-    ...combinations(rest, k - 1).map((c) => [head!, ...c]),
-    ...combinations(rest, k),
-  ];
+  return [...combinations(rest, k - 1).map((c) => [head!, ...c]), ...combinations(rest, k)];
 }
 
 /** 選んだ曜日集合の最小「円環ギャップ」（週内の隣接間隔の最小値）。大きいほど均等に分散。 */
@@ -68,7 +65,7 @@ function selectRunWeekdays(
   available: number[],
   longDay: number | null,
   k: number,
-  availability: WeeklyAvailability,
+  availability: WeeklyAvailability
 ): Set<number> {
   if (available.length === 0 || k <= 0) return new Set();
   if (k >= available.length) return new Set(available);
@@ -129,11 +126,7 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
   const lastWeek = Math.floor(totalDays / 7);
   const totalWeeks = lastWeek + 1;
   const taperWeeks =
-    totalWeeks >= 4
-      ? clamp(Math.round(totalWeeks * 0.15), 1, 3)
-      : totalWeeks >= 2
-        ? 1
-        : 0;
+    totalWeeks >= 4 ? clamp(Math.round(totalWeeks * 0.15), 1, 3) : totalWeeks >= 2 ? 1 : 0;
   const taperStartWeek = totalWeeks - taperWeeks;
   const nonTaper = Math.max(0, taperStartWeek);
   const baseEnd = Math.floor(nonTaper * 0.4);
@@ -165,10 +158,10 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
 
   // 練習が可能な曜日（時間が確保できる曜日）。
   const availableWeekdays = [0, 1, 2, 3, 4, 5, 6].filter(
-    (wd) => availability[wd]?.isPracticeDay && (availability[wd]?.maxMinutes ?? 0) > 0,
+    (wd) => availability[wd]?.isPracticeDay && (availability[wd]?.maxMinutes ?? 0) > 0
   );
   const byTimeDesc = [...availableWeekdays].sort(
-    (a, b) => (availability[b]!.maxMinutes - availability[a]!.maxMinutes) || b - a,
+    (a, b) => availability[b]!.maxMinutes - availability[a]!.maxMinutes || b - a
   );
   const longRunWeekday = byTimeDesc[0] ?? null;
 
@@ -177,19 +170,18 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
   const runDays = clamp(
     requestedRuns,
     availableWeekdays.length > 0 ? 1 : 0,
-    availableWeekdays.length,
+    availableWeekdays.length
   );
   const selectedWeekdays = selectRunWeekdays(
     availableWeekdays,
     longRunWeekday,
     runDays,
-    availability,
+    availability
   );
   const qualityWeekday =
     [...selectedWeekdays]
       .filter((wd) => wd !== longRunWeekday)
-      .sort((a, b) => availability[b]!.maxMinutes - availability[a]!.maxMinutes)[0] ??
-    null;
+      .sort((a, b) => availability[b]!.maxMinutes - availability[a]!.maxMinutes)[0] ?? null;
 
   // ペース: 目標タイムがあれば VDOT ゾーンから設計。無ければ現走力(イージーペース)から近似。
   let easyPace: number;

@@ -14,13 +14,15 @@ export default defineConfig({
   resolve: { alias },
   test: {
     projects: [
-      // 既存のロジック系ユニットテスト（node 環境）。
+      // 既存のロジック系ユニットテスト + カスタム ESLint ルールのテスト（node 環境）。
+      // ESLint の RuleTester は global の describe/it を使うため globals を有効化する。
       {
         resolve: { alias },
         test: {
           name: "unit",
-          include: ["src/**/*.test.ts"],
+          include: ["src/**/*.test.ts", "eslint-rules/**/test.js"],
           environment: "node",
+          globals: true,
         },
       },
       // Storybook の story を browser(playwright) でテスト実行する。

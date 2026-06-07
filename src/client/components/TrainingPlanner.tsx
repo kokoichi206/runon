@@ -4,18 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useTrainingStore } from "@/client/hooks/useTrainingStore";
 import { parseActivities } from "@/client/lib/parse-activities";
-import { isoToYmdLocal } from "@/server/lib/training/date";
-import { estimateFitness } from "@/server/lib/training/fitness";
-import {
-  buildProgression,
-  type ProgressionSummary,
-} from "@/server/lib/training/paces";
-import { generatePlan, summarizeByWeek } from "@/server/lib/training/plan";
-import type {
-  PlannedWorkout,
-  Race,
-  TrainingPhase,
-} from "@/shared/types/training";
+import { isoToYmdLocal } from "@/shared/training/date";
+import { estimateFitness } from "@/shared/training/fitness";
+import { buildProgression, type ProgressionSummary } from "@/shared/training/paces";
+import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
+import type { PlannedWorkout, Race, TrainingPhase } from "@/shared/types/training";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 const RACE_PRESETS = [
@@ -54,17 +47,11 @@ const parseClock = (s: string): number | null => {
     .trim()
     .split(":")
     .map((p) => Number(p));
-  if (
-    parts.length < 2 ||
-    parts.length > 3 ||
-    parts.some((p) => !Number.isFinite(p))
-  ) {
+  if (parts.length < 2 || parts.length > 3 || parts.some((p) => !Number.isFinite(p))) {
     return null;
   }
   const sec =
-    parts.length === 3
-      ? parts[0]! * 3600 + parts[1]! * 60 + parts[2]!
-      : parts[0]! * 60 + parts[1]!;
+    parts.length === 3 ? parts[0]! * 3600 + parts[1]! * 60 + parts[2]! : parts[0]! * 60 + parts[1]!;
   return sec > 0 ? sec : null;
 };
 
@@ -94,6 +81,9 @@ const mmddw = (ymd: string): string => {
 
 export function TrainingPlanner(): React.JSX.Element {
   const store = useTrainingStore();
+  // store オブジェクトは毎レンダリング新規生成されるが、各 setter は useCallback で安定。
+  // 安定した参照を依存配列に使うため setter を分割代入する。
+  const { setActivities } = store;
   const [today, setToday] = useState(todayYmd());
   const [csvError, setCsvError] = useState<string | null>(null);
   const [strava, setStrava] = useState({ configured: false, connected: false });
@@ -119,17 +109,15 @@ export function TrainingPlanner(): React.JSX.Element {
         setStravaMsg(j?.error ?? "Strava から取得できませんでした。");
         return;
       }
-      store.setActivities(j.activities ?? []);
+      setActivities(j.activities ?? []);
       setStrava((s) => ({ ...s, connected: true }));
-      setStravaMsg(
-        `Strava から ${j.count ?? j.activities?.length ?? 0} 件取り込みました。`,
-      );
+      setStravaMsg(`Strava から ${j.count ?? j.activities?.length ?? 0} 件取り込みました。`);
     } catch {
       setStravaMsg("Strava 取得に失敗しました。");
     } finally {
       setStravaBusy(false);
     }
-  }, [store.setActivities]);
+  }, [setActivities]);
 
   const disconnectStrava = useCallback(async () => {
     try {
@@ -176,17 +164,13 @@ export function TrainingPlanner(): React.JSX.Element {
   }, [importFromStrava]);
 
   const fitness = useMemo(
-    () =>
-      estimateFitness(
-        store.activities,
-        new Date(`${today}T00:00:00`).getTime(),
-      ),
-    [store.activities, today],
+    () => estimateFitness(store.activities, new Date(`${today}T00:00:00`).getTime()),
+    [store.activities, today]
   );
 
   const selectedRace = useMemo(
     () => store.races.find((r) => r.id === store.selectedRaceId) ?? null,
-    [store.races, store.selectedRaceId],
+    [store.races, store.selectedRaceId]
   );
 
   const plan = useMemo<PlannedWorkout[]>(() => {
@@ -199,20 +183,11 @@ export function TrainingPlanner(): React.JSX.Element {
       runsPerWeek: store.runsPerWeek,
       skippedDates: store.skippedDates,
     });
-  }, [
-    selectedRace,
-    today,
-    fitness,
-    store.availability,
-    store.runsPerWeek,
-    store.skippedDates,
-  ]);
+  }, [selectedRace, today, fitness, store.availability, store.runsPerWeek, store.skippedDates]);
 
   const availableDayCount = useMemo(
-    () =>
-      store.availability.filter((d) => d.isPracticeDay && d.maxMinutes > 0)
-        .length,
-    [store.availability],
+    () => store.availability.filter((d) => d.isPracticeDay && d.maxMinutes > 0).length,
+    [store.availability]
   );
 
   const weeks = useMemo(() => summarizeByWeek(plan), [plan]);
@@ -224,7 +199,7 @@ export function TrainingPlanner(): React.JSX.Element {
       fitness.currentVdot,
       selectedRace.goalTimeSec,
       selectedRace.distanceKm,
-      weeks.length,
+      weeks.length
     );
   }, [selectedRace, fitness.currentVdot, weeks.length]);
 
@@ -235,23 +210,18 @@ export function TrainingPlanner(): React.JSX.Element {
       const acts = parseActivities(text);
       if (acts.length === 0) {
         setCsvError(
-          "CSV から走行記録を読み取れませんでした（Garmin の Activities.csv 形式に対応）。",
+          "CSV から走行記録を読み取れませんでした（Garmin の Activities.csv 形式に対応）。"
         );
         return;
       }
-      store.setActivities(acts);
+      setActivities(acts);
     } catch {
       setCsvError("CSV の読み込みに失敗しました。");
     }
   };
 
   const onAddRace = () => {
-    if (
-      !raceName.trim() ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(raceDate) ||
-      raceKm <= 0
-    )
-      return;
+    if (!raceName.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(raceDate) || raceKm <= 0) return;
     const goalSec = raceGoal.trim() ? parseClock(raceGoal) : null;
     const race: Race = {
       id: crypto.randomUUID(),
@@ -267,19 +237,15 @@ export function TrainingPlanner(): React.JSX.Element {
   };
 
   const totalKm = useMemo(
-    () =>
-      Math.round(store.activities.reduce((s, a) => s + a.distanceKm, 0) * 10) /
-      10,
-    [store.activities],
+    () => Math.round(store.activities.reduce((s, a) => s + a.distanceKm, 0) * 10) / 10,
+    [store.activities]
   );
 
   return (
     <div className="mx-auto flex min-h-dvh max-w-7xl flex-col px-4 py-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:h-[calc(100dvh-var(--nav-h))] md:min-h-0 md:overflow-hidden md:py-4">
       <header className="mb-4 shrink-0">
         <h1 className="text-xl font-bold text-fg">トレーニング計画</h1>
-        <p className="text-xs text-muted">
-          目標レースまでの練習メニューを自動生成
-        </p>
+        <p className="text-xs text-muted">目標レースまでの練習メニューを自動生成</p>
       </header>
 
       {/* デスクトップは左右カラムを独立スクロール（min-h-0 が無いと子が縮まずスクロールしない）。モバイルは通常の縦積み。 */}
@@ -288,14 +254,12 @@ export function TrainingPlanner(): React.JSX.Element {
         <div className="flex flex-col gap-5 md:h-full md:min-h-0 md:overflow-y-auto md:pr-1 md:pb-4">
           {/* 練習履歴 */}
           <section className="rounded-lg border border-border p-3">
-            <h2 className="text-sm font-bold text-fg">
-              1. 練習履歴（CSV / Strava）
-            </h2>
+            <h2 className="text-sm font-bold text-fg">1. 練習履歴（CSV / Strava）</h2>
             <div className="mt-2">
               {!strava.configured ? (
                 <p className="text-[11px] text-faint">
-                  Strava 連携は未設定（.env.local に STRAVA_CLIENT_ID /
-                  STRAVA_CLIENT_SECRET を設定で有効化）。
+                  Strava 連携は未設定（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET
+                  を設定で有効化）。
                 </p>
               ) : strava.connected ? (
                 <div className="flex items-center gap-2">
@@ -323,11 +287,7 @@ export function TrainingPlanner(): React.JSX.Element {
                   Strava と連携
                 </a>
               )}
-              {stravaMsg && (
-                <p className="mt-1 text-[11px] text-accent-soft-fg">
-                  {stravaMsg}
-                </p>
-              )}
+              {stravaMsg && <p className="mt-1 text-[11px] text-accent-soft-fg">{stravaMsg}</p>}
             </div>
             <label className="mt-2 block text-xs text-muted">
               または Garmin の Activities.csv をアップロード
@@ -341,17 +301,15 @@ export function TrainingPlanner(): React.JSX.Element {
                 className="mt-1 block w-full text-xs file:mr-2 file:rounded file:border-0 file:bg-accent file:px-2 file:py-1 file:text-accent-fg"
               />
             </label>
-            {csvError && (
-              <p className="mt-1 text-[11px] text-danger-fg">{csvError}</p>
-            )}
+            {csvError && <p className="mt-1 text-[11px] text-danger-fg">{csvError}</p>}
             {store.activities.length > 0 && (
               <div className="mt-2 text-[11px] text-muted">
                 <p>
                   {store.activities.length} 件 / 合計 {totalKm}km
                 </p>
                 <p className="mt-1 text-fg">
-                  推定: 週{fitness.weeklyKm}km・最長{fitness.longestKm}km・
-                  Eペース {paceLabel(fitness.easyPaceSecPerKm)}
+                  推定: 週{fitness.weeklyKm}km・最長{fitness.longestKm}km・ Eペース{" "}
+                  {paceLabel(fitness.easyPaceSecPerKm)}
                 </p>
                 <p className="text-fg">
                   推定VO2max(VDOT) {fitness.currentVdot ?? "—"}・最大HR{" "}
@@ -367,9 +325,7 @@ export function TrainingPlanner(): React.JSX.Element {
                           </td>
                           <td className="px-1 py-0.5">{a.distanceKm}km</td>
                           <td className="px-1 py-0.5 text-muted">
-                            {a.avgPaceSecPerKm
-                              ? paceLabel(a.avgPaceSecPerKm)
-                              : "-"}
+                            {a.avgPaceSecPerKm ? paceLabel(a.avgPaceSecPerKm) : "-"}
                           </td>
                         </tr>
                       ))}
@@ -456,10 +412,7 @@ export function TrainingPlanner(): React.JSX.Element {
                       }`}
                     >
                       {r.date} {r.name}（{r.distanceKm}km
-                      {r.goalTimeSec
-                        ? ` / 目標 ${formatClock(r.goalTimeSec)}`
-                        : ""}
-                      ）
+                      {r.goalTimeSec ? ` / 目標 ${formatClock(r.goalTimeSec)}` : ""}）
                     </button>
                     <button
                       type="button"
@@ -477,9 +430,7 @@ export function TrainingPlanner(): React.JSX.Element {
 
           {/* 週間設定 */}
           <section className="rounded-lg border border-border p-3">
-            <h2 className="text-sm font-bold text-fg">
-              3. 週間設定（練習可能な曜日・確保時間）
-            </h2>
+            <h2 className="text-sm font-bold text-fg">3. 週間設定（練習可能な曜日・確保時間）</h2>
             <p className="mt-1 text-[11px] text-muted">
               練習が可能な曜日にチェックし、その日に確保できる時間(分)を入れてください。
               下の「週の練習回数」だけを可能日の中から選びます（最も時間が取れる日をロング走に、残りは間隔が空くように）。
@@ -490,25 +441,19 @@ export function TrainingPlanner(): React.JSX.Element {
               </label>
               <select
                 id="runsPerWeek"
-                value={Math.min(
-                  store.runsPerWeek,
-                  Math.max(1, availableDayCount),
-                )}
+                value={Math.min(store.runsPerWeek, Math.max(1, availableDayCount))}
                 onChange={(e) => store.setRunsPerWeek(Number(e.target.value))}
                 className="rounded border border-border px-2 py-1 text-base sm:text-sm"
               >
-                {Array.from(
-                  { length: Math.max(1, availableDayCount) },
-                  (_, i) => i + 1,
-                ).map((n) => (
-                  <option key={n} value={n}>
-                    {n}
-                  </option>
-                ))}
+                {Array.from({ length: Math.max(1, availableDayCount) }, (_, i) => i + 1).map(
+                  (n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  )
+                )}
               </select>
-              <span className="text-[11px] text-faint">
-                回 / 可能日 {availableDayCount}日
-              </span>
+              <span className="text-[11px] text-faint">回 / 可能日 {availableDayCount}日</span>
             </div>
             <div className="mt-2 flex flex-col gap-1">
               {store.availability.map((d, wd) => (
@@ -641,34 +586,26 @@ function ProgressionPanel({
             {pr.currentVdot !== null ? `VDOT ${pr.currentVdot}` : "履歴不足"}
           </div>
           {pr.predictedCurrentTimeSec !== null && (
-            <div className="text-muted">
-              予測 {formatClock(pr.predictedCurrentTimeSec)}
-            </div>
+            <div className="text-muted">予測 {formatClock(pr.predictedCurrentTimeSec)}</div>
           )}
         </div>
         <div className="rounded border border-hairline p-2">
           <div className="text-muted">目標</div>
-          <div className="font-semibold text-fg">
-            {formatClock(pr.goalTimeSec)}
-          </div>
+          <div className="font-semibold text-fg">{formatClock(pr.goalTimeSec)}</div>
           <div className="text-muted">VDOT {pr.goalVdot}</div>
         </div>
       </div>
       {pr.requiredImprovementPct !== null && pr.requiredImprovementPct > 0 && (
         <p className="mt-2 text-muted">
-          目標まであと <b>{pr.requiredImprovementPct}%</b>{" "}
-          のタイム短縮が必要（残り {pr.weeks} 週）。
+          目標まであと <b>{pr.requiredImprovementPct}%</b> のタイム短縮が必要（残り {pr.weeks}{" "}
+          週）。
         </p>
       )}
       {pr.currentVdot === null && (
-        <p className="mt-2 text-muted">
-          CSV 履歴を取り込むと、現状からの差を表示できます。
-        </p>
+        <p className="mt-2 text-muted">CSV 履歴を取り込むと、現状からの差を表示できます。</p>
       )}
       <div className="mt-2">
-        <div className="text-muted">
-          目標達成に必要なペース（VDOT {pr.goalVdot}）
-        </div>
+        <div className="text-muted">目標達成に必要なペース（VDOT {pr.goalVdot}）</div>
         <div className="mt-1 grid grid-cols-4 gap-1 text-center">
           {zones.map((z) => (
             <div key={z.label} className="rounded bg-surface-2 p-1">
@@ -681,8 +618,7 @@ function ProgressionPanel({
       {pr.currentPaces && (
         <p className="mt-1 text-[10px] text-faint">
           現状の閾値 {paceLabel(pr.currentPaces.threshold)} → 目標{" "}
-          {paceLabel(pr.goalPaces.threshold)} へ、 build/peak
-          のテンポ走で寄せていきます。
+          {paceLabel(pr.goalPaces.threshold)} へ、 build/peak のテンポ走で寄せていきます。
         </p>
       )}
       <p className="mt-2 text-[10px] text-faint">
@@ -724,8 +660,8 @@ function PlanView({
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded border border-border bg-surface-2 p-2 text-xs text-muted">
-        {race.name}（{race.date} / {race.distanceKm}km）まで {weeks.length} 週・
-        総距離 約{totalKm}km
+        {race.name}（{race.date} / {race.distanceKm}km）まで {weeks.length} 週・ 総距離 約{totalKm}
+        km
       </div>
       {weeks.map((wk) => {
         const days = plan.filter((p) => p.weekIndex === wk.weekIndex);
@@ -753,20 +689,15 @@ function PlanView({
               {days.map((d) => {
                 const isToday = d.date === today;
                 const isDone = done.has(d.date);
-                const isSkip =
-                  skip.has(d.date) || d.note === "スキップ（お休み）";
+                const isSkip = skip.has(d.date) || d.note === "スキップ（お休み）";
                 return (
                   <li
                     key={d.date}
                     className={`flex items-center gap-2 border-l-4 px-3 py-1.5 text-sm ${
-                      d.isKey
-                        ? "border-warn bg-warn-soft"
-                        : "border-transparent"
+                      d.isKey ? "border-warn bg-warn-soft" : "border-transparent"
                     } ${isToday ? "bg-accent-soft" : ""}`}
                   >
-                    <span className="w-20 text-xs text-muted">
-                      {mmddw(d.date)}
-                    </span>
+                    <span className="w-20 text-xs text-muted">{mmddw(d.date)}</span>
                     <span
                       className={`w-24 ${TYPE_STYLE[d.type] ?? ""} ${isDone ? "line-through" : ""}`}
                     >
@@ -784,26 +715,18 @@ function PlanView({
                         <>
                           {d.distanceKm}km・約{d.estMinutes}分
                           {d.paceSecPerKm && (
-                            <span className="ml-1 text-faint">
-                              @{paceLabel(d.paceSecPerKm)}
-                            </span>
+                            <span className="ml-1 text-faint">@{paceLabel(d.paceSecPerKm)}</span>
                           )}
                           {d.hrZone && (
                             <span
                               className="ml-1 text-hr"
-                              title={
-                                d.hrBpmRange ? `${d.hrBpmRange} bpm` : undefined
-                              }
+                              title={d.hrBpmRange ? `${d.hrBpmRange} bpm` : undefined}
                             >
                               Z{d.hrZone}
                               {d.hrBpmRange ? `(${d.hrBpmRange})` : ""}
                             </span>
                           )}
-                          {d.cappedByTime && (
-                            <span className="ml-1 text-warn-fg">
-                              (時間調整)
-                            </span>
-                          )}
+                          {d.cappedByTime && <span className="ml-1 text-warn-fg">(時間調整)</span>}
                           {d.isKey && d.type !== "race" && (
                             <span className="ml-1 font-semibold text-warn-fg">
                               ・今週のポイント

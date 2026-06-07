@@ -5,7 +5,7 @@ import {
   predictTimeSec,
   trainingPaces,
   vdotFromPerformance,
-} from "@/server/lib/training/paces";
+} from "@/shared/training/paces";
 
 describe("VDOT モデル", () => {
   it("5K 20:00 の VDOT は ~49.8（Daniels テーブル一致）", () => {
@@ -41,9 +41,7 @@ describe("VDOT モデル", () => {
   });
 
   it("速い目標ほど VDOT が高い（単調）", () => {
-    expect(vdotFromPerformance(10, 40 * 60)).toBeGreaterThan(
-      vdotFromPerformance(10, 50 * 60),
-    );
+    expect(vdotFromPerformance(10, 40 * 60)).toBeGreaterThan(vdotFromPerformance(10, 50 * 60));
   });
 });
 

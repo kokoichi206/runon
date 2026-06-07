@@ -12,9 +12,7 @@ const CARTO_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
 
 const cartoTiles = (variant: "light_all" | "dark_all"): string[] =>
-  ["a", "b", "c", "d"].map(
-    (s) => `https://${s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}.png`,
-  );
+  ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}.png`);
 
 export function mapStyle(theme: ResolvedTheme): StyleSpecification {
   const variant = theme === "dark" ? "dark_all" : "light_all";

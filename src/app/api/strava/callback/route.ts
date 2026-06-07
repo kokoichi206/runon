@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  connectHandler,
-  STRAVA_REFRESH_COOKIE,
-} from "@/server/handlers/strava-handler";
+import { connectHandler, STRAVA_REFRESH_COOKIE } from "@/server/handlers/strava-handler";
 import { serverEnv } from "@/shared/env/server-env";
 
 export const runtime = "nodejs";
@@ -19,10 +16,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   const url = new URL(request.url);
   const home = new URL("/training", base);
 
-  const result = await connectHandler(
-    url.searchParams.get("code"),
-    url.searchParams.get("error"),
-  );
+  const result = await connectHandler(url.searchParams.get("code"), url.searchParams.get("error"));
   if (!result.ok) {
     home.searchParams.set("strava", result.error.type === "unauthorized" ? "denied" : "error");
     return NextResponse.redirect(home);

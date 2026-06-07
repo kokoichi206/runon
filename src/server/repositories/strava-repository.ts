@@ -1,6 +1,6 @@
+import { serverEnv } from "@/shared/env/server-env";
 import { appError, type AppError } from "@/shared/errors";
 import { err, ok, type Result, safeTry } from "@/shared/result";
-import { serverEnv } from "@/shared/env/server-env";
 import type { Activity } from "@/shared/types/training";
 
 const AUTHORIZE_URL = "https://www.strava.com/oauth/authorize";
@@ -71,7 +71,7 @@ async function postToken(body: Record<string, string>): Promise<Result<StravaTok
         client_secret: serverEnv.STRAVA_CLIENT_SECRET ?? "",
         ...body,
       }).toString(),
-    }),
+    })
   );
   if (!fetched.ok) {
     return err(appError.upstream("Strava への接続に失敗しました。", fetched.error));
@@ -118,14 +118,11 @@ export const stravaRepository = {
   },
 
   /** アクセストークンで直近の活動を取得し、内部 Activity[] にして返す。 */
-  async fetchActivities(
-    accessToken: string,
-    perPage = 100,
-  ): Promise<Result<Activity[], AppError>> {
+  async fetchActivities(accessToken: string, perPage = 100): Promise<Result<Activity[], AppError>> {
     const fetched = await safeTry(() =>
       fetch(`${ACTIVITIES_URL}?per_page=${perPage}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
-      }),
+      })
     );
     if (!fetched.ok) {
       return err(appError.upstream("Strava への接続に失敗しました。", fetched.error));
@@ -133,7 +130,9 @@ export const stravaRepository = {
     const res = fetched.value;
     if (!res.ok) {
       const text = await res.text().catch(() => "");
-      return err(appError.upstream(`Strava 活動取得エラー (HTTP ${res.status}): ${text.slice(0, 200)}`));
+      return err(
+        appError.upstream(`Strava 活動取得エラー (HTTP ${res.status}): ${text.slice(0, 200)}`)
+      );
     }
     const parsed = await safeTry(() => res.json() as Promise<StravaActivity[]>);
     if (!parsed.ok) {

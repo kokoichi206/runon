@@ -19,7 +19,7 @@ export async function POST(request: Request): Promise<NextResponse> {
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error.message },
-      { status: httpStatusFor(result.error) },
+      { status: httpStatusFor(result.error) }
     );
   }
   return NextResponse.json(result.value);

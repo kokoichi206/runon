@@ -1,10 +1,7 @@
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-import {
-  listActivitiesHandler,
-  STRAVA_REFRESH_COOKIE,
-} from "@/server/handlers/strava-handler";
+import { listActivitiesHandler, STRAVA_REFRESH_COOKIE } from "@/server/handlers/strava-handler";
 import { httpStatusFor } from "@/shared/errors";
 
 export const runtime = "nodejs";
@@ -19,7 +16,7 @@ export async function GET(): Promise<NextResponse> {
   if (!result.ok) {
     return NextResponse.json(
       { error: result.error.message },
-      { status: httpStatusFor(result.error) },
+      { status: httpStatusFor(result.error) }
     );
   }
 

@@ -40,7 +40,10 @@ const num = (s: string | undefined): number | null => {
 /** "HH:MM:SS" / "MM:SS" / "M:SS.s" -> 秒。 */
 const toSeconds = (s: string | undefined): number | null => {
   if (!s) return null;
-  const parts = s.trim().split(":").map((p) => Number(p));
+  const parts = s
+    .trim()
+    .split(":")
+    .map((p) => Number(p));
   if (parts.some((p) => !Number.isFinite(p))) return null;
   if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
   if (parts.length === 2) return parts[0]! * 60 + parts[1]!;
@@ -93,8 +96,7 @@ export function parseActivities(text: string): Activity[] {
   const activities: Activity[] = [];
   for (let r = 1; r < lines.length; r++) {
     const f = parseCsvLine(lines[r]!);
-    const get = (key: string) =>
-      colIndex[key] !== undefined ? f[colIndex[key]!] : undefined;
+    const get = (key: string) => (colIndex[key] !== undefined ? f[colIndex[key]!] : undefined);
 
     const distanceKm = num(get("distance"));
     const durationSec = toSeconds(get("time"));

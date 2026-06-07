@@ -21,9 +21,7 @@ export function haversineMeters(a: LatLng, b: LatLng): number {
   const dLng = toRad(b.lng - a.lng);
   const lat1 = toRad(a.lat);
   const lat2 = toRad(b.lat);
-  const h =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * EARTH_RADIUS_M * Math.asin(Math.min(1, Math.sqrt(h)));
 }
 
@@ -33,9 +31,7 @@ export function bearingDeg(a: LatLng, b: LatLng): number {
   const lat2 = toRad(b.lat);
   const dLng = toRad(b.lng - a.lng);
   const y = Math.sin(dLng) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
 
@@ -43,25 +39,20 @@ export function bearingDeg(a: LatLng, b: LatLng): number {
  * 始点から指定距離・方位に進んだ地点（大圏航法 destination point）。
  * 多角形ウェイポイントを地表に配置するのに使う。
  */
-export function destinationPoint(
-  start: LatLng,
-  distanceM: number,
-  bearing: number,
-): LatLng {
+export function destinationPoint(start: LatLng, distanceM: number, bearing: number): LatLng {
   const angular = distanceM / EARTH_RADIUS_M;
   const br = toRad(bearing);
   const lat1 = toRad(start.lat);
   const lng1 = toRad(start.lng);
 
   const lat2 = Math.asin(
-    Math.sin(lat1) * Math.cos(angular) +
-      Math.cos(lat1) * Math.sin(angular) * Math.cos(br),
+    Math.sin(lat1) * Math.cos(angular) + Math.cos(lat1) * Math.sin(angular) * Math.cos(br)
   );
   const lng2 =
     lng1 +
     Math.atan2(
       Math.sin(br) * Math.sin(angular) * Math.cos(lat1),
-      Math.cos(angular) - Math.sin(lat1) * Math.sin(lat2),
+      Math.cos(angular) - Math.sin(lat1) * Math.sin(lat2)
     );
 
   return {

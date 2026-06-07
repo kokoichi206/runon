@@ -41,29 +41,26 @@ export function addNode(graph: StreetGraph, id: NodeId, pos: LatLng): void {
 }
 
 /**
- * 有向弧を追加する。重みが未指定なら両端ノード座標から haversine で算出。
+ * 有向弧を追加する。重み（メートル）は呼び出し側が両端ノードの座標から算出して渡す。
+ * addArc 内部でノード座標を参照しないことで「ノード未登録」状態を型・契約から排除する
+ * （weightM を必須にしたため、欠損ノードに対する実行時 throw が不要になった）。
  * 既に同じ (from,to) があれば、より短い重みで上書きする（多重辺の正規化）。
  */
-export function addArc(
-  graph: StreetGraph,
-  from: NodeId,
-  to: NodeId,
-  weightM?: number,
-): void {
-  const a = graph.nodes.get(from);
-  const b = graph.nodes.get(to);
-  if (a === undefined || b === undefined) {
-    throw new Error(`addArc: missing node ${from} or ${to}`);
-  }
+export function addArc(graph: StreetGraph, from: NodeId, to: NodeId, weightM: number): void {
   if (from === to) return;
-  const w = weightM ?? haversineMeters(a, b);
-  const list = graph.adjacency.get(from)!;
+  // from は addNode 済みが前提。型上の undefined を排除するため隣接リストを遅延生成する
+  // （多重マップのコンテナ初期化であり、データの握りつぶしではない）。
+  let list = graph.adjacency.get(from);
+  if (list === undefined) {
+    list = [];
+    graph.adjacency.set(from, list);
+  }
   const existing = list.find((arc) => arc.to === to);
   if (existing) {
-    if (w < existing.weightM) existing.weightM = w;
+    if (weightM < existing.weightM) existing.weightM = weightM;
     return;
   }
-  list.push({ to, weightM: w, edgeKey: undirectedEdgeKey(from, to) });
+  list.push({ to, weightM, edgeKey: undirectedEdgeKey(from, to) });
 }
 
 export function neighbors(graph: StreetGraph, id: NodeId): Arc[] {
@@ -80,11 +77,7 @@ export function edgeCount(graph: StreetGraph): number {
  * 指定座標に最も近いノード（線形走査）。グラフは局所的で小さいため十分高速。
  * allowed を渡すとその集合内のノードのみを対象にする（例: 最大連結成分への再スナップ）。
  */
-export function nearestNode(
-  graph: StreetGraph,
-  pos: LatLng,
-  allowed?: Set<NodeId>,
-): NodeId | null {
+export function nearestNode(graph: StreetGraph, pos: LatLng, allowed?: Set<NodeId>): NodeId | null {
   let best: NodeId | null = null;
   let bestDist = Infinity;
   for (const [id, p] of graph.nodes) {

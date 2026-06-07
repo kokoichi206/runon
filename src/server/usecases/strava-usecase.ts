@@ -1,14 +1,11 @@
-import {
-  stravaRepository,
-  type StravaTokens,
-} from "@/server/repositories/strava-repository";
+import { stravaRepository, type StravaTokens } from "@/server/repositories/strava-repository";
 import { isStravaConfigured } from "@/shared/env/server-env";
 import { appError, type AppError } from "@/shared/errors";
 import { err, ok, type Result } from "@/shared/result";
 import type { Activity } from "@/shared/types/training";
 
 const NOT_CONFIGURED = appError.config(
-  "Strava が未設定です（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET を設定してください）。",
+  "Strava が未設定です（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET を設定してください）。"
 );
 
 /** Strava 連携のビジネスロジック。設定チェックと repository の呼び出しを束ねる。 */
@@ -35,7 +32,7 @@ export const stravaUsecase = {
    * 新しい refresh_token も併せて返し、route 側で Cookie を更新する。
    */
   async listActivities(
-    refreshToken: string,
+    refreshToken: string
   ): Promise<Result<{ activities: Activity[]; refreshToken: string }, AppError>> {
     if (!isStravaConfigured()) return err(NOT_CONFIGURED);
     const tokens = await stravaRepository.refreshTokens(refreshToken);

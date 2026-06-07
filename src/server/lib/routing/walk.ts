@@ -20,7 +20,7 @@ export interface WalkMetrics {
 export function evaluateWalk(
   graph: StreetGraph,
   walk: NodeId[],
-  targetMeters: number,
+  targetMeters: number
 ): WalkMetrics {
   const lengthMeters = walkLengthMeters(graph, walk);
   const lengthError = Math.abs(targetMeters - lengthMeters);
@@ -54,7 +54,7 @@ export function evaluateWalk(
  * ネストした行き止まり (A,B,C,B,A) も反復で除去できる。閉路性を保つ。
  */
 export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
-  let current = walk.slice();
+  const current = walk.slice();
   for (;;) {
     let removedAt = -1;
     for (let i = 1; i + 1 < current.length; i++) {
@@ -76,7 +76,6 @@ export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
 /** a が b をパレート支配するか（(f1,f2) で全て以下かつどこかで真に小さい）。 */
 export function dominates(a: WalkMetrics, b: WalkMetrics): boolean {
   const le = a.lengthError <= b.lengthError && a.overlapPercent <= b.overlapPercent;
-  const strict =
-    a.lengthError < b.lengthError || a.overlapPercent < b.overlapPercent;
+  const strict = a.lengthError < b.lengthError || a.overlapPercent < b.overlapPercent;
   return le && strict;
 }

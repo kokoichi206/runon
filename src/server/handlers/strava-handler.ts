@@ -15,7 +15,7 @@ export function authorizeUrlHandler(redirectUri: string): Result<string, AppErro
 /** コールバック。認可コード/エラーパラメータを検証し、トークン交換へ進む。 */
 export async function connectHandler(
   code: string | null,
-  errorParam: string | null,
+  errorParam: string | null
 ): Promise<Result<StravaTokens, AppError>> {
   if (errorParam) return err(appError.unauthorized("Strava 連携がキャンセルされました。"));
   if (!code) return err(appError.validation("認可コードがありません。"));
@@ -24,7 +24,7 @@ export async function connectHandler(
 
 /** 直近の活動を取得。refresh_token 未保持なら未連携として扱う。 */
 export async function listActivitiesHandler(
-  refreshToken: string | undefined,
+  refreshToken: string | undefined
 ): Promise<Result<{ activities: Activity[]; refreshToken: string }, AppError>> {
   if (!refreshToken) return err(appError.unauthorized("Strava 未連携です。"));
   return stravaUsecase.listActivities(refreshToken);

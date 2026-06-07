@@ -1,4 +1,4 @@
-import { isoToYmdLocal, parseYmd } from "@/server/lib/training/date";
+import { isoToYmdLocal, parseYmd } from "@/shared/training/date";
 import type { Activity } from "@/shared/types/training";
 
 /**
@@ -9,8 +9,7 @@ import type { Activity } from "@/shared/types/training";
  */
 
 // vo2 = -4.60 + 0.182258 v + 0.000104 v^2   (v: m/min)
-const vo2FromVelocity = (v: number): number =>
-  -4.6 + 0.182258 * v + 0.000104 * v * v;
+const vo2FromVelocity = (v: number): number => -4.6 + 0.182258 * v + 0.000104 * v * v;
 
 // 上式を v について解く（正の根）。
 const velocityFromVo2 = (vo2: number): number => {
@@ -22,9 +21,7 @@ const velocityFromVo2 = (vo2: number): number => {
 
 // レース時間 t(分) における %VO2max（持続率）。
 const pctMaxForMinutes = (tMin: number): number =>
-  0.8 +
-  0.1894393 * Math.exp(-0.012778 * tMin) +
-  0.2989558 * Math.exp(-0.1932605 * tMin);
+  0.8 + 0.1894393 * Math.exp(-0.012778 * tMin) + 0.2989558 * Math.exp(-0.1932605 * tMin);
 
 /** 実績(距離km, 時間sec)から VDOT を推定。 */
 export function vdotFromPerformance(distanceKm: number, timeSec: number): number {
@@ -81,12 +78,10 @@ export function trainingPaces(vdot: number): TrainingPaces {
 export function estimateCurrentVdot(
   activities: Activity[],
   nowMs: number,
-  maxHr: number | null = null,
+  maxHr: number | null = null
 ): number | null {
   const base = activities.filter((a) => a.distanceKm >= 2 && a.durationSec > 0);
-  const recent = base.filter(
-    (a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= 56 * 86_400_000,
-  );
+  const recent = base.filter((a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= 56 * 86_400_000);
   let pool = recent.length > 0 ? recent : base;
   // 最大心拍が分かるなら、本当に追い込んだ走(avgHr ≥ 80%HRmax)に絞って
   // 過小/過大評価を減らす。該当が無ければ全体にフォールバック。
@@ -128,7 +123,7 @@ export function buildProgression(
   currentVdot: number | null,
   goalTimeSec: number,
   raceKm: number,
-  weeks: number,
+  weeks: number
 ): ProgressionSummary {
   const goalVdot = vdotFromPerformance(raceKm, goalTimeSec);
   const goalPaces = trainingPaces(goalVdot);

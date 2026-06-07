@@ -7,10 +7,7 @@ import {
   type StreetGraph,
 } from "@/server/lib/routing/graph";
 import { computeReachable } from "@/server/lib/routing/isochrone";
-import {
-  paretoLocalSearch,
-  type Solution,
-} from "@/server/lib/routing/pareto-local-search";
+import { paretoLocalSearch, type Solution } from "@/server/lib/routing/pareto-local-search";
 import {
   generatePolygons,
   refineRoute,
@@ -38,7 +35,7 @@ export interface ComputeDeps {
   fetchNetwork?: (
     center: LatLng,
     radiusM: number,
-    profile: RoundTripRequest["profile"],
+    profile: RoundTripRequest["profile"]
   ) => Promise<OverpassFetchResult>;
   overpassEndpoint?: string;
   userAgent?: string;
@@ -61,12 +58,11 @@ function fetchRadiusMeters(targetMeters: number): number {
   return Math.min(15_000, Math.round(targetMeters * 0.6 + 200));
 }
 
-const score = (m: WalkMetrics, k: number): number =>
-  m.lengthError / k + m.overlapPercent / 100;
+const score = (m: WalkMetrics, k: number): number => m.lengthError / k + m.overlapPercent / 100;
 
 export async function computeRoundTrips(
   req: RoundTripRequest,
-  deps: ComputeDeps = {},
+  deps: ComputeDeps = {}
 ): Promise<Result<RoundTripResult, AppError>> {
   const computeStart = Date.now();
   // 全体のウォールクロック上限。超過したら以降の探索を打ち切り、その時点のベスト候補を返す
@@ -91,8 +87,8 @@ export async function computeRoundTrips(
   if (ways.length === 0) {
     return err(
       appError.validation(
-        "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。",
-      ),
+        "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。"
+      )
     );
   }
 
@@ -101,8 +97,8 @@ export async function computeRoundTrips(
   if (startNode === null) {
     return err(
       appError.validation(
-        "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。",
-      ),
+        "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。"
+      )
     );
   }
   let startPos = graph.nodes.get(startNode)!;
@@ -130,8 +126,8 @@ export async function computeRoundTrips(
   if (reachable.dist.size < 5) {
     return err(
       appError.validation(
-        "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。",
-      ),
+        "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。"
+      )
     );
   }
 
@@ -164,7 +160,15 @@ export async function computeRoundTrips(
     req.targetMeters / detour,
     reachable.baseBearingDeg,
     // 長距離は候補(多角形)を 24→12 に削減して Stage1 を軽くする。
-    isLong ? { bearingCount: 6, aspects: [[1, 1], [1.4, 0.7]] } : undefined,
+    isLong
+      ? {
+          bearingCount: 6,
+          aspects: [
+            [1, 1],
+            [1.4, 0.7],
+          ],
+        }
+      : undefined
   );
 
   const stage1: {
@@ -183,7 +187,7 @@ export async function computeRoundTrips(
       reachable,
       5,
       isLong ? 1 : 2, // 長距離は精緻化反復を減らす
-      0.06,
+      0.06
     );
     if (routed) {
       stage1.push({
@@ -197,8 +201,8 @@ export async function computeRoundTrips(
   if (stage1.length === 0) {
     return err(
       appError.validation(
-        "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。",
-      ),
+        "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。"
+      )
     );
   }
 
@@ -252,8 +256,7 @@ export async function computeRoundTrips(
     combined.push({ sol: e.sol, onFront: false });
   }
 
-  const recommendedSig =
-    frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;
+  const recommendedSig = frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;
   const limited = combined.slice(0, 8);
 
   let recommendedId = "";

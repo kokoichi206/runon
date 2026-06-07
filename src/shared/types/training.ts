@@ -24,7 +24,11 @@ export const raceSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   distanceKm: z.number().positive().max(300),
   /** 目標タイム（秒）。任意。設定すると VDOT からペース設計する。 */
-  goalTimeSec: z.number().positive().max(24 * 3600).optional(),
+  goalTimeSec: z
+    .number()
+    .positive()
+    .max(24 * 3600)
+    .optional(),
 });
 export type Race = z.infer<typeof raceSchema>;
 
@@ -38,13 +42,7 @@ export type DayAvailability = z.infer<typeof dayAvailabilitySchema>;
 /** 長さ 7（index=曜日）。 */
 export type WeeklyAvailability = DayAvailability[];
 
-export type WorkoutType =
-  | "rest"
-  | "easy"
-  | "long"
-  | "tempo"
-  | "interval"
-  | "race";
+export type WorkoutType = "rest" | "easy" | "long" | "tempo" | "interval" | "race";
 
 export type TrainingPhase = "base" | "build" | "peak" | "taper" | "race";
 

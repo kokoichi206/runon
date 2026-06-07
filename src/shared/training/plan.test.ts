@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { addDays, diffDays, weekday } from "@/server/lib/training/date";
-import { estimateFitness } from "@/server/lib/training/fitness";
-import { generatePlan, summarizeByWeek } from "@/server/lib/training/plan";
+import { addDays, diffDays, weekday } from "@/shared/training/date";
+import { estimateFitness } from "@/shared/training/fitness";
+import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
 import {
   defaultAvailability,
   type Activity,
@@ -31,9 +31,39 @@ describe("estimateFitness", () => {
 
   it("直近の履歴から週間距離・最長・ペースを推定", () => {
     const acts: Activity[] = [
-      { date: "2026-05-27", type: "ラン", title: "", distanceKm: 6, durationSec: 1800, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
-      { date: "2026-05-24", type: "ラン", title: "", distanceKm: 4, durationSec: 1320, avgPaceSecPerKm: 330, avgHr: 150, maxHr: 165, ascentM: 0 },
-      { date: "2026-05-20", type: "ラン", title: "", distanceKm: 10, durationSec: 3000, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
+      {
+        date: "2026-05-27",
+        type: "ラン",
+        title: "",
+        distanceKm: 6,
+        durationSec: 1800,
+        avgPaceSecPerKm: 300,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
+      {
+        date: "2026-05-24",
+        type: "ラン",
+        title: "",
+        distanceKm: 4,
+        durationSec: 1320,
+        avgPaceSecPerKm: 330,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
+      {
+        date: "2026-05-20",
+        type: "ラン",
+        title: "",
+        distanceKm: 10,
+        durationSec: 3000,
+        avgPaceSecPerKm: 300,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
     ];
     const f = estimateFitness(acts, now);
     expect(f.longestKm).toBe(10);
@@ -57,21 +87,36 @@ const fitness = {
 
 describe("generatePlan", () => {
   it("開始日からレース日まで毎日分を出力", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     expect(plan.length).toBe(diffDays(START, RACE.date) + 1);
     expect(plan[0]!.date).toBe(START);
     expect(plan[plan.length - 1]!.date).toBe(RACE.date);
   });
 
   it("レース日は race で距離=レース距離", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const raceDay = plan.find((p) => p.date === RACE.date)!;
     expect(raceDay.type).toBe("race");
     expect(raceDay.distanceKm).toBe(21.1);
   });
 
   it("ロング走は確保時間最大の曜日(土)のみ・1回以上", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const longs = plan.filter((p) => p.type === "long");
     expect(longs.length).toBeGreaterThan(0);
     for (const l of longs) expect(weekday(l.date)).toBe(6);
@@ -86,7 +131,13 @@ describe("generatePlan", () => {
 
   it("スキップ日は休養になる", () => {
     const skip = "2026-06-06"; // 最初の土曜(ロング走予定)
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability(), skippedDates: [skip] });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+      skippedDates: [skip],
+    });
     const day = plan.find((p) => p.date === skip)!;
     expect(day.type).toBe("rest");
     expect(day.note).toContain("スキップ");
@@ -95,7 +146,7 @@ describe("generatePlan", () => {
   it("確保時間でキャップされる", () => {
     // 火曜(2)を練習日・10分だけにする → 火曜の練習は約10分に制限。
     const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
-      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d,
+      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d
     );
     const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
     const tue = plan.find((p) => weekday(p.date) === 2 && p.type !== "rest")!;
@@ -104,7 +155,12 @@ describe("generatePlan", () => {
   });
 
   it("テーパーで最終週(レース週除く)はピーク週より減る", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const weeks = summarizeByWeek(plan);
     const peak = Math.max(...weeks.map((w) => w.totalKm));
     const taperWeek = weeks[weeks.length - 2]; // レース週の一つ前
@@ -119,9 +175,7 @@ describe("generatePlan", () => {
       availability: defaultAvailability(),
       runsPerWeek: 2,
     });
-    const wk0 = plan.filter(
-      (p) => p.weekIndex === 0 && p.type !== "rest" && p.date !== RACE.date,
-    );
+    const wk0 = plan.filter((p) => p.weekIndex === 0 && p.type !== "rest" && p.date !== RACE.date);
     const wds = new Set(wk0.map((p) => weekday(p.date)));
     expect(wk0.length).toBe(2); // 週2回
     expect(wds.has(6)).toBe(true); // 土(ロング走)は必須
@@ -141,7 +195,12 @@ describe("generatePlan", () => {
   });
 
   it("各週にポイント練習(isKey)が1つだけ立つ", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const byWeek = new Map<number, number>();
     for (const p of plan) if (p.isKey) byWeek.set(p.weekIndex, (byWeek.get(p.weekIndex) ?? 0) + 1);
     const weeksWithRun = new Set(plan.filter((p) => p.type !== "rest").map((p) => p.weekIndex));
@@ -153,7 +212,12 @@ describe("generatePlan", () => {
 
   it("目標タイム設定時は VDOT ゾーンでペースが付く", () => {
     const raceWithGoal: Race = { ...RACE, goalTimeSec: 110 * 60 }; // ハーフ 1:50
-    const plan = generatePlan({ startDate: START, race: raceWithGoal, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: raceWithGoal,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const raceDay = plan.find((p) => p.type === "race")!;
     // レース当日のペース ≈ 目標ペース(110*60/21.1 ≈ 313 s/km)
     expect(Math.abs((raceDay.paceSecPerKm ?? 0) - Math.round((110 * 60) / 21.1))).toBeLessThan(3);
@@ -164,12 +228,22 @@ describe("generatePlan", () => {
   });
 
   it("レースが過去なら空", () => {
-    const plan = generatePlan({ startDate: "2026-09-01", race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: "2026-09-01",
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     expect(plan).toEqual([]);
   });
 
   it("非キャップのイージー走は 距離×ペース と整合", () => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: defaultAvailability(),
+    });
     const easy = plan.find((p) => p.type === "easy" && !p.cappedByTime)!;
     expect(easy.estMinutes).toBe(Math.round((easy.distanceKm * fitness.easyPaceSecPerKm) / 60));
   });

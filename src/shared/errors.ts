@@ -19,9 +19,17 @@ export interface AppError {
 }
 
 export const appError = {
-  validation: (message: string, cause?: unknown): AppError => ({ type: "validation", message, cause }),
+  validation: (message: string, cause?: unknown): AppError => ({
+    type: "validation",
+    message,
+    cause,
+  }),
   config: (message: string, cause?: unknown): AppError => ({ type: "config", message, cause }),
-  unauthorized: (message: string, cause?: unknown): AppError => ({ type: "unauthorized", message, cause }),
+  unauthorized: (message: string, cause?: unknown): AppError => ({
+    type: "unauthorized",
+    message,
+    cause,
+  }),
   notFound: (message: string, cause?: unknown): AppError => ({ type: "not_found", message, cause }),
   upstream: (message: string, cause?: unknown): AppError => ({ type: "upstream", message, cause }),
   internal: (message: string, cause?: unknown): AppError => ({ type: "internal", message, cause }),

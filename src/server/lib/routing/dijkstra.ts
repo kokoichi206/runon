@@ -77,7 +77,7 @@ const directedKey = (from: NodeId, to: NodeId): string => `${from}->${to}`;
 export function dijkstra(
   graph: StreetGraph,
   source: NodeId,
-  opts: DijkstraOptions = {},
+  opts: DijkstraOptions = {}
 ): DijkstraResult {
   const dist = new Map<NodeId, number>();
   const prev = new Map<NodeId, NodeId>();
@@ -107,9 +107,7 @@ export function dijkstra(
       const realNext = baseDist + arc.weightM;
       if (realNext > maxD) continue;
       const stepCost =
-        penalized && penalized.has(arc.edgeKey)
-          ? arc.weightM * penalty
-          : arc.weightM;
+        penalized && penalized.has(arc.edgeKey) ? arc.weightM * penalty : arc.weightM;
       const nextCost = (cost.get(u) ?? Infinity) + stepCost;
       if (nextCost < (cost.get(arc.to) ?? Infinity)) {
         cost.set(arc.to, nextCost);
@@ -127,7 +125,7 @@ export function dijkstra(
 export function reconstructPath(
   prev: Map<NodeId, NodeId>,
   source: NodeId,
-  target: NodeId,
+  target: NodeId
 ): NodeId[] | null {
   if (source === target) return [source];
   const path: NodeId[] = [];
@@ -159,7 +157,7 @@ export function shortestPath(
   graph: StreetGraph,
   source: NodeId,
   target: NodeId,
-  opts: Omit<DijkstraOptions, "target" | "maxDistanceM"> = {},
+  opts: Omit<DijkstraOptions, "target" | "maxDistanceM"> = {}
 ): ShortestPath | null {
   const { prev } = dijkstra(graph, source, { ...opts, target });
   const path = reconstructPath(prev, source, target);

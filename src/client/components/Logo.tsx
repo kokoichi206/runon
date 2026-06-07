@@ -19,7 +19,14 @@ export function LogoMark({
       className={className}
     >
       <defs>
-        <linearGradient id="runon-ember" x1="4" y1="28" x2="28" y2="4" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="runon-ember"
+          x1="4"
+          y1="28"
+          x2="28"
+          y2="4"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="var(--accent)" />
           <stop offset="1" stopColor="var(--accent-2)" />
         </linearGradient>

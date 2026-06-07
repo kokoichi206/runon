@@ -1,9 +1,5 @@
 import { shortestPath } from "@/server/lib/routing/dijkstra";
-import {
-  destinationPoint,
-  haversineMeters,
-  type LatLng,
-} from "@/server/lib/routing/geo";
+import { destinationPoint, haversineMeters, type LatLng } from "@/server/lib/routing/geo";
 import {
   nearestNode,
   undirectedEdgeKey,
@@ -53,7 +49,7 @@ export function buildPolygon(
   targetMeters: number,
   bearing: number,
   n: number,
-  aspect: [number, number],
+  aspect: [number, number]
 ): PolygonSpec {
   const [alongRaw, acrossRaw] = aspect;
   // φ_0 = π としたとき頂点0が楕円の「後端」= start に来る。
@@ -107,7 +103,7 @@ export function generatePolygons(
   start: LatLng,
   targetMeters: number,
   baseBearingDeg: number,
-  options: GenerateOptions = {},
+  options: GenerateOptions = {}
 ): PolygonSpec[] {
   const opts = { ...DEFAULTS, ...options };
   const polygons: PolygonSpec[] = [];
@@ -143,7 +139,7 @@ export function routePolygon(
   polygon: PolygonSpec,
   targetMeters: number,
   reachable: Reachable,
-  penaltyFactor: number,
+  penaltyFactor: number
 ): RoutedCandidate | null {
   // 頂点をノードへスナップ（vertices[0]=start は startNode 固定）。
   const snapped: NodeId[] = [startNode];
@@ -189,10 +185,7 @@ export function routePolygon(
 
   const metrics = evaluateWalk(graph, trimmed, targetMeters);
   // 極端に短い/長い退化解（目標の 30%未満 or 300%超）は棄却。
-  if (
-    metrics.lengthMeters < targetMeters * 0.3 ||
-    metrics.lengthMeters > targetMeters * 3
-  ) {
+  if (metrics.lengthMeters < targetMeters * 0.3 || metrics.lengthMeters > targetMeters * 3) {
     return null;
   }
 
@@ -228,7 +221,7 @@ export function refineRoute(
   reachable: Reachable,
   penaltyFactor: number,
   maxIters = 2,
-  tolerance = 0.06,
+  tolerance = 0.06
 ): RoutedCandidate | null {
   let best = routePolygon(graph, startNode, polygon, targetMeters, reachable, penaltyFactor);
   for (let i = 0; i < maxIters && best; i++) {
@@ -239,13 +232,17 @@ export function refineRoute(
     const n = best.polygon.vertices.length;
     const { along, across } = best.polygon.aspect;
     const candidate = buildPolygon(start, newPerim, best.polygon.bearingDeg, n, [along, across]);
-    const routed = routePolygon(graph, startNode, candidate, targetMeters, reachable, penaltyFactor);
+    const routed = routePolygon(
+      graph,
+      startNode,
+      candidate,
+      targetMeters,
+      reachable,
+      penaltyFactor
+    );
     if (!routed) break;
     // 改善した場合のみ採用。
-    if (
-      Math.abs(routed.metrics.lengthMeters - targetMeters) <
-      Math.abs(len - targetMeters)
-    ) {
+    if (Math.abs(routed.metrics.lengthMeters - targetMeters) < Math.abs(len - targetMeters)) {
       best = routed;
     } else {
       break;
@@ -259,7 +256,7 @@ export function snapStart(
   graph: StreetGraph,
   start: LatLng,
   maxSnapMeters = 500,
-  allowed?: Set<NodeId>,
+  allowed?: Set<NodeId>
 ): NodeId | null {
   const node = nearestNode(graph, start, allowed);
   if (node === null) return null;

@@ -12,8 +12,7 @@ const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)";
 
 export function resolveTheme(mode: ThemeMode): ResolvedTheme {
   if (mode === "system") {
-    return typeof window !== "undefined" &&
-      window.matchMedia(SYSTEM_DARK_QUERY).matches
+    return typeof window !== "undefined" && window.matchMedia(SYSTEM_DARK_QUERY).matches
       ? "dark"
       : "light";
   }
@@ -32,9 +31,7 @@ const THEME_BG: Record<ResolvedTheme, string> = {
  * 実行時に専用 meta を head 末尾へ挿入して上書きする（最後に適用される meta が勝つ）。
  */
 function syncThemeColorMeta(resolved: ResolvedTheme): void {
-  let meta = document.head.querySelector<HTMLMetaElement>(
-    'meta[name="theme-color"][data-runon]',
-  );
+  let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"][data-runon]');
   if (!meta) {
     meta = document.createElement("meta");
     meta.setAttribute("name", "theme-color");
@@ -78,7 +75,7 @@ export function storeMode(mode: ThemeMode): void {
  * React ハイドレーション前に data-theme を確定させる。STORAGE_KEY を共有するため文字列で持つ。
  */
 export const THEME_INIT_SCRIPT = `(function(){try{var k=${JSON.stringify(
-  THEME_STORAGE_KEY,
+  THEME_STORAGE_KEY
 )};var m=localStorage.getItem(k);if(m!=="light"&&m!=="dark"&&m!=="system")m="system";var d=m==="dark"||(m==="system"&&matchMedia(${JSON.stringify(
-  SYSTEM_DARK_QUERY,
+  SYSTEM_DARK_QUERY
 )}).matches);var e=document.documentElement;e.dataset.theme=d?"dark":"light";e.dataset.themeMode=m;}catch(e){document.documentElement.dataset.theme="dark";}})();`;
