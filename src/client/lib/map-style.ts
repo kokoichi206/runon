@@ -32,11 +32,30 @@ export function mapStyle(theme: ResolvedTheme): StyleSpecification {
   };
 }
 
-/** ルート/マーカーの描画色。MapLibre の paint は CSS 変数を読めないため JS 側で持つ。 */
+/**
+ * ルート/マーカーの描画色。MapLibre の paint は CSS 変数を読めないため JS 側で持つ。
+ * - palette: 比較モードで候補を識別する色（候補ごとに割り当て、地図とパネルで一致させる）
+ * - ghost: フォーカスモードで非選択ルートを薄く描く色
+ * 各テーマのタイル（dark/light）上でコントラストが出るよう色を分けている。
+ */
 export const MAP_COLORS: Record<
   ResolvedTheme,
-  { routeSelected: string; routeAlt: string; marker: string }
+  { marker: string; ghost: string; palette: string[] }
 > = {
-  dark: { routeSelected: "#ff5a1f", routeAlt: "#ffb020", marker: "#ff5a1f" },
-  light: { routeSelected: "#d9480f", routeAlt: "#b5740a", marker: "#d9480f" },
+  dark: {
+    marker: "#ff5a1f",
+    ghost: "#6b7785",
+    palette: ["#ff5a1f", "#22d3ee", "#a78bfa", "#34d399", "#ffb020", "#f472b6"],
+  },
+  light: {
+    marker: "#d9480f",
+    ghost: "#9b9186",
+    palette: ["#d9480f", "#0e7490", "#7c3aed", "#047857", "#b5740a", "#be185d"],
+  },
+};
+
+/** 候補インデックスに対応するルート色（地図とパネルのスウォッチで共有）。 */
+export const routeColor = (theme: ResolvedTheme, index: number): string => {
+  const p = MAP_COLORS[theme].palette;
+  return p[index % p.length]!;
 };

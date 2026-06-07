@@ -5,7 +5,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useResolvedTheme } from "@/client/hooks/useResolvedTheme";
 import { useRoundTrip } from "@/client/hooks/useRoundTrip";
+import { routeColor } from "@/client/lib/map-style";
 import type { LngLat } from "@/shared/types/round-trip";
+
+/** 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。 */
+type RouteView = "compare" | "focus";
 
 const MapView = dynamic(() => import("@/client/components/MapView"), {
   ssr: false,
@@ -160,6 +164,7 @@ export function RoundTripPlanner(): React.JSX.Element {
   const [lng, setLng] = useState(139.767);
   const [targetKm, setTargetKm] = useState(3);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [view, setView] = useState<RouteView>("compare");
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [geoNote, setGeoNote] = useState<string | null>(null);
@@ -238,7 +243,11 @@ export function RoundTripPlanner(): React.JSX.Element {
   const sheetTranslate = isDesktop ? null : (dragY ?? (sheetOpen ? 0 : closedOffset));
 
   useEffect(() => {
-    if (state.status === "success") setSelectedId(state.result.recommendedId);
+    if (state.status === "success") {
+      setSelectedId(state.result.recommendedId);
+      // まず全候補を見比べられる「比較」から始める。
+      setView("compare");
+    }
   }, [state]);
 
   // 保存済みの自宅を localStorage から読み込む（クライアントのみ）。
@@ -380,10 +389,20 @@ export function RoundTripPlanner(): React.JSX.Element {
           start={mapStart}
           candidates={candidates}
           selectedId={selectedId}
+          view={view}
           theme={theme}
           onPick={(pLng, pLat) => {
             setLng(Number(pLng.toFixed(6)));
             setLat(Number(pLat.toFixed(6)));
+          }}
+          onSelectRoute={(id) => {
+            // 選択中のループを再タップ → 比較へ戻る。
+            if (view === "focus" && id === selectedId) {
+              setView("compare");
+            } else {
+              setSelectedId(id);
+              setView("focus");
+            }
           }}
         />
       </main>
@@ -586,14 +605,52 @@ export function RoundTripPlanner(): React.JSX.Element {
               エッジ {result.stats.graphEdges} / 計算 {result.stats.computeMs}ms
               （Overpass {result.stats.overpassMs}ms）
             </div>
+
+            {/* 比較（全候補を色分け）↔ フォーカス（選択した1本に集中）の切替。 */}
+            <div
+              className="flex gap-1 rounded-lg bg-surface-2 p-0.5 text-xs font-medium"
+              role="group"
+              aria-label="候補の表示モード"
+            >
+              <button
+                type="button"
+                onClick={() => setView("compare")}
+                aria-pressed={view === "compare"}
+                className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
+                  view === "compare" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
+                }`}
+              >
+                比較（全{candidates.length}本）
+              </button>
+              <button
+                type="button"
+                onClick={() => setView("focus")}
+                aria-pressed={view === "focus"}
+                className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
+                  view === "focus" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
+                }`}
+              >
+                選択中の1本
+              </button>
+            </div>
+
             <ul className="flex flex-col gap-1.5">
               {candidates.map((c, i) => {
-                const isSel = c.id === selectedId;
+                // 比較中はどのカードも選択表示にしない（フォーカス中のみ強調）。
+                const isSel = view === "focus" && c.id === selectedId;
                 return (
                   <li key={c.id}>
                     <button
                       type="button"
-                      onClick={() => setSelectedId(c.id)}
+                      onClick={() => {
+                        // フォーカス中に選択中カードを再タップ → 比較へ戻る。
+                        if (view === "focus" && c.id === selectedId) {
+                          setView("compare");
+                        } else {
+                          setSelectedId(c.id);
+                          setView("focus");
+                        }
+                      }}
                       className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
                         isSel
                           ? "border-accent bg-accent-soft"
@@ -601,8 +658,14 @@ export function RoundTripPlanner(): React.JSX.Element {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold text-fg">
-                          #{i + 1}{" "}
+                        <span className="flex items-center gap-1.5 font-semibold text-fg">
+                          {/* 地図上のルート色と対応するスウォッチ。 */}
+                          <span
+                            aria-hidden="true"
+                            className="inline-block size-2.5 shrink-0 rounded-full"
+                            style={{ backgroundColor: routeColor(theme, i) }}
+                          />
+                          #{i + 1}
                           {c.id === result.recommendedId && (
                             <span className="ml-1 rounded bg-success-soft px-1 text-[10px] text-success-fg">
                               推奨
@@ -629,36 +692,52 @@ export function RoundTripPlanner(): React.JSX.Element {
               })}
             </ul>
             {(() => {
-              const sel = candidates.find((c) => c.id === selectedId) ?? candidates[0];
-              if (!sel) return null;
+              // 書き出しは「1本を選択中（フォーカス）」のときだけ有効。
+              // レイアウトは固定し、要素の有効/無効だけ切り替える（選択ごとに文章が増減しないように）。
+              const focused =
+                view === "focus"
+                  ? (candidates.find((c) => c.id === selectedId) ?? null)
+                  : null;
+              const pickHint = "ルートを1つ選択してください";
               return (
                 <>
                   <button
                     type="button"
-                    onClick={() =>
-                      void shareGpx(
-                        sel.path,
-                        `round-trip-${(sel.lengthMeters / 1000).toFixed(1)}km`,
-                      )
-                    }
-                    className="min-h-11 rounded-lg border border-success/40 bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-fg transition-colors hover:border-success"
+                    disabled={!focused}
+                    title={focused ? undefined : pickHint}
+                    onClick={() => {
+                      if (focused) {
+                        void shareGpx(
+                          focused.path,
+                          `round-trip-${(focused.lengthMeters / 1000).toFixed(1)}km`,
+                        );
+                      }
+                    }}
+                    className="min-h-11 rounded-lg border border-success/40 bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-fg transition-colors hover:border-success disabled:border-border disabled:bg-surface-2 disabled:text-faint disabled:opacity-60 disabled:hover:border-border"
                   >
                     GPX をスマホに送る / 保存
                   </button>
-                  <p className="text-[10px] text-muted">
-                    スマホでこのボタン → 共有シートから <b>OsmAnd / Komoot / Garmin Connect</b> に渡すと、
-                    走りながら音声＋ライン表示で正確にナビできます（PC では GPX が保存されます）。
-                  </p>
-                  <a
-                    href={googleMapsDirUrl(result.start, sel.path)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted hover:bg-surface-2 hover:text-fg"
-                  >
-                    Google マップで開く（近似・参考）
-                  </a>
+                  {focused ? (
+                    <a
+                      href={googleMapsDirUrl(result.start, focused.path)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                    >
+                      Google マップで開く（近似・参考）
+                    </a>
+                  ) : (
+                    <span
+                      aria-disabled="true"
+                      title={pickHint}
+                      className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
+                    >
+                      Google マップで開く（近似・参考）
+                    </span>
+                  )}
+                  {/* 文言は選択状態によらず固定（チラつき防止）。 */}
                   <p className="text-[10px] text-faint">
-                    ※ Google マップは経由地点(最大約9点)を再探索するため近似です。正確な経路は上の GPX を使ってください。
+                    GPX をスマホの共有シートから <b>OsmAnd / Komoot / Garmin Connect</b> に渡すと音声＋ライン表示で正確にナビできます（Google マップは経由地を再探索する近似）。
                   </p>
                 </>
               );
