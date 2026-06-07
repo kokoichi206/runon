@@ -11,6 +11,9 @@ import type { LngLat } from "@/shared/types/round-trip";
 /** 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。 */
 type RouteView = "compare" | "focus";
 
+/** ボトムシートの段階。peek=つまみのみ / mid=半分 / full=ほぼ全面。 */
+type SheetSnap = "peek" | "mid" | "full";
+
 const MapView = dynamic(() => import("@/client/components/MapView"), {
   ssr: false,
   loading: () => (
@@ -173,8 +176,8 @@ export function RoundTripPlanner(): React.JSX.Element {
 
   const { state, run } = useRoundTrip();
   const theme = useResolvedTheme();
-  // モバイルのボトムシート開閉。初期は開（設定が見える状態）。
-  const [sheetOpen, setSheetOpen] = useState(true);
+  // モバイルのボトムシート段階。初期は full（設定が見える状態）。
+  const [snap, setSnap] = useState<SheetSnap>("full");
   // md 以上はサイドバー（常時表示）。シートの折りたたみ判定（inert 適用）に使う。
   const [isDesktop, setIsDesktop] = useState(false);
 
@@ -186,12 +189,12 @@ export function RoundTripPlanner(): React.JSX.Element {
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  // モバイルのドラッグ開閉。シートを translateY で動かし、ハンドルを掴んで上下にドラッグできる。
+  // ドラッグでシートを translateY 移動し、離すと最寄りの段（peek/mid/full）にスナップする。
   const sheetRef = useRef<HTMLElement | null>(null);
   const handleRef = useRef<HTMLButtonElement | null>(null);
-  // 閉じ位置 = 全高からハンドル分を引いた量（ハンドルだけ残して下へ隠す）。実測で算出。
+  // peek 位置 = 全高からハンドル分を引いた量（ハンドルだけ残して下へ隠す）。実測で算出。
   const [closedOffset, setClosedOffset] = useState(0);
-  // ドラッグ中の translateY（px）。null のときは sheetOpen に従う。
+  // ドラッグ中の translateY（px）。null のときは snap に従う。
   const [dragY, setDragY] = useState<number | null>(null);
   const dragStart = useRef<{ y: number; base: number } | null>(null);
   const didDrag = useRef(false);
@@ -208,10 +211,19 @@ export function RoundTripPlanner(): React.JSX.Element {
     return () => ro.disconnect();
   }, []);
 
+  // 各段の translateY。full=0（最も開く）/ peek=closedOffset（最も閉じる）/ mid=その間。
+  const MID_RATIO = 0.45;
+  const snapOffset = (s: SheetSnap): number =>
+    s === "full" ? 0 : s === "peek" ? closedOffset : Math.round(closedOffset * MID_RATIO);
+  const nearestSnap = (offset: number): SheetSnap =>
+    (["full", "mid", "peek"] as SheetSnap[]).reduce((best, s) =>
+      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best,
+    );
+
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     if (isDesktop) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragStart.current = { y: e.clientY, base: sheetOpen ? 0 : closedOffset };
+    dragStart.current = { y: e.clientY, base: snapOffset(snap) };
     didDrag.current = false;
   };
   const onHandlePointerMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
@@ -225,22 +237,21 @@ export function RoundTripPlanner(): React.JSX.Element {
     dragStart.current = null;
     if (start && didDrag.current) {
       const at = Math.min(closedOffset, Math.max(0, start.base + (e.clientY - start.y)));
-      // 半分を境に最も近い状態へスナップ。
-      setSheetOpen(at < closedOffset / 2);
+      setSnap(nearestSnap(at)); // 離した位置に最も近い段へ
     }
     setDragY(null);
   };
-  // タップ（ドラッグなし）はトグル。キーボード操作もこの click 経路で効く。
+  // タップ（ドラッグなし）は full ↔ peek を行き来（mid へはドラッグで）。
   const onHandleClick = (): void => {
     if (didDrag.current) {
       didDrag.current = false;
       return;
     }
-    setSheetOpen((v) => !v);
+    setSnap((s) => (s === "full" ? "peek" : "full"));
   };
 
   // シートの translateY。デスクトップ（静的サイドバー）では変形しない。
-  const sheetTranslate = isDesktop ? null : (dragY ?? (sheetOpen ? 0 : closedOffset));
+  const sheetTranslate = isDesktop ? null : (dragY ?? snapOffset(snap));
 
   useEffect(() => {
     if (state.status === "success") {
@@ -380,7 +391,8 @@ export function RoundTripPlanner(): React.JSX.Element {
   };
 
   // モバイルで閉じている時だけシート内容を不活性化（フォーカス/SR から除外）。md は常時操作可。
-  const sheetCollapsed = !sheetOpen && !isDesktop;
+  // peek（つまみのみ）のときだけ内容を不活性化。mid/full は操作可。
+  const sheetCollapsed = snap === "peek" && !isDesktop;
 
   return (
     <div className="relative flex h-[calc(100dvh-var(--nav-h))] w-full flex-col overflow-hidden md:flex-row">
@@ -409,6 +421,7 @@ export function RoundTripPlanner(): React.JSX.Element {
 
       <aside
         ref={sheetRef}
+        data-snap={snap}
         className="absolute inset-x-0 bottom-0 z-10 order-2 flex max-h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-[0_-8px_30px_rgb(0_0_0/0.25)] transition-transform duration-300 ease-out will-change-transform motion-reduce:transition-none md:static md:order-1 md:max-h-none md:w-[380px] md:rounded-none md:border-t-0 md:border-r md:shadow-none md:transform-none"
         style={{
           paddingBottom: "env(safe-area-inset-bottom)",
@@ -429,9 +442,9 @@ export function RoundTripPlanner(): React.JSX.Element {
           onPointerUp={onHandlePointerEnd}
           onPointerCancel={onHandlePointerEnd}
           onClick={onHandleClick}
-          aria-expanded={sheetOpen}
+          aria-expanded={snap !== "peek"}
           aria-controls="rt-controls"
-          aria-label={sheetOpen ? "設定パネルを閉じる" : "設定パネルを開く"}
+          aria-label={snap === "peek" ? "設定パネルを開く" : "設定パネルを閉じる"}
           className="flex min-h-9 shrink-0 touch-none items-center justify-center px-4 md:hidden"
         >
           {/* つまみのみ。開閉ラベルはボトムシートの慣習として省略（名前は aria-label で担保）。 */}
