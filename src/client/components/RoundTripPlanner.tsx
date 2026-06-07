@@ -566,13 +566,18 @@ export function RoundTripPlanner(): React.JSX.Element {
             <input
               type="range"
               min={0.5}
-              max={20}
+              max={42}
               step={0.5}
               value={targetKm}
               onChange={(e) => setTargetKm(Number(e.target.value))}
               className="mt-1"
             />
           </label>
+          {targetKm >= 25 && (
+            <p className="-mt-1 text-[11px] text-faint">
+              長距離は計算に時間がかかります（最大 40 秒ほど）。
+            </p>
+          )}
 
           <button
             type="button"
