@@ -107,3 +107,27 @@ export const defaultAvailability = (): WeeklyAvailability =>
     const maxMinutes = wd === 6 ? 120 : isPracticeDay ? 60 : 0;
     return { isPracticeDay, maxMinutes };
   });
+
+/** 推定走力（Fitness）の検証スキーマ。サーバー境界（Server Action）で入力を検証する。 */
+export const fitnessSchema = z.object({
+  weeklyKm: z.number(),
+  longestKm: z.number(),
+  easyPaceSecPerKm: z.number(),
+  currentVdot: z.number().nullable(),
+  maxHrObserved: z.number().nullable(),
+}) satisfies z.ZodType<Fitness>;
+
+/**
+ * トレーニング計画生成リクエスト。Server Action / handler の入口で検証する。
+ * fitness は client 側で算出済みのものを渡す（走力表示と同じ値を使う）。
+ */
+export const trainingPlanRequestSchema = z.object({
+  /** 計画開始日 YYYY-MM-DD（通常は今日）。 */
+  today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  race: raceSchema,
+  fitness: fitnessSchema,
+  availability: z.array(dayAvailabilitySchema).length(7),
+  runsPerWeek: z.number().int().min(1).max(7).optional(),
+  skippedDates: z.array(z.string()).optional(),
+});
+export type TrainingPlanRequest = z.infer<typeof trainingPlanRequestSchema>;

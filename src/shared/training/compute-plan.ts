@@ -1,0 +1,39 @@
+import { buildProgression, type ProgressionSummary } from "@/shared/training/paces";
+import { generatePlan, summarizeByWeek, type WeekSummary } from "@/shared/training/plan";
+import type { PlannedWorkout, TrainingPlanRequest } from "@/shared/types/training";
+
+/**
+ * トレーニング計画生成の出力。日毎メニュー / 週サマリ / 伸ばし方サマリをまとめる。
+ */
+export interface TrainingPlanResult {
+  plan: PlannedWorkout[];
+  weeks: WeekSummary[];
+  /** 目標タイムが設定されている場合のみ算出。 */
+  progression: ProgressionSummary | null;
+}
+
+/**
+ * 計画生成の合成ロジック（純粋）。client（ローカル即時計算）と server（Server Action,
+ * 将来 LLM 等を合成）の双方から再利用する単一エントリ。
+ */
+export function computeTrainingPlan(req: TrainingPlanRequest): TrainingPlanResult {
+  const plan = generatePlan({
+    startDate: req.today,
+    race: req.race,
+    fitness: req.fitness,
+    availability: req.availability,
+    runsPerWeek: req.runsPerWeek,
+    skippedDates: req.skippedDates,
+  });
+  const weeks = summarizeByWeek(plan);
+  const progression =
+    req.race.goalTimeSec !== undefined && weeks.length > 0
+      ? buildProgression(
+          req.fitness.currentVdot,
+          req.race.goalTimeSec,
+          req.race.distanceKm,
+          weeks.length
+        )
+      : null;
+  return { plan, weeks, progression };
+}
