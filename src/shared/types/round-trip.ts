@@ -15,8 +15,9 @@ export type Profile = z.infer<typeof profileSchema>;
 export const roundTripRequestSchema = z.object({
   lat: z.number().min(-90).max(90),
   lng: z.number().min(-180).max(180),
-  // 200m 未満は道路網として意味が薄く、25km 超は公開 Overpass への負荷が大きいため上限を設ける。
-  targetMeters: z.number().min(200).max(25_000),
+  // 200m 未満は道路網として意味が薄く、上限はフルマラソン(42.195km)。
+  // 取得半径は 15km にキャップ済みなので Overpass 負荷は 25km 時と同じ、計算は全体締切で打ち切る。
+  targetMeters: z.number().min(200).max(42_195),
   profile: profileSchema.default("walk"),
 });
 export type RoundTripRequest = z.infer<typeof roundTripRequestSchema>;
