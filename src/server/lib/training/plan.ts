@@ -4,6 +4,7 @@ import { trainingPaces, vdotFromPerformance } from "@/server/lib/training/paces"
 import type {
   PlanInput,
   PlannedWorkout,
+  RecentLoad,
   TrainingPhase,
   WeeklyAvailability,
   WorkoutType,
@@ -11,6 +12,20 @@ import type {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const round1 = (v: number) => Math.round(v * 10) / 10;
+
+/**
+ * 実測負荷(ACWR)に応じた開始ボリュームの乗数。
+ * 急増(>1.5)や急減後(<0.8)は序盤を保守的にする。負荷データが無ければ 1.0（従来挙動と一致）。
+ * ピーク距離やテーパーには影響させず、起点の安全側調整のみに限定する。
+ */
+function startVolumeFactor(recentLoad: RecentLoad | null | undefined): number {
+  if (recentLoad == null) return 1.0;
+  const r = recentLoad.ratio;
+  if (r > 1.5) return 0.8;
+  if (r > 1.3) return 0.9;
+  if (r < 0.8) return 0.9;
+  return 1.0;
+}
 
 /** レース距離からピーク時のロング走距離(km)を決める（区間線形補間＋上限）。 */
 function peakLongFromRace(raceKm: number): number {
@@ -149,7 +164,12 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
   // ピークのロング走: レース距離由来の目標と、現走力(最長走)からの安全上限の小さい方。
   // 現状からの無理な急増（故障リスク）を避けるためのガード。
   const raceLong = peakLongFromRace(race.distanceKm);
-  const startLong = clamp(fitness.longestKm || 3, 3, raceLong);
+  // 起点だけ ACWR で安全側に調整（peakLong/漸増/テーパーは不変＝距離アンカー温存）。
+  const startLong = clamp(
+    (fitness.longestKm || 3) * startVolumeFactor(fitness.recentLoad),
+    3,
+    raceLong,
+  );
   const fitnessCapLong = (fitness.longestKm || 3) * 2 + 2;
   const peakLong = clamp(Math.min(raceLong, fitnessCapLong), startLong + 1, raceLong);
 

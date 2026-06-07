@@ -23,8 +23,14 @@ export async function GET(): Promise<NextResponse> {
     );
   }
 
-  const { activities, refreshToken } = result.value;
-  const res = NextResponse.json({ activities, count: activities.length });
+  const { activities, athlete, detailFetched, detailTruncated, refreshToken } = result.value;
+  const res = NextResponse.json({
+    activities,
+    athlete,
+    count: activities.length,
+    detailFetched,
+    detailTruncated,
+  });
   res.cookies.set(STRAVA_REFRESH_COOKIE, refreshToken, {
     httpOnly: true,
     sameSite: "lax",

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   defaultAvailability,
   type Activity,
+  type AthleteProfile,
   type DayAvailability,
   type Race,
   type WeeklyAvailability,
@@ -14,6 +15,8 @@ const KEY = "flrt:training:v1";
 
 export interface TrainingState {
   activities: Activity[];
+  /** Strava のアスリート情報・長期集計（CSV 取り込みでは null）。 */
+  athleteProfile: AthleteProfile | null;
   races: Race[];
   selectedRaceId: string | null;
   availability: WeeklyAvailability;
@@ -25,6 +28,7 @@ export interface TrainingState {
 
 const initialState = (): TrainingState => ({
   activities: [],
+  athleteProfile: null,
   races: [],
   selectedRaceId: null,
   availability: defaultAvailability(),
@@ -36,6 +40,7 @@ const initialState = (): TrainingState => ({
 export interface TrainingStore extends TrainingState {
   loaded: boolean;
   setActivities: (activities: Activity[]) => void;
+  setAthleteProfile: (profile: AthleteProfile | null) => void;
   addRace: (race: Race) => void;
   removeRace: (id: string) => void;
   selectRace: (id: string | null) => void;
@@ -77,6 +82,10 @@ export function useTrainingStore(): TrainingStore {
 
   const setActivities = useCallback((activities: Activity[]) => {
     setState((s) => ({ ...s, activities }));
+  }, []);
+
+  const setAthleteProfile = useCallback((profile: AthleteProfile | null) => {
+    setState((s) => ({ ...s, athleteProfile: profile }));
   }, []);
 
   const addRace = useCallback((race: Race) => {
@@ -154,6 +163,7 @@ export function useTrainingStore(): TrainingStore {
     ...state,
     loaded,
     setActivities,
+    setAthleteProfile,
     addRace,
     removeRace,
     selectRace,
