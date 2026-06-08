@@ -4,10 +4,14 @@ import { appError, type AppError } from "@/shared/errors";
 import { err, ok, type Result } from "@/shared/result";
 import type { Activity, AthleteProfile } from "@/shared/types/training";
 
-/** listActivities の戻り。activities は best_efforts 畳み込み済み。 */
+/**
+ * listActivities の戻り。activities は best_efforts 畳み込み済み。
+ */
 export interface ListActivitiesResult {
   activities: Activity[];
-  /** アスリート情報・長期集計。取得失敗時は null（活動取得は成功扱いを維持）。 */
+  /**
+   * アスリート情報・長期集計。取得失敗時は null（活動取得は成功扱いを維持）。
+   */
   athlete: AthleteProfile | null;
   detailFetched: number;
   detailTruncated: boolean;
@@ -18,20 +22,28 @@ const NOT_CONFIGURED = appError.config(
   "Strava が未設定です（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET を設定してください）。"
 );
 
-/** Strava 連携のビジネスロジック。設定チェックと repository の呼び出しを束ねる。 */
+/**
+ * Strava 連携のビジネスロジック。設定チェックと repository の呼び出しを束ねる。
+ */
 export const stravaUsecase = {
-  /** 連携が設定済みか（status 表示用）。 */
+  /**
+   * 連携が設定済みか（status 表示用）。
+   */
   isConfigured(): boolean {
     return isStravaConfigured();
   },
 
-  /** 認可画面 URL を返す。未設定なら config エラー。 */
+  /**
+   * 認可画面 URL を返す。未設定なら config エラー。
+   */
   authorizeUrl(redirectUri: string): Result<string, AppError> {
     if (!isStravaConfigured()) return err(NOT_CONFIGURED);
     return ok(stravaRepository.buildAuthorizeUrl(redirectUri));
   },
 
-  /** 認可コードをトークンに交換する。route 側で refresh_token を Cookie 保存する。 */
+  /**
+   * 認可コードをトークンに交換する。route 側で refresh_token を Cookie 保存する。
+   */
   async connect(code: string): Promise<Result<StravaTokens, AppError>> {
     if (!isStravaConfigured()) return err(NOT_CONFIGURED);
     return stravaRepository.exchangeCode(code);

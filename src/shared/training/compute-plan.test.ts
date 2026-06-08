@@ -15,12 +15,14 @@ const fitness: Fitness = {
   maxHrObserved: 185,
 };
 
-/** today から daysAhead 日後の YYYY-MM-DD を作る（固定計算、Date.now 非依存）。 */
-function ymdPlus(base: string, daysAhead: number): string {
+/**
+ * today から daysAhead 日後の YYYY-MM-DD を作る（固定計算、Date.now 非依存）。
+ */
+const ymdPlus = (base: string, daysAhead: number): string => {
   const d = new Date(`${base}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + daysAhead);
   return d.toISOString().slice(0, 10);
-}
+};
 
 const baseReq = (overrides: Partial<TrainingPlanRequest> = {}): TrainingPlanRequest => ({
   today: "2026-01-01",

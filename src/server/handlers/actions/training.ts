@@ -12,8 +12,8 @@ import type { TrainingPlanRequest } from "@/shared/types/training";
  *
  * 注意: "use server" ファイルは async 関数のみ export 可能。
  */
-export async function generateTrainingPlanAction(
+export const generateTrainingPlanAction = async (
   input: TrainingPlanRequest
-): Promise<Result<TrainingPlanResult, AppError>> {
+): Promise<Result<TrainingPlanResult, AppError>> => {
   return trainingPlanHandler(input);
-}
+};

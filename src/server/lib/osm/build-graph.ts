@@ -6,8 +6,10 @@ import type { Profile } from "@/shared/types/round-trip";
 
 type Direction = "both" | "forward" | "reverse";
 
-/** 自転車プロファイルの一方通行解釈。徒歩は常に双方向。 */
-function travelDirection(tags: Record<string, string> | undefined): Direction {
+/**
+ * 自転車プロファイルの一方通行解釈。徒歩は常に双方向。
+ */
+const travelDirection = (tags: Record<string, string> | undefined): Direction => {
   if (!tags) return "both";
   let dir: Direction = "both";
   const ow = tags["oneway"];
@@ -24,13 +26,13 @@ function travelDirection(tags: Record<string, string> | undefined): Direction {
   else if (owb === "yes") dir = "forward";
 
   return dir;
-}
+};
 
 /**
  * Overpass の way 群から有向ストリートグラフを構築する。
  * 連続ノード間にセグメント弧を張り、共有ノード ID が交差点トポロジを与える。
  */
-export function buildGraphFromOverpass(ways: OverpassWay[], profile: Profile): StreetGraph {
+export const buildGraphFromOverpass = (ways: OverpassWay[], profile: Profile): StreetGraph => {
   const graph = createGraph();
 
   for (const way of ways) {
@@ -60,4 +62,4 @@ export function buildGraphFromOverpass(ways: OverpassWay[], profile: Profile): S
   }
 
   return graph;
-}
+};

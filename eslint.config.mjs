@@ -9,7 +9,9 @@ import tseslint from "typescript-eslint";
 
 import customRules from "./eslint-rules/index.js";
 
-/** @type {import("eslint").Linter.Config[]} */
+/**
+ * @type {import("eslint").Linter.Config[]}
+ */
 const config = [
   {
     ignores: [
@@ -69,6 +71,9 @@ const config = [
       // null/undefined を同時に判定する == null / != null は許容し、それ以外は厳格比較。
       eqeqeq: ["error", "always", { null: "ignore" }],
 
+      // 関数宣言ではなく const + アロー関数を強制する。
+      "func-style": ["error", "expression"],
+
       // 環境変数は src/shared/env に集約する。直接参照を禁止し出処を一元化する。
       "no-process-env": "error",
 
@@ -91,6 +96,7 @@ const config = [
       "security/detect-object-injection": "off",
 
       // --- runon 独自ルール（全層共通） ---
+      "custom/no-single-line-block-comment": "error",
       "custom/no-dynamic-env-access": "error",
       "custom/no-error-message-comparison": "error",
       "custom/no-to-locale-string": "error",

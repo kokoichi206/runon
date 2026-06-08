@@ -8,7 +8,9 @@ import type { PlannedWorkout, TrainingPlanRequest } from "@/shared/types/trainin
 export interface TrainingPlanResult {
   plan: PlannedWorkout[];
   weeks: WeekSummary[];
-  /** 目標タイムが設定されている場合のみ算出。 */
+  /**
+   * 目標タイムが設定されている場合のみ算出。
+   */
   progression: ProgressionSummary | null;
 }
 
@@ -16,7 +18,7 @@ export interface TrainingPlanResult {
  * 計画生成の合成ロジック（純粋）。client（ローカル即時計算）と server（Server Action,
  * 将来 LLM 等を合成）の双方から再利用する単一エントリ。
  */
-export function computeTrainingPlan(req: TrainingPlanRequest): TrainingPlanResult {
+export const computeTrainingPlan = (req: TrainingPlanRequest): TrainingPlanResult => {
   const plan = generatePlan({
     startDate: req.today,
     race: req.race,
@@ -36,4 +38,4 @@ export function computeTrainingPlan(req: TrainingPlanRequest): TrainingPlanResul
         )
       : null;
   return { plan, weeks, progression };
-}
+};

@@ -14,7 +14,7 @@ const CARTO_ATTRIBUTION =
 const cartoTiles = (variant: "light_all" | "dark_all"): string[] =>
   ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}.png`);
 
-export function mapStyle(theme: ResolvedTheme): StyleSpecification {
+export const mapStyle = (theme: ResolvedTheme): StyleSpecification => {
   const variant = theme === "dark" ? "dark_all" : "light_all";
   return {
     version: 8,
@@ -28,7 +28,7 @@ export function mapStyle(theme: ResolvedTheme): StyleSpecification {
     },
     layers: [{ id: "carto", type: "raster", source: "carto" }],
   };
-}
+};
 
 /**
  * ルート/マーカーの描画色。MapLibre の paint は CSS 変数を読めないため JS 側で持つ。
@@ -52,7 +52,9 @@ export const MAP_COLORS: Record<
   },
 };
 
-/** 候補インデックスに対応するルート色（地図とパネルのスウォッチで共有）。 */
+/**
+ * 候補インデックスに対応するルート色（地図とパネルのスウォッチで共有）。
+ */
 export const routeColor = (theme: ResolvedTheme, index: number): string => {
   const p = MAP_COLORS[theme].palette;
   return p[index % p.length]!;

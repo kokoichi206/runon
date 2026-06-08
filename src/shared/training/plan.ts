@@ -18,17 +18,19 @@ const round1 = (v: number) => Math.round(v * 10) / 10;
  * 急増(>1.5)や急減後(<0.8)は序盤を保守的にする。負荷データが無ければ 1.0（従来挙動と一致）。
  * ピーク距離やテーパーには影響させず、起点の安全側調整のみに限定する。
  */
-function startVolumeFactor(recentLoad: RecentLoad | null | undefined): number {
+const startVolumeFactor = (recentLoad: RecentLoad | null | undefined): number => {
   if (recentLoad == null) return 1.0;
   const r = recentLoad.ratio;
   if (r > 1.5) return 0.8;
   if (r > 1.3) return 0.9;
   if (r < 0.8) return 0.9;
   return 1.0;
-}
+};
 
-/** レース距離からピーク時のロング走距離(km)を決める（区間線形補間＋上限）。 */
-function peakLongFromRace(raceKm: number): number {
+/**
+ * レース距離からピーク時のロング走距離(km)を決める（区間線形補間＋上限）。
+ */
+const peakLongFromRace = (raceKm: number): number => {
   const anchors: [number, number][] = [
     [5, 10],
     [10, 16],
@@ -48,20 +50,24 @@ function peakLongFromRace(raceKm: number): number {
     }
   }
   return raceKm;
-}
+};
 
 const TAPER_FACTORS = [0.7, 0.55, 0.4];
 
-/** 配列から k 要素の組合せを全列挙（要素数が小さい前提＝曜日は最大7）。 */
-function combinations<T>(arr: T[], k: number): T[][] {
+/**
+ * 配列から k 要素の組合せを全列挙（要素数が小さい前提＝曜日は最大7）。
+ */
+const combinations = <T>(arr: T[], k: number): T[][] => {
   if (k <= 0) return [[]];
   if (k > arr.length) return [];
   const [head, ...rest] = arr;
   return [...combinations(rest, k - 1).map((c) => [head!, ...c]), ...combinations(rest, k)];
-}
+};
 
-/** 選んだ曜日集合の最小「円環ギャップ」（週内の隣接間隔の最小値）。大きいほど均等に分散。 */
-function minCircularGap(weekdays: number[]): number {
+/**
+ * 選んだ曜日集合の最小「円環ギャップ」（週内の隣接間隔の最小値）。大きいほど均等に分散。
+ */
+const minCircularGap = (weekdays: number[]): number => {
   if (weekdays.length <= 1) return 7;
   const s = [...weekdays].sort((a, b) => a - b);
   let min = Infinity;
@@ -70,18 +76,18 @@ function minCircularGap(weekdays: number[]): number {
     min = Math.min(min, next - s[i]!);
   }
   return min;
-}
+};
 
 /**
  * 可能日 available から k 日を選ぶ。ロング走日 longDay は必ず含め、
  * 週内で最も均等に分散する集合を選ぶ（最小ギャップ最大化、同点は確保時間合計が多い方）。
  */
-function selectRunWeekdays(
+const selectRunWeekdays = (
   available: number[],
   longDay: number | null,
   k: number,
   availability: WeeklyAvailability
-): Set<number> {
+): Set<number> => {
   if (available.length === 0 || k <= 0) return new Set();
   if (k >= available.length) return new Set(available);
   const must = longDay !== null && available.includes(longDay) ? longDay : available[0]!;
@@ -102,9 +108,9 @@ function selectRunWeekdays(
     }
   }
   return new Set(best);
-}
+};
 
-function workoutTitle(type: WorkoutType): string {
+const workoutTitle = (type: WorkoutType): string => {
   switch (type) {
     case "rest":
       return "休養";
@@ -119,7 +125,7 @@ function workoutTitle(type: WorkoutType): string {
     case "race":
       return "レース";
   }
-}
+};
 
 /**
  * 目標レースまでのトレーニング計画を生成する純粋関数。
@@ -131,7 +137,7 @@ function workoutTitle(type: WorkoutType): string {
  * - 距離は平均ペースで所要時間へ換算し、その曜日の確保時間 maxMinutes を上限にキャップ。
  * - スキップ日と非練習日は休養。レース週は脚を残すため軽め＋前日休養。
  */
-export function generatePlan(input: PlanInput): PlannedWorkout[] {
+export const generatePlan = (input: PlanInput): PlannedWorkout[] => {
   const { startDate, race, fitness, availability } = input;
   const skipped = new Set(input.skippedDates ?? []);
 
@@ -161,7 +167,7 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
   const startLong = clamp(
     (fitness.longestKm || 3) * startVolumeFactor(fitness.recentLoad),
     3,
-    raceLong,
+    raceLong
   );
   const fitnessCapLong = (fitness.longestKm || 3) * 2 + 2;
   const peakLong = clamp(Math.min(raceLong, fitnessCapLong), startLong + 1, raceLong);
@@ -300,7 +306,7 @@ export function generatePlan(input: PlanInput): PlannedWorkout[] {
 
   markKeyWorkouts(out);
   return out;
-}
+};
 
 // ワークアウト種別の優先度（週の「ポイント練習」を選ぶ基準。高いほど重要）。
 const KEY_PRIORITY: Record<WorkoutType, number> = {
@@ -312,8 +318,10 @@ const KEY_PRIORITY: Record<WorkoutType, number> = {
   rest: 0,
 };
 
-/** 各週に「ポイント練習」を1つだけ立てる（最重要セッション）。 */
-function markKeyWorkouts(plan: PlannedWorkout[]): void {
+/**
+ * 各週に「ポイント練習」を1つだけ立てる（最重要セッション）。
+ */
+const markKeyWorkouts = (plan: PlannedWorkout[]): void => {
   const bestByWeek = new Map<number, PlannedWorkout>();
   for (const w of plan) {
     if (w.type === "rest") continue;
@@ -330,9 +338,11 @@ function markKeyWorkouts(plan: PlannedWorkout[]): void {
       w.note = w.note ? `${w.note} / 今週のポイント` : "今週のポイント";
     }
   }
-}
+};
 
-/** 週ごとの集計（UI 表示用）。 */
+/**
+ * 週ごとの集計（UI 表示用）。
+ */
 export interface WeekSummary {
   weekIndex: number;
   phase: TrainingPhase;
@@ -342,7 +352,7 @@ export interface WeekSummary {
   runDays: number;
 }
 
-export function summarizeByWeek(plan: PlannedWorkout[]): WeekSummary[] {
+export const summarizeByWeek = (plan: PlannedWorkout[]): WeekSummary[] => {
   const map = new Map<number, WeekSummary>();
   for (const w of plan) {
     let s = map.get(w.weekIndex);
@@ -368,4 +378,4 @@ export function summarizeByWeek(plan: PlannedWorkout[]): WeekSummary[] {
   return [...map.values()]
     .map((s) => ({ ...s, totalKm: round1(s.totalKm) }))
     .sort((a, b) => a.weekIndex - b.weekIndex);
-}
+};

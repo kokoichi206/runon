@@ -10,12 +10,12 @@ import type { TrainingPlanRequest } from "@/shared/types/training";
  * 将来は LLM による各メニューの言語化・調整や、重い最適化をここで合成する想定。
  * そのため戻り値は Result + 非同期に固定し、呼び出し側の契約を今のうちに確定させる。
  */
-export async function generateTrainingPlan(
+export const generateTrainingPlan = async (
   req: TrainingPlanRequest
-): Promise<Result<TrainingPlanResult, AppError>> {
+): Promise<Result<TrainingPlanResult, AppError>> => {
   const computed = await safeTry(() => computeTrainingPlan(req));
   if (!computed.ok) {
     return err(appError.internal("トレーニング計画の生成に失敗しました。", computed.error));
   }
   return ok(computed.value);
-}
+};

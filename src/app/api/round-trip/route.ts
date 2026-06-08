@@ -7,7 +7,7 @@ import { httpStatusFor } from "@/shared/errors";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-export async function POST(request: Request): Promise<NextResponse> {
+export const POST = async (request: Request): Promise<NextResponse> => {
   let body: unknown;
   try {
     body = await request.json();
@@ -23,4 +23,4 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
   return NextResponse.json(result.value);
-}
+};

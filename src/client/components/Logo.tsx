@@ -2,13 +2,13 @@
  * runon ロゴ。周回路（ループ）と走る推進力を表すマーク + ワードマーク。
  * 色は CSS 変数（--accent / --accent-2）を参照するためテーマに追従する。
  */
-export function LogoMark({
+export const LogoMark = ({
   size = 28,
   className,
 }: {
   size?: number;
   className?: string;
-}): React.JSX.Element {
+}): React.JSX.Element => {
   return (
     <svg
       width={size}
@@ -50,15 +50,15 @@ export function LogoMark({
       <circle cx="16" cy="5.5" r="3" fill="var(--accent)" filter="url(#runon-glow)" />
     </svg>
   );
-}
+};
 
-export function Logo({
+export const Logo = ({
   size = 28,
   className,
 }: {
   size?: number;
   className?: string;
-}): React.JSX.Element {
+}): React.JSX.Element => {
   return (
     <span className={`inline-flex items-center gap-2 ${className ?? ""}`}>
       <LogoMark size={size} />
@@ -68,4 +68,4 @@ export function Logo({
       </span>
     </span>
   );
-}
+};

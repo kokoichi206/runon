@@ -31,7 +31,9 @@ import type {
 const ATTRIBUTION = "© OpenStreetMap contributors (ODbL)";
 
 export interface ComputeDeps {
-  /** テスト/スモーク用に Overpass 取得を差し替え可能にする。 */
+  /**
+   * テスト/スモーク用に Overpass 取得を差し替え可能にする。
+   */
   fetchNetwork?: (
     center: LatLng,
     radiusM: number,
@@ -40,30 +42,34 @@ export interface ComputeDeps {
   overpassEndpoint?: string;
   userAgent?: string;
   signal?: AbortSignal;
-  /** Stage2(局所探索) を実行するか。デフォルト true。 */
+  /**
+   * Stage2(局所探索) を実行するか。デフォルト true。
+   */
   enableLocalSearch?: boolean;
 }
 
-function walkToLngLat(graph: StreetGraph, walk: NodeId[]): LngLat[] {
+const walkToLngLat = (graph: StreetGraph, walk: NodeId[]): LngLat[] => {
   const out: LngLat[] = [];
   for (const id of walk) {
     const p = graph.nodes.get(id);
     if (p) out.push([p.lng, p.lat]);
   }
   return out;
-}
+};
 
-/** 取得半径。目標距離の片道分 ~k/2 に余裕を持たせ、公開 Overpass 保護のため上限を設ける。 */
-function fetchRadiusMeters(targetMeters: number): number {
+/**
+ * 取得半径。目標距離の片道分 ~k/2 に余裕を持たせ、公開 Overpass 保護のため上限を設ける。
+ */
+const fetchRadiusMeters = (targetMeters: number): number => {
   return Math.min(15_000, Math.round(targetMeters * 0.6 + 200));
-}
+};
 
 const score = (m: WalkMetrics, k: number): number => m.lengthError / k + m.overlapPercent / 100;
 
-export async function computeRoundTrips(
+export const computeRoundTrips = async (
   req: RoundTripRequest,
   deps: ComputeDeps = {}
-): Promise<Result<RoundTripResult, AppError>> {
+): Promise<Result<RoundTripResult, AppError>> => {
   const computeStart = Date.now();
   // 全体のウォールクロック上限。超過したら以降の探索を打ち切り、その時点のベスト候補を返す
   // （本番の関数 60s 制限を超えないための保険）。
@@ -303,4 +309,4 @@ export async function computeRoundTrips(
     },
     attribution: ATTRIBUTION,
   });
-}
+};

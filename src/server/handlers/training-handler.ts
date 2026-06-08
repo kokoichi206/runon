@@ -4,13 +4,15 @@ import { err, type Result } from "@/shared/result";
 import type { TrainingPlanResult } from "@/shared/training/compute-plan";
 import { trainingPlanRequestSchema } from "@/shared/types/training";
 
-/** トレーニング計画生成の入口。入力を検証し usecase を呼ぶ。 */
-export async function trainingPlanHandler(
+/**
+ * トレーニング計画生成の入口。入力を検証し usecase を呼ぶ。
+ */
+export const trainingPlanHandler = async (
   rawInput: unknown
-): Promise<Result<TrainingPlanResult, AppError>> {
+): Promise<Result<TrainingPlanResult, AppError>> => {
   const parsed = trainingPlanRequestSchema.safeParse(rawInput);
   if (!parsed.success) {
     return err(appError.validation("入力が不正です。", parsed.error.issues));
   }
   return generateTrainingPlan(parsed.data);
-}
+};

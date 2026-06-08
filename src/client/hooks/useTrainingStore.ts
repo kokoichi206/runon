@@ -15,12 +15,16 @@ const KEY = "flrt:training:v1";
 
 export interface TrainingState {
   activities: Activity[];
-  /** Strava のアスリート情報・長期集計（CSV 取り込みでは null）。 */
+  /**
+   * Strava のアスリート情報・長期集計（CSV 取り込みでは null）。
+   */
   athleteProfile: AthleteProfile | null;
   races: Race[];
   selectedRaceId: string | null;
   availability: WeeklyAvailability;
-  /** 週あたりの練習回数（可能日の中から選ぶ）。 */
+  /**
+   * 週あたりの練習回数（可能日の中から選ぶ）。
+   */
   runsPerWeek: number;
   skippedDates: string[];
   doneDates: string[];
@@ -51,7 +55,7 @@ export interface TrainingStore extends TrainingState {
   skipWeek: (dates: string[]) => void;
 }
 
-export function useTrainingStore(): TrainingStore {
+export const useTrainingStore = (): TrainingStore => {
   const [state, setState] = useState<TrainingState>(initialState);
   const loadedRef = useRef(false);
   const [loaded, setLoaded] = useState(false);
@@ -163,4 +167,4 @@ export function useTrainingStore(): TrainingStore {
     toggleDone,
     skipWeek,
   };
-}
+};

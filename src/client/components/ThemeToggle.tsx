@@ -56,8 +56,10 @@ const OPTIONS: { mode: ThemeMode; label: string; icon: React.JSX.Element }[] = [
   },
 ];
 
-/** テーマ（system / light / dark）の切替。選択は localStorage に保存し、OS 変更にも追従する。 */
-export function ThemeToggle(): React.JSX.Element {
+/**
+ * テーマ（system / light / dark）の切替。選択は localStorage に保存し、OS 変更にも追従する。
+ */
+export const ThemeToggle = (): React.JSX.Element => {
   const [mode, setMode] = useState<ThemeMode>("system");
 
   // 初期マウントで保存済みモードを反映し、theme-color メタも実テーマへ同期する。
@@ -110,4 +112,4 @@ export function ThemeToggle(): React.JSX.Element {
       })}
     </div>
   );
-}
+};

@@ -269,8 +269,28 @@ describe("estimateFitness（負荷・Strava集計）", () => {
 
   it("relativeEffort が無い履歴では recentLoad=null（従来挙動）", () => {
     const acts: Activity[] = [
-      { date: "2026-05-27", type: "ラン", title: "", distanceKm: 6, durationSec: 1800, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
-      { date: "2026-05-24", type: "ラン", title: "", distanceKm: 4, durationSec: 1320, avgPaceSecPerKm: 330, avgHr: 150, maxHr: 165, ascentM: 0 },
+      {
+        date: "2026-05-27",
+        type: "ラン",
+        title: "",
+        distanceKm: 6,
+        durationSec: 1800,
+        avgPaceSecPerKm: 300,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
+      {
+        date: "2026-05-24",
+        type: "ラン",
+        title: "",
+        distanceKm: 4,
+        durationSec: 1320,
+        avgPaceSecPerKm: 330,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
     ];
     expect(estimateFitness(acts, now).recentLoad).toBeNull();
   });
@@ -287,9 +307,15 @@ describe("estimateFitness（負荷・Strava集計）", () => {
   it("急増(直近7日が高負荷)で ACWR>1.5 を算出", () => {
     const acts: Activity[] = [
       // 8-28日前: 低負荷（合計 500）
-      re("2026-05-08", 100), re("2026-05-12", 100), re("2026-05-16", 100), re("2026-05-20", 100), re("2026-05-23", 100),
+      re("2026-05-08", 100),
+      re("2026-05-12", 100),
+      re("2026-05-16", 100),
+      re("2026-05-20", 100),
+      re("2026-05-23", 100),
       // 直近7日: 高負荷（合計 350）
-      re("2026-05-26", 150), re("2026-05-28", 100), re("2026-05-30", 100),
+      re("2026-05-26", 150),
+      re("2026-05-28", 100),
+      re("2026-05-30", 100),
     ];
     const load = estimateFitness(acts, now).recentLoad;
     expect(load).not.toBeNull();
@@ -299,8 +325,28 @@ describe("estimateFitness（負荷・Strava集計）", () => {
 
   it("Strava 集計があれば weeklyKm を過小評価しないよう max 補正", () => {
     const acts: Activity[] = [
-      { date: "2026-05-27", type: "ラン", title: "", distanceKm: 6, durationSec: 1800, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
-      { date: "2026-05-20", type: "ラン", title: "", distanceKm: 10, durationSec: 3000, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
+      {
+        date: "2026-05-27",
+        type: "ラン",
+        title: "",
+        distanceKm: 6,
+        durationSec: 1800,
+        avgPaceSecPerKm: 300,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
+      {
+        date: "2026-05-20",
+        type: "ラン",
+        title: "",
+        distanceKm: 10,
+        durationSec: 3000,
+        avgPaceSecPerKm: 300,
+        avgHr: 150,
+        maxHr: 165,
+        ascentM: 0,
+      },
     ];
     const profile: AthleteProfile = {
       recentRunTotals: { distanceKm: 80, durationSec: 24000, count: 16 }, // 80/4=20km/週
@@ -322,21 +368,39 @@ describe("generatePlan（ACWR 増量補正）", () => {
     recentLoad: null,
   };
   const firstLongKm = (f: Fitness): number => {
-    const plan = generatePlan({ startDate: START, race: RACE, fitness: f, availability: defaultAvailability() });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness: f,
+      availability: defaultAvailability(),
+    });
     return plan.find((p) => p.type === "long")!.distanceKm;
   };
 
   it("ACWR>1.5 のとき序盤のロング走が縮む（recentLoad=null と比較）", () => {
     const normal = firstLongKm(baseFitness);
-    const spiking = firstLongKm({ ...baseFitness, recentLoad: { acute: 350, chronic: 200, ratio: 1.75 } });
+    const spiking = firstLongKm({
+      ...baseFitness,
+      recentLoad: { acute: 350, chronic: 200, ratio: 1.75 },
+    });
     expect(spiking).toBeLessThan(normal);
   });
 
   it("recentLoad=null は recentLoad 未指定と一致（従来挙動）", () => {
-    const a = generatePlan({ startDate: START, race: RACE, fitness: baseFitness, availability: defaultAvailability() });
+    const a = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness: baseFitness,
+      availability: defaultAvailability(),
+    });
     const legacy: Fitness = { ...baseFitness };
     delete (legacy as { recentLoad?: unknown }).recentLoad;
-    const b = generatePlan({ startDate: START, race: RACE, fitness: legacy, availability: defaultAvailability() });
+    const b = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness: legacy,
+      availability: defaultAvailability(),
+    });
     expect(a).toEqual(b);
   });
 });

@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 // localhost で動かす場合、取得されるのは開発マシンの公開 IP = 利用者の都市レベル位置。
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export const GET = async (): Promise<NextResponse> => {
   try {
     const res = await fetch("https://get.geojs.io/v1/ip/geo.json", {
       headers: { Accept: "application/json" },
@@ -41,4 +41,4 @@ export async function GET(): Promise<NextResponse> {
       { status: 502 }
     );
   }
-}
+};

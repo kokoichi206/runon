@@ -23,17 +23,21 @@ const velocityFromVo2 = (vo2: number): number => {
 const pctMaxForMinutes = (tMin: number): number =>
   0.8 + 0.1894393 * Math.exp(-0.012778 * tMin) + 0.2989558 * Math.exp(-0.1932605 * tMin);
 
-/** 実績(距離km, 時間sec)から VDOT を推定。 */
-export function vdotFromPerformance(distanceKm: number, timeSec: number): number {
+/**
+ * 実績(距離km, 時間sec)から VDOT を推定。
+ */
+export const vdotFromPerformance = (distanceKm: number, timeSec: number): number => {
   const tMin = timeSec / 60;
   const v = (distanceKm * 1000) / tMin; // m/min
   const vo2 = vo2FromVelocity(v);
   const pct = pctMaxForMinutes(tMin);
   return vo2 / pct;
-}
+};
 
-/** VDOT と距離から到達見込みタイム(sec)を二分探索で求める（vdotFromPerformance の逆）。 */
-export function predictTimeSec(vdot: number, distanceKm: number): number {
+/**
+ * VDOT と距離から到達見込みタイム(sec)を二分探索で求める（vdotFromPerformance の逆）。
+ */
+export const predictTimeSec = (vdot: number, distanceKm: number): number => {
   let lo = 60; // 1 分
   let hi = 8 * 3600; // 8 時間
   // f(sec)=vdotFromPerformance は sec について単調減少。
@@ -44,10 +48,12 @@ export function predictTimeSec(vdot: number, distanceKm: number): number {
     else hi = mid;
   }
   return Math.round((lo + hi) / 2);
-}
+};
 
 export interface TrainingPaces {
-  /** 秒/km */
+  /**
+   * 秒/km
+   */
   easy: number;
   marathon: number;
   threshold: number;
@@ -59,17 +65,21 @@ const ZONE_PCT = { easy: 0.7, marathon: 0.84, threshold: 0.88, interval: 1.0 };
 
 const paceFromVo2 = (vo2: number): number => 60000 / velocityFromVo2(vo2);
 
-/** VDOT から各ゾーンのペース(秒/km)を導く。 */
-export function trainingPaces(vdot: number): TrainingPaces {
+/**
+ * VDOT から各ゾーンのペース(秒/km)を導く。
+ */
+export const trainingPaces = (vdot: number): TrainingPaces => {
   return {
     easy: Math.round(paceFromVo2(ZONE_PCT.easy * vdot)),
     marathon: Math.round(paceFromVo2(ZONE_PCT.marathon * vdot)),
     threshold: Math.round(paceFromVo2(ZONE_PCT.threshold * vdot)),
     interval: Math.round(paceFromVo2(ZONE_PCT.interval * vdot)),
   };
-}
+};
 
-/** VDOT 入力に採るベストエフォートの最短距離。短距離全力は過大評価になるため除外。 */
+/**
+ * VDOT 入力に採るベストエフォートの最短距離。短距離全力は過大評価になるため除外。
+ */
 const MIN_EFFORT_M = 3000;
 
 interface Performance {
@@ -81,14 +91,14 @@ interface Performance {
  * 最大心拍が分かるなら、本当に追い込んだ走(avgHr ≥ 80%HRmax)に絞る。
  * 該当が無ければ全体を返す（過小/過大評価を減らすための従来ヒューリスティック）。
  */
-function hrFilteredPerformances(pool: Activity[], maxHr: number | null): Performance[] {
+const hrFilteredPerformances = (pool: Activity[], maxHr: number | null): Performance[] => {
   let p = pool;
   if (maxHr) {
     const hard = pool.filter((a) => a.avgHr !== null && a.avgHr >= 0.8 * maxHr);
     if (hard.length > 0) p = hard;
   }
   return p.map((a) => ({ distanceKm: a.distanceKm, timeSec: a.durationSec }));
-}
+};
 
 /**
  * 直近のラン履歴から現在の推定 VDOT を求める。
@@ -96,11 +106,11 @@ function hrFilteredPerformances(pool: Activity[], maxHr: number | null): Perform
  * Strava の best_efforts・workout_type が無い履歴（CSV 等）では従来の心拍フィルタ経路に一致。
  * 該当走が無ければ null。
  */
-export function estimateCurrentVdot(
+export const estimateCurrentVdot = (
   activities: Activity[],
   nowMs: number,
   maxHr: number | null = null
-): number | null {
+): number | null => {
   const base = activities.filter((a) => a.distanceKm >= 2 && a.durationSec > 0);
   const recent = base.filter((a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= 56 * 86_400_000);
   const pool = recent.length > 0 ? recent : base;
@@ -127,7 +137,7 @@ export function estimateCurrentVdot(
     if (v > best) best = v;
   }
   return Math.round(best * 10) / 10;
-}
+};
 
 export type Feasibility = "現実的" | "挑戦的" | "厳しい" | "不明";
 
@@ -135,9 +145,13 @@ export interface ProgressionSummary {
   currentVdot: number | null;
   goalVdot: number;
   goalTimeSec: number;
-  /** 現走力での到達見込みタイム(sec)。currentVdot 不明なら null。 */
+  /**
+   * 現走力での到達見込みタイム(sec)。currentVdot 不明なら null。
+   */
   predictedCurrentTimeSec: number | null;
-  /** 目標までに必要なタイム短縮率(%)。 */
+  /**
+   * 目標までに必要なタイム短縮率(%)。
+   */
   requiredImprovementPct: number | null;
   feasibility: Feasibility;
   weeks: number;
@@ -150,12 +164,12 @@ export interface ProgressionSummary {
  * 残り週数での妥当な VDOT 改善（控えめに ~0.35pt/週、上限 現VDOTの12%）と比較し
  * 実現可能性を正直に分類する。
  */
-export function buildProgression(
+export const buildProgression = (
   currentVdot: number | null,
   goalTimeSec: number,
   raceKm: number,
   weeks: number
-): ProgressionSummary {
+): ProgressionSummary => {
   const goalVdot = vdotFromPerformance(raceKm, goalTimeSec);
   const goalPaces = trainingPaces(goalVdot);
 
@@ -198,4 +212,4 @@ export function buildProgression(
     currentPaces: trainingPaces(currentVdot),
     goalPaces,
   };
-}
+};

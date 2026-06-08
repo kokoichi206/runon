@@ -13,6 +13,7 @@ import noDirectServerImport from "./no-direct-server-import/rule.js";
 import noDynamicEnvAccess from "./no-dynamic-env-access/rule.js";
 import noErrorMessageComparison from "./no-error-message-comparison/rule.js";
 import noRelativeImportsAcrossLayers from "./no-relative-imports-across-layers/rule.js";
+import noSingleLineBlockComment from "./no-single-line-block-comment/rule.js";
 import noThrowStatement from "./no-throw-statement/rule.js";
 import noToLocaleString from "./no-to-locale-string/rule.js";
 
@@ -25,6 +26,7 @@ export default {
     "no-dynamic-env-access": noDynamicEnvAccess,
     "no-error-message-comparison": noErrorMessageComparison,
     "no-relative-imports-across-layers": noRelativeImportsAcrossLayers,
+    "no-single-line-block-comment": noSingleLineBlockComment,
     "no-throw-statement": noThrowStatement,
     "no-to-locale-string": noToLocaleString,
   },

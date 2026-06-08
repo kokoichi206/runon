@@ -14,15 +14,21 @@ const TOKEN_URL = "https://www.strava.com/oauth/token";
 const API_BASE = "https://www.strava.com/api/v3";
 const ACTIVITIES_URL = `${API_BASE}/athlete/activities`;
 
-/** best_efforts を詳細取得する上限。レート制限(100req/15分)に余裕を残す。 */
+/**
+ * best_efforts を詳細取得する上限。レート制限(100req/15分)に余裕を残す。
+ */
 const DETAIL_LIMIT = 18;
 const EIGHT_WEEKS_MS = 56 * 86_400_000;
 
-/** Strava OAuth トークン（ドメイン型。外部レスポンスの snake_case はここで吸収）。 */
+/**
+ * Strava OAuth トークン（ドメイン型。外部レスポンスの snake_case はここで吸収）。
+ */
 export interface StravaTokens {
   accessToken: string;
   refreshToken: string;
-  /** 失効時刻（UNIX 秒）。 */
+  /**
+   * 失効時刻（UNIX 秒）。
+   */
   expiresAt: number;
 }
 
@@ -78,8 +84,10 @@ interface StravaStats {
   all_run_totals?: StravaRunTotals;
 }
 
-/** ラン向け workout_type 分類。null/未指定は不明として undefined。 */
-function workoutKindOf(wt: number | null | undefined): WorkoutKind | undefined {
+/**
+ * ラン向け workout_type 分類。null/未指定は不明として undefined。
+ */
+const workoutKindOf = (wt: number | null | undefined): WorkoutKind | undefined => {
   switch (wt) {
     case 1:
       return "race";
@@ -92,15 +100,17 @@ function workoutKindOf(wt: number | null | undefined): WorkoutKind | undefined {
     default:
       return undefined;
   }
-}
+};
 
 interface MappedActivity {
   id: number;
   activity: Activity;
 }
 
-/** Strava の 1 活動を内部 Activity にマップ（ラン系・距離/時間ありのみ。それ以外は null）。 */
-function mapActivity(a: StravaActivity): MappedActivity | null {
+/**
+ * Strava の 1 活動を内部 Activity にマップ（ラン系・距離/時間ありのみ。それ以外は null）。
+ */
+const mapActivity = (a: StravaActivity): MappedActivity | null => {
   const kind = a.sport_type ?? a.type ?? "";
   if (!/run/i.test(kind)) return null;
   if (!(a.distance > 0) || !(a.moving_time > 0)) return null;
@@ -128,13 +138,13 @@ function mapActivity(a: StravaActivity): MappedActivity | null {
   if (wk) activity.workoutKind = wk;
   if (a.suffer_score != null) activity.relativeEffort = a.suffer_score;
   return { id: a.id, activity };
-}
+};
 
 /**
  * best_efforts を詳細取得する候補を選ぶ。
  * 直近8週・2km 以上のうち、レースを最優先、残りは速い順。VDOT 推定に効く走に限定。
  */
-function selectDetailCandidates(mapped: MappedActivity[], nowMs: number): MappedActivity[] {
+const selectDetailCandidates = (mapped: MappedActivity[], nowMs: number): MappedActivity[] => {
   const recent = mapped.filter(
     (m) =>
       m.activity.distanceKm >= 2 && nowMs - new Date(m.activity.date).getTime() <= EIGHT_WEEKS_MS
@@ -146,14 +156,14 @@ function selectDetailCandidates(mapped: MappedActivity[], nowMs: number): Mapped
       (a, b) => (a.activity.avgPaceSecPerKm ?? Infinity) - (b.activity.avgPaceSecPerKm ?? Infinity)
     );
   return [...races, ...rest];
-}
+};
 
-function toRunTotals(t: StravaRunTotals | undefined): AthleteRunTotals | undefined {
+const toRunTotals = (t: StravaRunTotals | undefined): AthleteRunTotals | undefined => {
   if (!t) return undefined;
   return { distanceKm: t.distance / 1000, durationSec: t.moving_time, count: t.count };
-}
+};
 
-async function postToken(body: Record<string, string>): Promise<Result<StravaTokens, AppError>> {
+const postToken = async (body: Record<string, string>): Promise<Result<StravaTokens, AppError>> => {
   const fetched = await safeTry(() =>
     fetch(TOKEN_URL, {
       method: "POST",
@@ -183,14 +193,16 @@ async function postToken(body: Record<string, string>): Promise<Result<StravaTok
     refreshToken: t.refresh_token,
     expiresAt: t.expires_at,
   });
-}
+};
 
-/** Bearer 認証付き GET の共通処理。接続・HTTP・JSON 解析を Result に正規化する。 */
-async function getJson<T>(
+/**
+ * Bearer 認証付き GET の共通処理。接続・HTTP・JSON 解析を Result に正規化する。
+ */
+const getJson = async <T>(
   accessToken: string,
   url: string,
   what: string
-): Promise<Result<T, AppError>> {
+): Promise<Result<T, AppError>> => {
   const fetched = await safeTry(() =>
     fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
   );
@@ -209,13 +221,15 @@ async function getJson<T>(
     return err(appError.upstream(`Strava ${what}応答の解析に失敗しました。`, parsed.error));
   }
   return ok(parsed.value);
-}
+};
 
-/** 1 活動の best_efforts（最速 1k/5k/10k 等）を取得。 */
-async function fetchBestEfforts(
+/**
+ * 1 活動の best_efforts（最速 1k/5k/10k 等）を取得。
+ */
+const fetchBestEfforts = async (
   accessToken: string,
   id: number
-): Promise<Result<BestEffort[], AppError>> {
+): Promise<Result<BestEffort[], AppError>> => {
   const det = await getJson<StravaActivityDetail>(
     accessToken,
     `${API_BASE}/activities/${id}`,
@@ -230,10 +244,14 @@ async function fetchBestEfforts(
     }))
     .filter((b) => b.distanceM > 0 && b.timeSec > 0);
   return ok(efforts);
-}
+};
 
-/** アスリート情報(/athlete)と長期集計(/athletes/{id}/stats)を AthleteProfile にまとめる。 */
-async function fetchAthleteProfile(accessToken: string): Promise<Result<AthleteProfile, AppError>> {
+/**
+ * アスリート情報(/athlete)と長期集計(/athletes/{id}/stats)を AthleteProfile にまとめる。
+ */
+const fetchAthleteProfile = async (
+  accessToken: string
+): Promise<Result<AthleteProfile, AppError>> => {
   const ath = await getJson<StravaAthlete>(accessToken, `${API_BASE}/athlete`, "アスリート取得");
   if (!ath.ok) return err(ath.error);
   const profile: AthleteProfile = {};
@@ -254,20 +272,30 @@ async function fetchAthleteProfile(accessToken: string): Promise<Result<AthleteP
     if (all) profile.allRunTotals = all;
   }
   return ok(profile);
-}
+};
 
-/** 活動取得の結果。best_efforts 畳み込み済み活動と詳細取得の本数を返す。 */
+/**
+ * 活動取得の結果。best_efforts 畳み込み済み活動と詳細取得の本数を返す。
+ */
 export interface FetchActivitiesResult {
   activities: Activity[];
-  /** best_efforts を実際に取得できた活動数。 */
+  /**
+   * best_efforts を実際に取得できた活動数。
+   */
   detailFetched: number;
-  /** 詳細取得候補が上限を超え、一部のみ取得したか。 */
+  /**
+   * 詳細取得候補が上限を超え、一部のみ取得したか。
+   */
   detailTruncated: boolean;
 }
 
-/** Strava API（OAuth / 活動取得）への外部 I/O を担う repository。 */
+/**
+ * Strava API（OAuth / 活動取得）への外部 I/O を担う repository。
+ */
 export const stravaRepository = {
-  /** 認可画面の URL。scope は活動の読み取り。 */
+  /**
+   * 認可画面の URL。scope は活動の読み取り。
+   */
   buildAuthorizeUrl(redirectUri: string): string {
     const params = new URLSearchParams({
       client_id: serverEnv.STRAVA_CLIENT_ID ?? "",
@@ -279,12 +307,16 @@ export const stravaRepository = {
     return `${AUTHORIZE_URL}?${params.toString()}`;
   },
 
-  /** 認可コードをトークンに交換。 */
+  /**
+   * 認可コードをトークンに交換。
+   */
   exchangeCode(code: string): Promise<Result<StravaTokens, AppError>> {
     return postToken({ code, grant_type: "authorization_code" });
   },
 
-  /** リフレッシュトークンでアクセストークンを更新（refresh_token はローテートし得る）。 */
+  /**
+   * リフレッシュトークンでアクセストークンを更新（refresh_token はローテートし得る）。
+   */
   refreshTokens(refreshToken: string): Promise<Result<StravaTokens, AppError>> {
     return postToken({ refresh_token: refreshToken, grant_type: "refresh_token" });
   },
@@ -330,7 +362,9 @@ export const stravaRepository = {
     });
   },
 
-  /** アスリート情報・長期集計を取得する。 */
+  /**
+   * アスリート情報・長期集計を取得する。
+   */
   fetchAthleteProfile(accessToken: string): Promise<Result<AthleteProfile, AppError>> {
     return fetchAthleteProfile(accessToken);
   },

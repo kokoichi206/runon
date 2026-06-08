@@ -5,7 +5,9 @@ import {
   type StreetGraph,
 } from "@/server/lib/routing/graph";
 
-/** 距離キーの最小ヒープ。Dijkstra の優先度付きキュー。 */
+/**
+ * 距離キーの最小ヒープ。Dijkstra の優先度付きキュー。
+ */
 class MinHeap {
   private heap: { node: NodeId; key: number }[] = [];
 
@@ -50,19 +52,29 @@ class MinHeap {
 }
 
 export interface DijkstraOptions {
-  /** この実距離（メートル）を超えたノードは探索しない（等時線用）。 */
+  /**
+   * この実距離（メートル）を超えたノードは探索しない（等時線用）。
+   */
   maxDistanceM?: number;
-  /** このノードに到達したら打ち切る（単一目的地探索の高速化）。 */
+  /**
+   * このノードに到達したら打ち切る（単一目的地探索の高速化）。
+   */
   target?: NodeId;
-  /** 既使用エッジ（無向キー）に乗算するペナルティ。重複回避用。 */
+  /**
+   * 既使用エッジ（無向キー）に乗算するペナルティ。重複回避用。
+   */
   penalizedEdgeKeys?: ReadonlySet<string>;
   penaltyFactor?: number;
-  /** 遮断する有向弧 "from->to"。局所探索の残余グラフ用。 */
+  /**
+   * 遮断する有向弧 "from->to"。局所探索の残余グラフ用。
+   */
   blockedArcs?: ReadonlySet<string>;
 }
 
 export interface DijkstraResult {
-  /** 各ノードへの実距離（ペナルティ抜き、メートル）。 */
+  /**
+   * 各ノードへの実距離（ペナルティ抜き、メートル）。
+   */
   dist: Map<NodeId, number>;
   prev: Map<NodeId, NodeId>;
 }
@@ -74,11 +86,11 @@ const directedKey = (from: NodeId, to: NodeId): string => `${from}->${to}`;
  * 優先度はペナルティ込みコストで決めるが、dist には実距離を記録する。
  * これにより「重複を避けつつも、長さの評価は実距離で行う」ことができる。
  */
-export function dijkstra(
+export const dijkstra = (
   graph: StreetGraph,
   source: NodeId,
   opts: DijkstraOptions = {}
-): DijkstraResult {
+): DijkstraResult => {
   const dist = new Map<NodeId, number>();
   const prev = new Map<NodeId, NodeId>();
   const cost = new Map<NodeId, number>(); // ペナルティ込みの探索コスト
@@ -119,14 +131,16 @@ export function dijkstra(
   }
 
   return { dist, prev };
-}
+};
 
-/** prev マップから target までのノード列を復元する。 */
-export function reconstructPath(
+/**
+ * prev マップから target までのノード列を復元する。
+ */
+export const reconstructPath = (
   prev: Map<NodeId, NodeId>,
   source: NodeId,
   target: NodeId
-): NodeId[] | null {
+): NodeId[] | null => {
   if (source === target) return [source];
   const path: NodeId[] = [];
   let cur: NodeId | undefined = target;
@@ -142,7 +156,7 @@ export function reconstructPath(
     cur = prev.get(cur);
   }
   return null;
-}
+};
 
 export interface ShortestPath {
   path: NodeId[];
@@ -153,14 +167,14 @@ export interface ShortestPath {
  * source->target の最短経路（ペナルティ・遮断を考慮）。
  * 返す distanceM は実距離（ペナルティ抜き）。到達不能なら null。
  */
-export function shortestPath(
+export const shortestPath = (
   graph: StreetGraph,
   source: NodeId,
   target: NodeId,
   opts: Omit<DijkstraOptions, "target" | "maxDistanceM"> = {}
-): ShortestPath | null {
+): ShortestPath | null => {
   const { prev } = dijkstra(graph, source, { ...opts, target });
   const path = reconstructPath(prev, source, target);
   if (!path) return null;
   return { path, distanceM: walkLengthMeters(graph, path) };
-}
+};

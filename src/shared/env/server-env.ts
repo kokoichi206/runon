@@ -34,6 +34,8 @@ export const serverEnv = serverEnvSchema.parse({
   SITE_URL: process.env.SITE_URL,
 });
 
-/** Strava 連携が設定済みか（Client ID/Secret がそろっているか）。 */
+/**
+ * Strava 連携が設定済みか（Client ID/Secret がそろっているか）。
+ */
 export const isStravaConfigured = (): boolean =>
   serverEnv.STRAVA_CLIENT_ID !== undefined && serverEnv.STRAVA_CLIENT_SECRET !== undefined;
