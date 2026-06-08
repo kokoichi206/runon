@@ -6,6 +6,8 @@ import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
 import {
   defaultAvailability,
   type Activity,
+  type AthleteProfile,
+  type Fitness,
   type Race,
   type WeeklyAvailability,
 } from "@/shared/types/training";
@@ -246,5 +248,95 @@ describe("generatePlan", () => {
     });
     const easy = plan.find((p) => p.type === "easy" && !p.cappedByTime)!;
     expect(easy.estMinutes).toBe(Math.round((easy.distanceKm * fitness.easyPaceSecPerKm) / 60));
+  });
+});
+
+describe("estimateFitness（負荷・Strava集計）", () => {
+  const now = new Date("2026-06-01T00:00:00Z").getTime();
+  // relativeEffort を一定間隔で持つラン群（直近28日に8本、被覆率100%）。
+  const re = (date: string, relativeEffort: number): Activity => ({
+    date,
+    type: "ラン",
+    title: "",
+    distanceKm: 8,
+    durationSec: 8 * 330,
+    avgPaceSecPerKm: 330,
+    avgHr: 150,
+    maxHr: 170,
+    ascentM: 0,
+    relativeEffort,
+  });
+
+  it("relativeEffort が無い履歴では recentLoad=null（従来挙動）", () => {
+    const acts: Activity[] = [
+      { date: "2026-05-27", type: "ラン", title: "", distanceKm: 6, durationSec: 1800, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
+      { date: "2026-05-24", type: "ラン", title: "", distanceKm: 4, durationSec: 1320, avgPaceSecPerKm: 330, avgHr: 150, maxHr: 165, ascentM: 0 },
+    ];
+    expect(estimateFitness(acts, now).recentLoad).toBeNull();
+  });
+
+  it("被覆率が閾値未満なら recentLoad=null（中途半端な比を出さない）", () => {
+    // 10本中 relativeEffort 持ちは 2本 = 20% < 60%。
+    const acts: Activity[] = [];
+    for (let i = 0; i < 8; i++) acts.push(re(`2026-05-${10 + i}`, 50));
+    const withoutRE = acts.map((a) => ({ ...a, relativeEffort: undefined }));
+    const mixed = [...withoutRE, re("2026-05-28", 50), re("2026-05-29", 50)];
+    expect(estimateFitness(mixed, now).recentLoad).toBeNull();
+  });
+
+  it("急増(直近7日が高負荷)で ACWR>1.5 を算出", () => {
+    const acts: Activity[] = [
+      // 8-28日前: 低負荷（合計 500）
+      re("2026-05-08", 100), re("2026-05-12", 100), re("2026-05-16", 100), re("2026-05-20", 100), re("2026-05-23", 100),
+      // 直近7日: 高負荷（合計 350）
+      re("2026-05-26", 150), re("2026-05-28", 100), re("2026-05-30", 100),
+    ];
+    const load = estimateFitness(acts, now).recentLoad;
+    expect(load).not.toBeNull();
+    // chronic = 850/4 = 212.5≈213, acute = 350, ratio ≈ 1.64
+    expect(load!.ratio).toBeGreaterThan(1.5);
+  });
+
+  it("Strava 集計があれば weeklyKm を過小評価しないよう max 補正", () => {
+    const acts: Activity[] = [
+      { date: "2026-05-27", type: "ラン", title: "", distanceKm: 6, durationSec: 1800, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
+      { date: "2026-05-20", type: "ラン", title: "", distanceKm: 10, durationSec: 3000, avgPaceSecPerKm: 300, avgHr: 150, maxHr: 165, ascentM: 0 },
+    ];
+    const profile: AthleteProfile = {
+      recentRunTotals: { distanceKm: 80, durationSec: 24000, count: 16 }, // 80/4=20km/週
+    };
+    const withoutProfile = estimateFitness(acts, now).weeklyKm; // 16/4=4km/週
+    const withProfile = estimateFitness(acts, now, profile).weeklyKm;
+    expect(withProfile).toBeGreaterThan(withoutProfile);
+    expect(withProfile).toBeCloseTo(20, 1);
+  });
+});
+
+describe("generatePlan（ACWR 増量補正）", () => {
+  const baseFitness: Fitness = {
+    weeklyKm: 20,
+    longestKm: 8,
+    easyPaceSecPerKm: 360,
+    currentVdot: 40,
+    maxHrObserved: 185,
+    recentLoad: null,
+  };
+  const firstLongKm = (f: Fitness): number => {
+    const plan = generatePlan({ startDate: START, race: RACE, fitness: f, availability: defaultAvailability() });
+    return plan.find((p) => p.type === "long")!.distanceKm;
+  };
+
+  it("ACWR>1.5 のとき序盤のロング走が縮む（recentLoad=null と比較）", () => {
+    const normal = firstLongKm(baseFitness);
+    const spiking = firstLongKm({ ...baseFitness, recentLoad: { acute: 350, chronic: 200, ratio: 1.75 } });
+    expect(spiking).toBeLessThan(normal);
+  });
+
+  it("recentLoad=null は recentLoad 未指定と一致（従来挙動）", () => {
+    const a = generatePlan({ startDate: START, race: RACE, fitness: baseFitness, availability: defaultAvailability() });
+    const legacy: Fitness = { ...baseFitness };
+    delete (legacy as { recentLoad?: unknown }).recentLoad;
+    const b = generatePlan({ startDate: START, race: RACE, fitness: legacy, availability: defaultAvailability() });
+    expect(a).toEqual(b);
   });
 });

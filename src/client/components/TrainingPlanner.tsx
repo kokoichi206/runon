@@ -116,15 +116,22 @@ export function TrainingPlanner(): React.JSX.Element {
         setStravaMsg(j?.error ?? "Strava から取得できませんでした。");
         return;
       }
-      setActivities(j.activities ?? []);
+      store.setActivities(j.activities ?? []);
+      store.setAthleteProfile(j.athlete ?? null);
       setStrava((s) => ({ ...s, connected: true }));
-      setStravaMsg(`Strava から ${j.count ?? j.activities?.length ?? 0} 件取り込みました。`);
+      const detail =
+        j.detailFetched > 0
+          ? `（うち ${j.detailFetched} 本は詳細取得${j.detailTruncated ? "・一部のみ" : ""}）`
+          : "";
+      setStravaMsg(
+        `Strava から ${j.count ?? j.activities?.length ?? 0} 件取り込みました。${detail}`
+      );
     } catch {
       setStravaMsg("Strava 取得に失敗しました。");
     } finally {
       setStravaBusy(false);
     }
-  }, [setActivities]);
+  }, [store]);
 
   const disconnectStrava = useCallback(async () => {
     try {
@@ -171,8 +178,13 @@ export function TrainingPlanner(): React.JSX.Element {
   }, [importFromStrava]);
 
   const fitness = useMemo(
-    () => estimateFitness(store.activities, new Date(`${today}T00:00:00`).getTime()),
-    [store.activities, today]
+    () =>
+      estimateFitness(
+        store.activities,
+        new Date(`${today}T00:00:00`).getTime(),
+        store.athleteProfile ?? undefined
+      ),
+    [store.activities, store.athleteProfile, today]
   );
 
   const selectedRace = useMemo(
@@ -344,6 +356,30 @@ export function TrainingPlanner(): React.JSX.Element {
                   推定VO2max(VDOT) {fitness.currentVdot ?? "—"}・最大HR{" "}
                   {fitness.maxHrObserved ?? "—"}
                 </p>
+                {store.athleteProfile?.recentRunTotals && (
+                  <p className="text-fg">
+                    Strava集計 直近4週 週平均{" "}
+                    {Math.round((store.athleteProfile.recentRunTotals.distanceKm / 4) * 10) / 10}
+                    km
+                  </p>
+                )}
+                {fitness.recentLoad && (
+                  <p className="text-fg">
+                    実測負荷 ACWR {fitness.recentLoad.ratio}
+                    <span className="ml-1 text-faint">
+                      (急性 {fitness.recentLoad.acute} / 慢性 {fitness.recentLoad.chronic})
+                    </span>
+                  </p>
+                )}
+                {fitness.recentLoad && fitness.recentLoad.ratio > 1.5 && (
+                  <p
+                    aria-live="polite"
+                    className="mt-1 rounded border border-danger-fg/30 bg-danger-soft px-2 py-1 text-[11px] text-danger-fg"
+                  >
+                    注意: 直近の負荷が急増（ACWR {fitness.recentLoad.ratio}
+                    ）。故障リスク帯のため、序盤は距離を控えめにしています。
+                  </p>
+                )}
                 <div className="mt-2 max-h-40 overflow-y-auto rounded border border-hairline">
                   <table className="w-full text-[11px]">
                     <tbody>

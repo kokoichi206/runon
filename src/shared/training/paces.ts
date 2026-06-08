@@ -69,10 +69,31 @@ export function trainingPaces(vdot: number): TrainingPaces {
   };
 }
 
+/** VDOT 入力に採るベストエフォートの最短距離。短距離全力は過大評価になるため除外。 */
+const MIN_EFFORT_M = 3000;
+
+interface Performance {
+  distanceKm: number;
+  timeSec: number;
+}
+
+/**
+ * 最大心拍が分かるなら、本当に追い込んだ走(avgHr ≥ 80%HRmax)に絞る。
+ * 該当が無ければ全体を返す（過小/過大評価を減らすための従来ヒューリスティック）。
+ */
+function hrFilteredPerformances(pool: Activity[], maxHr: number | null): Performance[] {
+  let p = pool;
+  if (maxHr) {
+    const hard = pool.filter((a) => a.avgHr !== null && a.avgHr >= 0.8 * maxHr);
+    if (hard.length > 0) p = hard;
+  }
+  return p.map((a) => ({ distanceKm: a.distanceKm, timeSec: a.durationSec }));
+}
+
 /**
  * 直近のラン履歴から現在の推定 VDOT を求める。
- * 直近 8 週で 2km 以上の走の VDOT 最大値（=ベスト走）を採用。
- * 練習走ベースのため実際のレースより控えめに出やすい点に注意。
+ * 優先度: best_efforts(3km 以上) / レース走の実測 > 心拍で絞った練習走。
+ * Strava の best_efforts・workout_type が無い履歴（CSV 等）では従来の心拍フィルタ経路に一致。
  * 該当走が無ければ null。
  */
 export function estimateCurrentVdot(
@@ -82,17 +103,27 @@ export function estimateCurrentVdot(
 ): number | null {
   const base = activities.filter((a) => a.distanceKm >= 2 && a.durationSec > 0);
   const recent = base.filter((a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= 56 * 86_400_000);
-  let pool = recent.length > 0 ? recent : base;
-  // 最大心拍が分かるなら、本当に追い込んだ走(avgHr ≥ 80%HRmax)に絞って
-  // 過小/過大評価を減らす。該当が無ければ全体にフォールバック。
-  if (maxHr) {
-    const hard = pool.filter((a) => a.avgHr !== null && a.avgHr >= 0.8 * maxHr);
-    if (hard.length > 0) pool = hard;
-  }
+  const pool = recent.length > 0 ? recent : base;
   if (pool.length === 0) return null;
-  let best = 0;
+
+  // best_efforts と レース走は「追い込んだ既知距離の実測」なので最優先で採用する。
+  const measured: Performance[] = [];
   for (const a of pool) {
-    const v = vdotFromPerformance(a.distanceKm, a.durationSec);
+    for (const b of a.bestEfforts ?? []) {
+      if (b.distanceM >= MIN_EFFORT_M && b.timeSec > 0) {
+        measured.push({ distanceKm: b.distanceM / 1000, timeSec: b.timeSec });
+      }
+    }
+    if (a.workoutKind === "race") {
+      measured.push({ distanceKm: a.distanceKm, timeSec: a.durationSec });
+    }
+  }
+
+  const source = measured.length > 0 ? measured : hrFilteredPerformances(pool, maxHr);
+  if (source.length === 0) return null;
+  let best = 0;
+  for (const p of source) {
+    const v = vdotFromPerformance(p.distanceKm, p.timeSec);
     if (v > best) best = v;
   }
   return Math.round(best * 10) / 10;
