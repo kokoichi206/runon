@@ -69,6 +69,10 @@ export interface DijkstraOptions {
    * 遮断する有向弧 "from->to"。局所探索の残余グラフ用。
    */
   blockedArcs?: ReadonlySet<string>;
+  /**
+   * 信号ノード(graph.signalNodes)へ入る弧へ加算するコスト(m)。0/未指定で無効。実距離には影響しない。
+   */
+  signalPenaltyM?: number;
 }
 
 export interface DijkstraResult {
@@ -101,6 +105,8 @@ export const dijkstra = (
   const penalized = opts.penalizedEdgeKeys;
   const blocked = opts.blockedArcs;
   const maxD = opts.maxDistanceM ?? Infinity;
+  const signalPenaltyM = opts.signalPenaltyM ?? 0;
+  const signalNodes = graph.signalNodes;
 
   dist.set(source, 0);
   cost.set(source, 0);
@@ -120,7 +126,9 @@ export const dijkstra = (
       if (realNext > maxD) continue;
       const stepCost =
         penalized && penalized.has(arc.edgeKey) ? arc.weightM * penalty : arc.weightM;
-      const nextCost = (cost.get(u) ?? Infinity) + stepCost;
+      // 信号ノードへ入る弧へコストを加算（実距離 realNext には乗せない）。
+      const signalCost = signalPenaltyM > 0 && signalNodes.has(arc.to) ? signalPenaltyM : 0;
+      const nextCost = (cost.get(u) ?? Infinity) + stepCost + signalCost;
       if (nextCost < (cost.get(arc.to) ?? Infinity)) {
         cost.set(arc.to, nextCost);
         dist.set(arc.to, realNext);

@@ -4,7 +4,7 @@ import { err, ok, type Result, safeTry } from "@/shared/result";
 import type { OverpassWay, Profile } from "@/shared/types/round-trip";
 
 interface OverpassResponse {
-  elements: { type: string }[];
+  elements: { type: string; id?: number }[];
 }
 
 /**
@@ -31,23 +31,31 @@ export const buildOverpassQuery = (
   center: LatLng,
   radiusM: number,
   profile: Profile,
-  coarse = false
+  coarse = false,
+  withSignals = false
 ): string => {
   const r = Math.round(radiusM);
   const lat = center.lat.toFixed(6);
   const lon = center.lng.toFixed(6);
-  return [
+  const lines = [
     "[out:json][timeout:60];",
     "(",
     `  ${highwayFilter(profile, coarse)}(around:${r},${lat},${lon});`,
-    ");",
-    "out geom;",
-  ].join("\n");
+  ];
+  if (withSignals) {
+    lines.push(`  node["highway"="traffic_signals"](around:${r},${lat},${lon});`);
+  }
+  lines.push(");", "out geom;");
+  return lines.join("\n");
 };
 
 export interface OverpassFetchResult {
   ways: OverpassWay[];
   fetchMs: number;
+  /**
+   * traffic_signals ノードの ID 集合（withSignals 時のみ非空）。
+   */
+  signalNodes: Set<number>;
 }
 
 export interface OverpassFetchOptions {
@@ -58,6 +66,10 @@ export interface OverpassFetchOptions {
    * 長距離向けに細道（service/track/steps）も除外して辺数を抑える。
    */
   coarse?: boolean;
+  /**
+   * 信号（traffic_signals）ノードも取得する（信号回避ルーティング用）。
+   */
+  withSignals?: boolean;
 }
 
 const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
@@ -80,7 +92,13 @@ export const overpassRepository = {
   ): Promise<Result<OverpassFetchResult, AppError>> {
     const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
     const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
-    const query = buildOverpassQuery(center, radiusM, profile, options.coarse ?? false);
+    const query = buildOverpassQuery(
+      center,
+      radiusM,
+      profile,
+      options.coarse ?? false,
+      options.withSignals ?? false
+    );
 
     const startedAt = Date.now();
     const fetched = await safeTry(() =>
@@ -117,7 +135,12 @@ export const overpassRepository = {
     if (!parsed.ok) {
       return err(appError.upstream("Overpass 応答の解析に失敗しました。", parsed.error));
     }
-    const ways = (parsed.value.elements ?? []).filter((e): e is OverpassWay => e.type === "way");
-    return ok({ ways, fetchMs });
+    const elements = parsed.value.elements ?? [];
+    const ways = elements.filter((e): e is OverpassWay => e.type === "way");
+    const signalNodes = new Set<number>();
+    for (const e of elements) {
+      if (e.type === "node" && typeof e.id === "number") signalNodes.add(e.id);
+    }
+    return ok({ ways, fetchMs, signalNodes });
   },
 };
