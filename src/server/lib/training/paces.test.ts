@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildProgression,
+  estimateCurrentVdot,
   predictTimeSec,
   trainingPaces,
   vdotFromPerformance,
 } from "@/server/lib/training/paces";
+import type { Activity } from "@/shared/types/training";
 
 describe("VDOT モデル", () => {
   it("5K 20:00 の VDOT は ~49.8（Daniels テーブル一致）", () => {
@@ -67,5 +69,60 @@ describe("buildProgression（伸ばし方/実現可能性）", () => {
     const p = buildProgression(cur, 38 * 60, 10, 6); // 6週で38分は無理筋
     expect(p.feasibility).toBe("厳しい");
     expect(p.requiredImprovementPct).toBeGreaterThan(0);
+  });
+});
+
+describe("estimateCurrentVdot（実測優先）", () => {
+  const now = new Date("2026-06-01T00:00:00Z").getTime();
+  const slowRun = (extra?: Partial<Activity>): Activity => ({
+    date: "2026-05-25",
+    type: "ラン",
+    title: "",
+    distanceKm: 15,
+    durationSec: 15 * 360, // 6:00/km の遅い走（全体平均だと低い VDOT）
+    avgPaceSecPerKm: 360,
+    avgHr: 140,
+    maxHr: 160,
+    ascentM: 0,
+    ...extra,
+  });
+
+  it("best_efforts(5k) があれば全体平均より高い VDOT を採る", () => {
+    const withBE = estimateCurrentVdot(
+      [slowRun({ bestEfforts: [{ name: "5k", distanceM: 5000, timeSec: 20 * 60 }] })],
+      now,
+    );
+    const without = estimateCurrentVdot([slowRun()], now);
+    expect(withBE).not.toBeNull();
+    expect(without).not.toBeNull();
+    expect(withBE!).toBeGreaterThan(without!);
+    expect(withBE!).toBeGreaterThan(48); // 5k 20:00 ≒ VDOT 49.8
+  });
+
+  it("短距離(<3km)の best_effort は過大評価防止のため無視", () => {
+    const short = estimateCurrentVdot(
+      [slowRun({ bestEfforts: [{ name: "1k", distanceM: 1000, timeSec: 3 * 60 }] })],
+      now,
+    );
+    const without = estimateCurrentVdot([slowRun()], now);
+    expect(short).toBe(without);
+  });
+
+  it("workoutKind=race は実測として採用", () => {
+    const race: Activity = {
+      date: "2026-05-25",
+      type: "ラン",
+      title: "",
+      distanceKm: 10,
+      durationSec: 40 * 60,
+      avgPaceSecPerKm: 240,
+      avgHr: 175,
+      maxHr: 185,
+      ascentM: 0,
+      workoutKind: "race",
+    };
+    const v = estimateCurrentVdot([race], now);
+    expect(v).not.toBeNull();
+    expect(v!).toBeGreaterThan(48); // 10k 40:00 ≒ VDOT 50
   });
 });

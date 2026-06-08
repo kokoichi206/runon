@@ -1,8 +1,10 @@
 import type { StravaTokens } from "@/server/repositories/strava-repository";
-import { stravaUsecase } from "@/server/usecases/strava-usecase";
+import {
+  stravaUsecase,
+  type ListActivitiesResult,
+} from "@/server/usecases/strava-usecase";
 import { appError, type AppError } from "@/shared/errors";
 import { err, type Result } from "@/shared/result";
-import type { Activity } from "@/shared/types/training";
 
 /** refresh_token を保存する Cookie 名（Cookie の読み書きは route 層が行う）。 */
 export const STRAVA_REFRESH_COOKIE = "strava_rt";
@@ -25,7 +27,7 @@ export async function connectHandler(
 /** 直近の活動を取得。refresh_token 未保持なら未連携として扱う。 */
 export async function listActivitiesHandler(
   refreshToken: string | undefined,
-): Promise<Result<{ activities: Activity[]; refreshToken: string }, AppError>> {
+): Promise<Result<ListActivitiesResult, AppError>> {
   if (!refreshToken) return err(appError.unauthorized("Strava 未連携です。"));
   return stravaUsecase.listActivities(refreshToken);
 }

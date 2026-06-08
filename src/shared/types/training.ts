@@ -1,6 +1,21 @@
 import { z } from "zod";
 
-/** Garmin/Strava CSV から取り込む 1 アクティビティ。 */
+/** その走の中で Strava が算出したベストエフォート（最速 1k/5k/10k など）。 */
+export interface BestEffort {
+  /** Strava の区間名（"5k" "10k" "1 mile" など）。 */
+  name: string;
+  distanceM: number;
+  timeSec: number;
+}
+
+/** Strava の workout_type をラン向けに分類したもの。 */
+export type WorkoutKind = "race" | "long" | "workout" | "default";
+
+/**
+ * Garmin/Strava CSV から取り込む 1 アクティビティ。
+ * date 以降の基本5項目は両ソース共通。以降の optional 群は Strava のみが供給し得る
+ * 拡張データ（CSV では未設定。心拍計・サブスク有無で欠ける場合もある）。
+ */
 export interface Activity {
   /** ISO 日時（CSV の「日付」）。 */
   date: string;
@@ -14,6 +29,36 @@ export interface Activity {
   avgHr: number | null;
   maxHr: number | null;
   ascentM: number | null;
+  /** 経過時間（秒。停止含む）。Strava の elapsed_time。 */
+  elapsedSec?: number;
+  /** 平均ケイデンス（歩/分）。Strava は片脚 rpm を返すため取り込み時に 2 倍する。 */
+  avgCadenceSpm?: number;
+  /** 最高速ペース（秒/km）。Strava の max_speed から換算。 */
+  maxSpeedSecPerKm?: number;
+  /** 心拍が記録されていたか。 */
+  hasHeartrate?: boolean;
+  /** ワークアウト種別（Strava workout_type 由来）。 */
+  workoutKind?: WorkoutKind;
+  /** Relative Effort（Strava suffer_score。心拍ベースの実測トレーニング負荷）。 */
+  relativeEffort?: number;
+  /** その走のベストエフォート群（詳細取得した活動のみ）。 */
+  bestEfforts?: BestEffort[];
+}
+
+/** Strava のアスリート情報・長期集計（活動単位でないので Activity と別系統）。 */
+export interface AthleteRunTotals {
+  distanceKm: number;
+  durationSec: number;
+  count: number;
+}
+
+export interface AthleteProfile {
+  weightKg?: number;
+  sex?: "M" | "F";
+  /** 直近4週相当のラン集計（Strava stats）。 */
+  recentRunTotals?: AthleteRunTotals;
+  /** 全期間のラン集計（Strava stats）。 */
+  allRunTotals?: AthleteRunTotals;
 }
 
 /** 目標レース。距離は任意に設定可能。 */
@@ -85,6 +130,21 @@ export interface Fitness {
   currentVdot: number | null;
   /** 観測上の最大心拍。不明なら null。 */
   maxHrObserved: number | null;
+  /**
+   * 実測トレーニング負荷サマリ（ACWR）。relativeEffort が十分な活動にのみ算出。
+   * データ不足（CSV のみ・非サブスク等）では null。
+   */
+  recentLoad?: RecentLoad | null;
+}
+
+/** 急性(7日)/慢性(7日換算の28日平均)負荷とその比。 */
+export interface RecentLoad {
+  /** 直近7日の負荷合計。 */
+  acute: number;
+  /** 直近28日の負荷合計を7日スケールに換算した値。 */
+  chronic: number;
+  /** acute / chronic。1.5 超で急増（故障リスク帯）。 */
+  ratio: number;
 }
 
 export interface PlanInput {
