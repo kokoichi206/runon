@@ -12,30 +12,27 @@ interface OverpassResponse {
  * coarse=true（長距離）では走路価値の低い細道（駐車場通路 service・階段 steps・未舗装 track）も
  * 除外し、グラフの辺数を抑えて計算量を下げる（公園/河川敷の遊歩道 footway/path は温存）。
  */
-function highwayFilter(profile: Profile, coarse: boolean): string {
+const highwayFilter = (profile: Profile, coarse: boolean): string => {
   // 徒歩/自転車のいずれでも自動車専用路や工事中などは除外する。
   const baseExcluded =
     "motorway|motorway_link|trunk|trunk_link|construction|proposed|abandoned|raceway|bus_guideway|escape|corridor|platform";
-  const excludedHighway = coarse
-    ? `${baseExcluded}|service|track|steps`
-    : baseExcluded;
+  const excludedHighway = coarse ? `${baseExcluded}|service|track|steps` : baseExcluded;
   const base =
-    `way["highway"]["highway"!~"${excludedHighway}"]` +
-    `["area"!~"yes"]["access"!~"private|no"]`;
+    `way["highway"]["highway"!~"${excludedHighway}"]` + `["area"!~"yes"]["access"!~"private|no"]`;
   if (profile === "bike") {
     // 自転車禁止と歩行者専用路を除外。
     return `${base}["bicycle"!~"no"]["highway"!~"steps|footway|pedestrian"]`;
   }
   // walk: 歩行者禁止のみ除外。
   return `${base}["foot"!~"no"]`;
-}
+};
 
-export function buildOverpassQuery(
+export const buildOverpassQuery = (
   center: LatLng,
   radiusM: number,
   profile: Profile,
-  coarse = false,
-): string {
+  coarse = false
+): string => {
   const r = Math.round(radiusM);
   const lat = center.lat.toFixed(6);
   const lon = center.lng.toFixed(6);
@@ -46,7 +43,7 @@ export function buildOverpassQuery(
     ");",
     "out geom;",
   ].join("\n");
-}
+};
 
 export interface OverpassFetchResult {
   ways: OverpassWay[];
@@ -57,15 +54,18 @@ export interface OverpassFetchOptions {
   endpoint?: string;
   userAgent?: string;
   signal?: AbortSignal;
-  /** 長距離向けに細道（service/track/steps）も除外して辺数を抑える。 */
+  /**
+   * 長距離向けに細道（service/track/steps）も除外して辺数を抑える。
+   */
   coarse?: boolean;
 }
 
 const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
-const DEFAULT_USER_AGENT =
-  "runon/0.1 (https://github.com/kokoichi206/runon; round-trip generator)";
+const DEFAULT_USER_AGENT = "runon/0.1 (https://github.com/kokoichi206/runon; round-trip generator)";
 
-/** Overpass API（道路網取得）への外部 I/O を担う repository。 */
+/**
+ * Overpass API（道路網取得）への外部 I/O を担う repository。
+ */
 export const overpassRepository = {
   /**
    * 指定半径内の道路網を取得する。
@@ -76,7 +76,7 @@ export const overpassRepository = {
     center: LatLng,
     radiusM: number,
     profile: Profile,
-    options: OverpassFetchOptions = {},
+    options: OverpassFetchOptions = {}
   ): Promise<Result<OverpassFetchResult, AppError>> {
     const endpoint = options.endpoint ?? DEFAULT_ENDPOINT;
     const userAgent = options.userAgent ?? DEFAULT_USER_AGENT;
@@ -93,7 +93,7 @@ export const overpassRepository = {
         },
         body: new URLSearchParams({ data: query }).toString(),
         signal: options.signal,
-      }),
+      })
     );
     const fetchMs = Date.now() - startedAt;
     if (!fetched.ok) {
@@ -104,8 +104,8 @@ export const overpassRepository = {
     if (res.status === 429 || res.status === 504) {
       return err(
         appError.upstream(
-          `Overpass が混雑しています (HTTP ${res.status})。しばらく待つか距離を小さくして再試行してください。`,
-        ),
+          `Overpass が混雑しています (HTTP ${res.status})。しばらく待つか距離を小さくして再試行してください。`
+        )
       );
     }
     if (!res.ok) {
@@ -117,9 +117,7 @@ export const overpassRepository = {
     if (!parsed.ok) {
       return err(appError.upstream("Overpass 応答の解析に失敗しました。", parsed.error));
     }
-    const ways = (parsed.value.elements ?? []).filter(
-      (e): e is OverpassWay => e.type === "way",
-    );
+    const ways = (parsed.value.elements ?? []).filter((e): e is OverpassWay => e.type === "way");
     return ok({ ways, fetchMs });
   },
 };

@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
 
-import {
-  connectHandler,
-  STRAVA_REFRESH_COOKIE,
-} from "@/server/handlers/strava-handler";
+import { connectHandler, STRAVA_REFRESH_COOKIE } from "@/server/handlers/strava-handler";
 import { serverEnv } from "@/shared/env/server-env";
 
 export const runtime = "nodejs";
@@ -13,16 +10,15 @@ const baseUrl = (request: Request): string =>
 
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 365; // 1年
 
-/** Strava からのコールバック。認可コードをトークンに交換し refresh_token を Cookie 保存。 */
-export async function GET(request: Request): Promise<NextResponse> {
+/**
+ * Strava からのコールバック。認可コードをトークンに交換し refresh_token を Cookie 保存。
+ */
+export const GET = async (request: Request): Promise<NextResponse> => {
   const base = baseUrl(request);
   const url = new URL(request.url);
   const home = new URL("/training", base);
 
-  const result = await connectHandler(
-    url.searchParams.get("code"),
-    url.searchParams.get("error"),
-  );
+  const result = await connectHandler(url.searchParams.get("code"), url.searchParams.get("error"));
   if (!result.ok) {
     home.searchParams.set("strava", result.error.type === "unauthorized" ? "denied" : "error");
     return NextResponse.redirect(home);
@@ -38,4 +34,4 @@ export async function GET(request: Request): Promise<NextResponse> {
     secure: url.protocol === "https:",
   });
   return res;
-}
+};

@@ -14,12 +14,12 @@ OAuth で自動取得できるか検討した結果のまとめ。
 
 ## 選択肢の比較
 
-| 方法 | 認証 | 個人利用 | 実情 |
-|---|---|---|---|
-| Garmin 公式（Connect Developer Program: Activity/Health/Training API） | OAuth 2.0 (PKCE) | 不可 | 「個人利用はサポートしない」と明記。法人情報＋用途審査（確認〜2営業日、連携1〜4週、本番は partner verification）。アクセストークンは3か月で失効しリフレッシュ必要 |
-| **Strava API 経由**（推奨） | OAuth 2.0 | 可 | アプリ登録は即時。新規アプリは "Single Player Mode"＝自分のデータのみなら審査不要。他athlete連携は要審査 |
-| 非公式 `garminconnect`（python 等） | ID/PW ログイン | △ | Garmin Connect 内部 API をスクレイプ。OAuth でない・ToS グレー・壊れやすい。個人スクリプト用途のみ |
-| CSV アップロード（現状） | 不要 | 可 | ゼロ設定。Garmin Connect から `Activities.csv` を書き出して取り込む |
+| 方法                                                                   | 認証             | 個人利用 | 実情                                                                                                                                                              |
+| ---------------------------------------------------------------------- | ---------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Garmin 公式（Connect Developer Program: Activity/Health/Training API） | OAuth 2.0 (PKCE) | 不可     | 「個人利用はサポートしない」と明記。法人情報＋用途審査（確認〜2営業日、連携1〜4週、本番は partner verification）。アクセストークンは3か月で失効しリフレッシュ必要 |
+| **Strava API 経由**（推奨）                                            | OAuth 2.0        | 可       | アプリ登録は即時。新規アプリは "Single Player Mode"＝自分のデータのみなら審査不要。他athlete連携は要審査                                                          |
+| 非公式 `garminconnect`（python 等）                                    | ID/PW ログイン   | △        | Garmin Connect 内部 API をスクレイプ。OAuth でない・ToS グレー・壊れやすい。個人スクリプト用途のみ                                                                |
+| CSV アップロード（現状）                                               | 不要             | 可       | ゼロ設定。Garmin Connect から `Activities.csv` を書き出して取り込む                                                                                               |
 
 ## Garmin 公式 API（参考）
 
@@ -47,7 +47,7 @@ OAuth で自動取得できるか検討した結果のまとめ。
 取り込んだ活動は既存の `Activity` 型（`src/shared/types/training.ts`）に合わせるだけで、
 計画ロジック（`generatePlan`）はそのまま使える。
 
-1. **Strava アプリを発行**（Client ID / Client Secret、redirect URI を設定）— *ユーザーが用意するキー*
+1. **Strava アプリを発行**（Client ID / Client Secret、redirect URI を設定）— _ユーザーが用意するキー_
 2. サーバールート追加:
    - `GET /api/strava/auth` … 認可画面へリダイレクト（scope: `activity:read`）
    - `GET /api/strava/callback` … 認可コード→トークン交換（**Client Secret はサーバー保持**）

@@ -2,11 +2,12 @@ import type { Metadata, Viewport } from "next";
 
 import { SiteNav } from "@/client/components/SiteNav";
 import { THEME_INIT_SCRIPT } from "@/client/lib/theme";
+import { serverEnv } from "@/shared/env/server-env";
 
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3077"),
+  metadataBase: new URL(serverEnv.SITE_URL ?? "http://localhost:3077"),
   applicationName: "runon",
   title: {
     default: "runon — 走るための周回路とトレーニング計画",

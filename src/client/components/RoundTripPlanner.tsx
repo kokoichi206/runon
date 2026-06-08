@@ -8,10 +8,14 @@ import { useRoundTrip } from "@/client/hooks/useRoundTrip";
 import { routeColor } from "@/client/lib/map-style";
 import type { LngLat } from "@/shared/types/round-trip";
 
-/** 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。 */
+/**
+ * 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。
+ */
 type RouteView = "compare" | "focus";
 
-/** ボトムシートの段階。peek=つまみのみ / mid=半分 / full=ほぼ全面。 */
+/**
+ * ボトムシートの段階。peek=つまみのみ / mid=半分 / full=ほぼ全面。
+ */
 type SheetSnap = "peek" | "mid" | "full";
 
 const MapView = dynamic(() => import("@/client/components/MapView"), {
@@ -45,7 +49,7 @@ interface HomeLocation {
 
 // 経路の「形を決める点」を最大 k 個選ぶ（Ramer–Douglas–Peucker の貪欲版）。
 // 等間隔サンプルより曲がり角を残せるため、Google の再探索でも本来の道を辿りやすい。
-function simplifyToK(path: LngLat[], k: number): LngLat[] {
+const simplifyToK = (path: LngLat[], k: number): LngLat[] => {
   const n = path.length;
   if (n <= k) return path;
   // 緯度経度を近似的に平面化（perpendicular 距離計算用）。
@@ -88,7 +92,7 @@ function simplifyToK(path: LngLat[], k: number): LngLat[] {
     keep.add(bestIdx);
   }
   return [...keep].sort((a, b) => a - b).map((i) => path[i]!);
-}
+};
 
 /**
  * 計算した周回路を Google マップ（経路モード・徒歩）で開く URL を作る。
@@ -96,7 +100,7 @@ function simplifyToK(path: LngLat[], k: number): LngLat[] {
  * 「曲がり角」を優先選択(simplifyToK)して渡すことで再探索の精度を上げる。
  * それでも Google が点間を自前データで補うため「近似」になる（完全一致は GPX で）。
  */
-function googleMapsDirUrl(start: LngLat, path: LngLat[], maxWaypoints = 9): string {
+const googleMapsDirUrl = (start: LngLat, path: LngLat[], maxWaypoints = 9): string => {
   const ll = ([lngV, latV]: LngLat) => `${latV.toFixed(6)},${lngV.toFixed(6)}`;
   const origin = ll(start);
   // 始点・終点(=start)を含めて簡約し、中間の形状点だけ waypoint にする。
@@ -112,15 +116,18 @@ function googleMapsDirUrl(start: LngLat, path: LngLat[], maxWaypoints = 9): stri
   // waypoints は URLSearchParams だと | が %7C になる。Google はどちらも解釈する。
   const wp = waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : "";
   return `https://www.google.com/maps/dir/?${params.toString()}${wp}`;
-}
+};
 
 const escapeXml = (s: string): string =>
-  s.replace(/[<>&'"]/g, (c) =>
-    ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!,
+  s.replace(
+    /[<>&'"]/g,
+    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!
   );
 
-/** 経路を GPX(トラック) 文字列にする。全点をそのまま出力＝正確な経路。 */
-function toGpx(path: LngLat[], name: string): string {
+/**
+ * 経路を GPX(トラック) 文字列にする。全点をそのまま出力＝正確な経路。
+ */
+const toGpx = (path: LngLat[], name: string): string => {
   const pts = path
     .map(([lng, lat]) => `<trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}"/>`)
     .join("");
@@ -129,10 +136,12 @@ function toGpx(path: LngLat[], name: string): string {
     `<gpx version="1.1" creator="Running Planner" xmlns="http://www.topografix.com/GPX/1/1">` +
     `<trk><name>${escapeXml(name)}</name><trkseg>${pts}</trkseg></trk></gpx>`
   );
-}
+};
 
-/** GPX をダウンロードさせる。 */
-function downloadGpx(path: LngLat[], name: string): void {
+/**
+ * GPX をダウンロードさせる。
+ */
+const downloadGpx = (path: LngLat[], name: string): void => {
   const blob = new Blob([toGpx(path, name)], { type: "application/gpx+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -140,13 +149,13 @@ function downloadGpx(path: LngLat[], name: string): void {
   a.download = `${name}.gpx`;
   a.click();
   URL.revokeObjectURL(url);
-}
+};
 
 /**
  * GPX をスマホの共有シートに出す（Web Share API）。OsmAnd/Komoot/AirDrop 等へ直接渡せる。
  * 共有が使えない環境（多くの PC）ではダウンロードにフォールバック。
  */
-async function shareGpx(path: LngLat[], name: string): Promise<void> {
+const shareGpx = async (path: LngLat[], name: string): Promise<void> => {
   const file = new File([toGpx(path, name)], `${name}.gpx`, {
     type: "application/gpx+xml",
   });
@@ -160,9 +169,9 @@ async function shareGpx(path: LngLat[], name: string): Promise<void> {
     }
   }
   downloadGpx(path, name);
-}
+};
 
-export function RoundTripPlanner(): React.JSX.Element {
+export const RoundTripPlanner = (): React.JSX.Element => {
   const [lat, setLat] = useState(35.681);
   const [lng, setLng] = useState(139.767);
   const [targetKm, setTargetKm] = useState(3);
@@ -217,7 +226,7 @@ export function RoundTripPlanner(): React.JSX.Element {
     s === "full" ? 0 : s === "peek" ? closedOffset : Math.round(closedOffset * MID_RATIO);
   const nearestSnap = (offset: number): SheetSnap =>
     (["full", "mid", "peek"] as SheetSnap[]).reduce((best, s) =>
-      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best,
+      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best
     );
 
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
@@ -343,20 +352,20 @@ export function RoundTripPlanner(): React.JSX.Element {
       setLat(Number(Number(j.lat).toFixed(6)));
       setLng(Number(Number(j.lng).toFixed(6)));
       setGeoNote(
-        `概算現在地(IP${j.city ? ` / ${j.city}` : ""})を使用しました。精度は都市レベルです。地図クリックで微調整できます。`,
+        `概算現在地(IP${j.city ? ` / ${j.city}` : ""})を使用しました。精度は都市レベルです。地図クリックで微調整できます。`
       );
       return true;
     } catch (err) {
       setGeoError(
         err instanceof Error
           ? `IP からの現在地取得に失敗: ${err.message}`
-          : "IP からの現在地取得に失敗しました。",
+          : "IP からの現在地取得に失敗しました。"
       );
       return false;
     }
   };
 
-  const useCurrentLocation = async () => {
+  const requestCurrentLocation = async () => {
     setLocating(true);
     setGeoError(null);
     setGeoNote(null);
@@ -377,7 +386,7 @@ export function RoundTripPlanner(): React.JSX.Element {
           // 許可拒否はユーザー操作が必要なので IP に進まず明示する。
           if (e.code === e.PERMISSION_DENIED) {
             setGeoError(
-              "位置情報の利用が拒否されました。ブラウザ/OS の許可設定を確認してください。",
+              "位置情報の利用が拒否されました。ブラウザ/OS の許可設定を確認してください。"
             );
             return;
           }
@@ -425,10 +434,10 @@ export function RoundTripPlanner(): React.JSX.Element {
         className="absolute inset-x-0 bottom-0 z-10 order-2 flex max-h-[88dvh] flex-col rounded-t-2xl border-t border-border bg-surface shadow-[0_-8px_30px_rgb(0_0_0/0.25)] transition-transform duration-300 ease-out will-change-transform motion-reduce:transition-none md:static md:order-1 md:max-h-none md:w-[380px] md:rounded-none md:border-t-0 md:border-r md:shadow-none md:transform-none"
         style={{
           paddingBottom: "env(safe-area-inset-bottom)",
-          ...(sheetTranslate != null
+          ...(sheetTranslate !== null
             ? {
                 transform: `translateY(${sheetTranslate}px)`,
-                transition: dragY != null ? "none" : undefined,
+                transition: dragY !== null ? "none" : undefined,
               }
             : {}),
         }}
@@ -461,310 +470,307 @@ export function RoundTripPlanner(): React.JSX.Element {
               周回路を作る
             </h1>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              目標距離のループコースを生成します（Lewis &amp; Corcoran 2024 の等時線多角形法
-              + パレート局所探索 / OpenStreetMap データ）。
+              目標距離のループコースを生成します（Lewis &amp; Corcoran 2024 の等時線多角形法 +
+              パレート局所探索 / OpenStreetMap データ）。
             </p>
           </header>
 
           <section className="flex flex-col gap-3">
-          <div>
-            <label className="text-xs font-semibold text-muted">プリセット</label>
-            <div className="mt-1 flex flex-wrap gap-1.5">
-              {home && (
-                <button
-                  type="button"
-                  onClick={useHome}
-                  className="rounded-full border border-success/40 bg-success-soft px-2.5 py-1 text-xs font-semibold text-success-fg hover:border-success"
-                >
-                  🏠 自宅
-                </button>
-              )}
-              {PRESETS.map((p) => (
-                <button
-                  key={p.label}
-                  type="button"
-                  onClick={() => {
-                    setLat(p.lat);
-                    setLng(p.lng);
-                  }}
-                  className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-fg"
-                >
-                  {p.label}
-                </button>
-              ))}
+            <div>
+              <span className="text-xs font-semibold text-muted">プリセット</span>
+              <div className="mt-1 flex flex-wrap gap-1.5">
+                {home && (
+                  <button
+                    type="button"
+                    onClick={useHome}
+                    className="rounded-full border border-success/40 bg-success-soft px-2.5 py-1 text-xs font-semibold text-success-fg hover:border-success"
+                  >
+                    🏠 自宅
+                  </button>
+                )}
+                {PRESETS.map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => {
+                      setLat(p.lat);
+                      setLng(p.lng);
+                    }}
+                    className="rounded-full border border-border px-2.5 py-1 text-xs text-muted hover:bg-surface-2 hover:text-fg"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          <div>
-            <button
-              type="button"
-              onClick={() => void useCurrentLocation()}
-              disabled={locating}
-              className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent-soft-border bg-accent-soft px-2 py-1.5 text-sm font-semibold text-accent-soft-fg transition-colors hover:brightness-105 disabled:opacity-50"
-            >
-              {locating ? "現在地を取得中…" : "📍 現在地を始点にする"}
-            </button>
-            {geoNote && (
-              <p className="mt-1 text-[11px] text-accent-soft-fg">{geoNote}</p>
-            )}
-            {geoError && (
-              <p className="mt-1 text-[11px] text-danger-fg">{geoError}</p>
-            )}
-            <div className="mt-2 flex items-center justify-between gap-2">
+            <div>
               <button
                 type="button"
-                onClick={saveHome}
-                className="min-h-9 flex-1 rounded-lg border border-border px-2 py-1.5 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-fg"
+                onClick={() => void requestCurrentLocation()}
+                disabled={locating}
+                className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent-soft-border bg-accent-soft px-2 py-1.5 text-sm font-semibold text-accent-soft-fg transition-colors hover:brightness-105 disabled:opacity-50"
               >
-                🏠 この地点を自宅に登録
+                {locating ? "現在地を取得中…" : "📍 現在地を始点にする"}
               </button>
-              {home && (
+              {geoNote && <p className="mt-1 text-[11px] text-accent-soft-fg">{geoNote}</p>}
+              {geoError && <p className="mt-1 text-[11px] text-danger-fg">{geoError}</p>}
+              <div className="mt-2 flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={clearHome}
-                  className="inline-flex min-h-6 items-center px-1 text-[11px] text-faint underline hover:text-fg"
+                  onClick={saveHome}
+                  className="min-h-9 flex-1 rounded-lg border border-border px-2 py-1.5 text-xs font-semibold text-muted hover:bg-surface-2 hover:text-fg"
                 >
-                  解除
+                  🏠 この地点を自宅に登録
                 </button>
+                {home && (
+                  <button
+                    type="button"
+                    onClick={clearHome}
+                    className="inline-flex min-h-6 items-center px-1 text-[11px] text-faint underline hover:text-fg"
+                  >
+                    解除
+                  </button>
+                )}
+              </div>
+              {homeNote && (
+                <p className="mt-1 text-[11px] text-success-fg" aria-live="polite">
+                  {homeNote}
+                </p>
               )}
             </div>
-            {homeNote && (
-              <p className="mt-1 text-[11px] text-success-fg" aria-live="polite">
-                {homeNote}
+
+            <div className="grid grid-cols-2 gap-2">
+              <label className="flex flex-col text-xs font-semibold text-muted">
+                緯度 (lat)
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={lat}
+                  onChange={(e) => setLat(Number(e.target.value))}
+                  className="mt-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-base text-fg sm:text-sm"
+                />
+              </label>
+              <label className="flex flex-col text-xs font-semibold text-muted">
+                経度 (lng)
+                <input
+                  type="number"
+                  step="0.0001"
+                  value={lng}
+                  onChange={(e) => setLng(Number(e.target.value))}
+                  className="mt-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-base text-fg sm:text-sm"
+                />
+              </label>
+            </div>
+            <p className="-mt-1 text-[11px] text-faint">
+              地図をクリックして始点を指定することもできます。
+            </p>
+
+            <label className="flex flex-col text-xs font-semibold text-muted">
+              目標距離:{" "}
+              <span className="font-semibold text-accent-soft-fg">{targetKm.toFixed(1)} km</span>
+              <input
+                type="range"
+                min={0.5}
+                max={42}
+                step={0.5}
+                value={targetKm}
+                onChange={(e) => setTargetKm(Number(e.target.value))}
+                className="mt-1"
+              />
+            </label>
+            {targetKm >= 25 && (
+              <p className="-mt-1 text-[11px] text-faint">
+                長距離は計算に時間がかかります（最大 40 秒ほど）。
               </p>
             )}
-          </div>
 
-          <div className="grid grid-cols-2 gap-2">
-            <label className="flex flex-col text-xs font-semibold text-muted">
-              緯度 (lat)
-              <input
-                type="number"
-                step="0.0001"
-                value={lat}
-                onChange={(e) => setLat(Number(e.target.value))}
-                className="mt-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-base text-fg sm:text-sm"
-              />
-            </label>
-            <label className="flex flex-col text-xs font-semibold text-muted">
-              経度 (lng)
-              <input
-                type="number"
-                step="0.0001"
-                value={lng}
-                onChange={(e) => setLng(Number(e.target.value))}
-                className="mt-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-base text-fg sm:text-sm"
-              />
-            </label>
-          </div>
-          <p className="-mt-1 text-[11px] text-faint">
-            地図をクリックして始点を指定することもできます。
-          </p>
+            <button
+              type="button"
+              onClick={onSubmit}
+              disabled={state.status === "loading"}
+              className="min-h-11 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-fg shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
+            >
+              {state.status === "loading" ? "計算中…（数秒）" : "周回路を計算"}
+            </button>
 
-          <label className="flex flex-col text-xs font-semibold text-muted">
-            目標距離: <span className="font-semibold text-accent-soft-fg">{targetKm.toFixed(1)} km</span>
-            <input
-              type="range"
-              min={0.5}
-              max={42}
-              step={0.5}
-              value={targetKm}
-              onChange={(e) => setTargetKm(Number(e.target.value))}
-              className="mt-1"
-            />
-          </label>
-          {targetKm >= 25 && (
-            <p className="-mt-1 text-[11px] text-faint">
-              長距離は計算に時間がかかります（最大 40 秒ほど）。
+            <p className="text-[10px] text-faint">
+              地図: ©{" "}
+              <a
+                href="https://www.openstreetmap.org/copyright"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-fg"
+              >
+                OpenStreetMap
+              </a>{" "}
+              · ©{" "}
+              <a
+                href="https://carto.com/attributions"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline hover:text-fg"
+              >
+                CARTO
+              </a>
+            </p>
+          </section>
+
+          {state.status === "error" && (
+            <p className="rounded-lg border border-danger/30 bg-danger-soft p-2 text-xs text-danger-fg">
+              {state.message}
             </p>
           )}
 
-          <button
-            type="button"
-            onClick={onSubmit}
-            disabled={state.status === "loading"}
-            className="min-h-11 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-fg shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
-          >
-            {state.status === "loading" ? "計算中…（数秒）" : "周回路を計算"}
-          </button>
+          {result && (
+            <section className="flex flex-col gap-2">
+              <div className="text-[11px] text-faint">
+                候補 {result.candidates.length} 件 / ノード {result.stats.graphNodes}・ エッジ{" "}
+                {result.stats.graphEdges} / 計算 {result.stats.computeMs}ms （Overpass{" "}
+                {result.stats.overpassMs}ms）
+              </div>
 
-          <p className="text-[10px] text-faint">
-            地図: ©{" "}
-            <a
-              href="https://www.openstreetmap.org/copyright"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-fg"
-            >
-              OpenStreetMap
-            </a>{" "}
-            · ©{" "}
-            <a
-              href="https://carto.com/attributions"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline hover:text-fg"
-            >
-              CARTO
-            </a>
-          </p>
-        </section>
-
-        {state.status === "error" && (
-          <p className="rounded-lg border border-danger/30 bg-danger-soft p-2 text-xs text-danger-fg">
-            {state.message}
-          </p>
-        )}
-
-        {result && (
-          <section className="flex flex-col gap-2">
-            <div className="text-[11px] text-faint">
-              候補 {result.candidates.length} 件 / ノード {result.stats.graphNodes}・
-              エッジ {result.stats.graphEdges} / 計算 {result.stats.computeMs}ms
-              （Overpass {result.stats.overpassMs}ms）
-            </div>
-
-            {/* 比較（全候補を色分け）↔ フォーカス（選択した1本に集中）の切替。 */}
-            <div
-              className="flex gap-1 rounded-lg bg-surface-2 p-0.5 text-xs font-medium"
-              role="group"
-              aria-label="候補の表示モード"
-            >
-              <button
-                type="button"
-                onClick={() => setView("compare")}
-                aria-pressed={view === "compare"}
-                className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
-                  view === "compare" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
-                }`}
+              {/* 比較（全候補を色分け）↔ フォーカス（選択した1本に集中）の切替。 */}
+              <div
+                className="flex gap-1 rounded-lg bg-surface-2 p-0.5 text-xs font-medium"
+                role="group"
+                aria-label="候補の表示モード"
               >
-                比較（全{candidates.length}本）
-              </button>
-              <button
-                type="button"
-                onClick={() => setView("focus")}
-                aria-pressed={view === "focus"}
-                className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
-                  view === "focus" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
-                }`}
-              >
-                選択中の1本
-              </button>
-            </div>
+                <button
+                  type="button"
+                  onClick={() => setView("compare")}
+                  aria-pressed={view === "compare"}
+                  className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
+                    view === "compare" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
+                  }`}
+                >
+                  比較（全{candidates.length}本）
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setView("focus")}
+                  aria-pressed={view === "focus"}
+                  className={`flex-1 rounded-md px-2 py-1.5 transition-colors ${
+                    view === "focus" ? "bg-accent text-accent-fg" : "text-muted hover:text-fg"
+                  }`}
+                >
+                  選択中の1本
+                </button>
+              </div>
 
-            <ul className="flex flex-col gap-1.5">
-              {candidates.map((c, i) => {
-                // 比較中はどのカードも選択表示にしない（フォーカス中のみ強調）。
-                const isSel = view === "focus" && c.id === selectedId;
+              <ul className="flex flex-col gap-1.5">
+                {candidates.map((c, i) => {
+                  // 比較中はどのカードも選択表示にしない（フォーカス中のみ強調）。
+                  const isSel = view === "focus" && c.id === selectedId;
+                  return (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // フォーカス中に選択中カードを再タップ → 比較へ戻る。
+                          if (view === "focus" && c.id === selectedId) {
+                            setView("compare");
+                          } else {
+                            setSelectedId(c.id);
+                            setView("focus");
+                          }
+                        }}
+                        className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
+                          isSel
+                            ? "border-accent bg-accent-soft"
+                            : "border-border hover:bg-surface-2"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="flex items-center gap-1.5 font-semibold text-fg">
+                            {/* 地図上のルート色と対応するスウォッチ。 */}
+                            <span
+                              aria-hidden="true"
+                              className="inline-block size-2.5 shrink-0 rounded-full"
+                              style={{ backgroundColor: routeColor(theme, i) }}
+                            />
+                            #{i + 1}
+                            {c.id === result.recommendedId && (
+                              <span className="ml-1 rounded bg-success-soft px-1 text-[10px] text-success-fg">
+                                推奨
+                              </span>
+                            )}
+                          </span>
+                          <span className="font-medium text-fg tabular-nums">
+                            {(c.lengthMeters / 1000).toFixed(2)} km
+                          </span>
+                        </div>
+                        <div className="mt-0.5 flex justify-between text-[11px] text-muted tabular-nums">
+                          <span>誤差 ±{(c.lengthError / 1000).toFixed(2)}km</span>
+                          <span>重複 {c.overlapPercent}%</span>
+                          <span
+                            className={c.onParetoFront ? "text-accent-soft-fg" : "text-faint"}
+                            title={`手法: ${c.source}`}
+                          >
+                            {c.onParetoFront ? "フロント" : "別方向"}
+                          </span>
+                        </div>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              {(() => {
+                // 書き出しは「1本を選択中（フォーカス）」のときだけ有効。
+                // レイアウトは固定し、要素の有効/無効だけ切り替える（選択ごとに文章が増減しないように）。
+                const focused =
+                  view === "focus" ? (candidates.find((c) => c.id === selectedId) ?? null) : null;
+                const pickHint = "ルートを1つ選択してください";
                 return (
-                  <li key={c.id}>
+                  <>
                     <button
                       type="button"
+                      disabled={!focused}
+                      title={focused ? undefined : pickHint}
                       onClick={() => {
-                        // フォーカス中に選択中カードを再タップ → 比較へ戻る。
-                        if (view === "focus" && c.id === selectedId) {
-                          setView("compare");
-                        } else {
-                          setSelectedId(c.id);
-                          setView("focus");
+                        if (focused) {
+                          void shareGpx(
+                            focused.path,
+                            `round-trip-${(focused.lengthMeters / 1000).toFixed(1)}km`
+                          );
                         }
                       }}
-                      className={`w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors ${
-                        isSel
-                          ? "border-accent bg-accent-soft"
-                          : "border-border hover:bg-surface-2"
-                      }`}
+                      className="min-h-11 rounded-lg border border-success/40 bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-fg transition-colors hover:border-success disabled:border-border disabled:bg-surface-2 disabled:text-faint disabled:opacity-60 disabled:hover:border-border"
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-1.5 font-semibold text-fg">
-                          {/* 地図上のルート色と対応するスウォッチ。 */}
-                          <span
-                            aria-hidden="true"
-                            className="inline-block size-2.5 shrink-0 rounded-full"
-                            style={{ backgroundColor: routeColor(theme, i) }}
-                          />
-                          #{i + 1}
-                          {c.id === result.recommendedId && (
-                            <span className="ml-1 rounded bg-success-soft px-1 text-[10px] text-success-fg">
-                              推奨
-                            </span>
-                          )}
-                        </span>
-                        <span className="font-medium text-fg tabular-nums">
-                          {(c.lengthMeters / 1000).toFixed(2)} km
-                        </span>
-                      </div>
-                      <div className="mt-0.5 flex justify-between text-[11px] text-muted tabular-nums">
-                        <span>誤差 ±{(c.lengthError / 1000).toFixed(2)}km</span>
-                        <span>重複 {c.overlapPercent}%</span>
-                        <span
-                          className={c.onParetoFront ? "text-accent-soft-fg" : "text-faint"}
-                          title={`手法: ${c.source}`}
-                        >
-                          {c.onParetoFront ? "フロント" : "別方向"}
-                        </span>
-                      </div>
+                      GPX をスマホに送る / 保存
                     </button>
-                  </li>
+                    {focused ? (
+                      <a
+                        href={googleMapsDirUrl(result.start, focused.path)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                      >
+                        Google マップで開く（近似・参考）
+                      </a>
+                    ) : (
+                      <span
+                        aria-disabled="true"
+                        title={pickHint}
+                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
+                      >
+                        Google マップで開く（近似・参考）
+                      </span>
+                    )}
+                    {/* 文言は選択状態によらず固定（チラつき防止）。 */}
+                    <p className="text-[10px] text-faint">
+                      GPX をスマホの共有シートから <b>OsmAnd / Komoot / Garmin Connect</b>{" "}
+                      に渡すと音声＋ライン表示で正確にナビできます（Google
+                      マップは経由地を再探索する近似）。
+                    </p>
+                  </>
                 );
-              })}
-            </ul>
-            {(() => {
-              // 書き出しは「1本を選択中（フォーカス）」のときだけ有効。
-              // レイアウトは固定し、要素の有効/無効だけ切り替える（選択ごとに文章が増減しないように）。
-              const focused =
-                view === "focus"
-                  ? (candidates.find((c) => c.id === selectedId) ?? null)
-                  : null;
-              const pickHint = "ルートを1つ選択してください";
-              return (
-                <>
-                  <button
-                    type="button"
-                    disabled={!focused}
-                    title={focused ? undefined : pickHint}
-                    onClick={() => {
-                      if (focused) {
-                        void shareGpx(
-                          focused.path,
-                          `round-trip-${(focused.lengthMeters / 1000).toFixed(1)}km`,
-                        );
-                      }
-                    }}
-                    className="min-h-11 rounded-lg border border-success/40 bg-success-soft px-3 py-2 text-center text-sm font-semibold text-success-fg transition-colors hover:border-success disabled:border-border disabled:bg-surface-2 disabled:text-faint disabled:opacity-60 disabled:hover:border-border"
-                  >
-                    GPX をスマホに送る / 保存
-                  </button>
-                  {focused ? (
-                    <a
-                      href={googleMapsDirUrl(result.start, focused.path)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-                    >
-                      Google マップで開く（近似・参考）
-                    </a>
-                  ) : (
-                    <span
-                      aria-disabled="true"
-                      title={pickHint}
-                      className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
-                    >
-                      Google マップで開く（近似・参考）
-                    </span>
-                  )}
-                  {/* 文言は選択状態によらず固定（チラつき防止）。 */}
-                  <p className="text-[10px] text-faint">
-                    GPX をスマホの共有シートから <b>OsmAnd / Komoot / Garmin Connect</b> に渡すと音声＋ライン表示で正確にナビできます（Google マップは経由地を再探索する近似）。
-                  </p>
-                </>
-              );
-            })()}
-            <p className="text-[10px] text-faint">{result.attribution}</p>
-          </section>
-        )}
+              })()}
+              <p className="text-[10px] text-faint">{result.attribution}</p>
+            </section>
+          )}
         </div>
       </aside>
     </div>
   );
-}
+};

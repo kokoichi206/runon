@@ -1,16 +1,15 @@
-import {
-  addArc,
-  addNode,
-  type StreetGraph,
-} from "@/server/lib/routing/graph";
+import { haversineMeters } from "@/server/lib/routing/geo";
+import { addArc, addNode, type StreetGraph } from "@/server/lib/routing/graph";
 import { createGraph } from "@/server/lib/routing/graph";
 import type { OverpassWay } from "@/shared/types/round-trip";
 import type { Profile } from "@/shared/types/round-trip";
 
 type Direction = "both" | "forward" | "reverse";
 
-/** 自転車プロファイルの一方通行解釈。徒歩は常に双方向。 */
-function travelDirection(tags: Record<string, string> | undefined): Direction {
+/**
+ * 自転車プロファイルの一方通行解釈。徒歩は常に双方向。
+ */
+const travelDirection = (tags: Record<string, string> | undefined): Direction => {
   if (!tags) return "both";
   let dir: Direction = "both";
   const ow = tags["oneway"];
@@ -27,16 +26,13 @@ function travelDirection(tags: Record<string, string> | undefined): Direction {
   else if (owb === "yes") dir = "forward";
 
   return dir;
-}
+};
 
 /**
  * Overpass の way 群から有向ストリートグラフを構築する。
  * 連続ノード間にセグメント弧を張り、共有ノード ID が交差点トポロジを与える。
  */
-export function buildGraphFromOverpass(
-  ways: OverpassWay[],
-  profile: Profile,
-): StreetGraph {
+export const buildGraphFromOverpass = (ways: OverpassWay[], profile: Profile): StreetGraph => {
   const graph = createGraph();
 
   for (const way of ways) {
@@ -56,10 +52,14 @@ export function buildGraphFromOverpass(
       const a = ids[i]!;
       const b = ids[i + 1]!;
       if (a === b) continue;
-      if (dir === "both" || dir === "forward") addArc(graph, a, b);
-      if (dir === "both" || dir === "reverse") addArc(graph, b, a);
+      const ga = geom[i]!;
+      const gb = geom[i + 1]!;
+      // 重みは隣接ジオメトリ間の haversine。両方向で同じ値。
+      const weightM = haversineMeters({ lat: ga.lat, lng: ga.lon }, { lat: gb.lat, lng: gb.lon });
+      if (dir === "both" || dir === "forward") addArc(graph, a, b, weightM);
+      if (dir === "both" || dir === "reverse") addArc(graph, b, a, weightM);
     }
   }
 
   return graph;
-}
+};

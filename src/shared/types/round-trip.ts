@@ -22,7 +22,9 @@ export const roundTripRequestSchema = z.object({
 });
 export type RoundTripRequest = z.infer<typeof roundTripRequestSchema>;
 
-/** GeoJSON 順序 [lng, lat] の座標。 */
+/**
+ * GeoJSON 順序 [lng, lat] の座標。
+ */
 export type LngLat = [number, number];
 
 /**
@@ -39,28 +41,48 @@ export interface OverpassWay {
 
 export interface RoundTripCandidate {
   id: string;
-  /** 周回経路の全ポリライン（始点 = 終点）。GeoJSON 順 [lng, lat]。 */
+  /**
+   * 周回経路の全ポリライン（始点 = 終点）。GeoJSON 順 [lng, lat]。
+   */
   path: LngLat[];
-  /** 多角形ウェイポイント（始点を含む）。可視化・デバッグ用。 */
+  /**
+   * 多角形ウェイポイント（始点を含む）。可視化・デバッグ用。
+   */
   waypoints: LngLat[];
-  /** 実距離 L(S)（メートル）。 */
+  /**
+   * 実距離 L(S)（メートル）。
+   */
   lengthMeters: number;
-  /** f1 = |k - L(S)|（メートル）。小さいほど目標距離に近い。 */
+  /**
+   * f1 = |k - L(S)|（メートル）。小さいほど目標距離に近い。
+   */
   lengthError: number;
-  /** f2 = 既踏破区間の再通過割合（%）。小さいほど往復が少ない。 */
+  /**
+   * f2 = 既踏破区間の再通過割合（%）。小さいほど往復が少ない。
+   */
   overlapPercent: number;
-  /** パレートフロント上の解か。 */
+  /**
+   * パレートフロント上の解か。
+   */
   onParetoFront: boolean;
-  /** この候補を生み出した手法。 */
+  /**
+   * この候補を生み出した手法。
+   */
   source: "isochrone-polygon" | "pareto-local-search";
 }
 
 export interface RoundTripResult {
-  /** start に最も近い道路ノードへスナップした実際の始点。 */
+  /**
+   * start に最も近い道路ノードへスナップした実際の始点。
+   */
   start: LngLat;
-  /** 推奨候補の id（パレートフロントから重み付けで選択）。 */
+  /**
+   * 推奨候補の id（パレートフロントから重み付けで選択）。
+   */
   recommendedId: string;
-  /** 全候補（パレートフロント + 参考解）。lengthError 昇順。 */
+  /**
+   * 全候補（パレートフロント + 参考解）。lengthError 昇順。
+   */
   candidates: RoundTripCandidate[];
   stats: {
     graphNodes: number;

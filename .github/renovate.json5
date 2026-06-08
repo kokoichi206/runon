@@ -25,13 +25,7 @@
       // Next 16 ↔ React 19 の major lockstep。型定義もまとめて追従させる。
       groupName: "Next.js & React",
       groupSlug: "next-react",
-      matchPackageNames: [
-        "next",
-        "react",
-        "react-dom",
-        "@types/react",
-        "@types/react-dom",
-      ],
+      matchPackageNames: ["next", "react", "react-dom", "@types/react", "@types/react-dom"],
       addLabels: ["frontend"],
       separateMajorMinor: true,
     },
