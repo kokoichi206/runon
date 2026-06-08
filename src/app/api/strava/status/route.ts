@@ -8,7 +8,7 @@ import {
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
+export const GET = async (): Promise<NextResponse> => {
   const cookieStore = await cookies();
   return NextResponse.json(statusHandler(cookieStore.has(STRAVA_REFRESH_COOKIE)));
-}
+};

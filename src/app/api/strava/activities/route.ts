@@ -12,8 +12,10 @@ export const maxDuration = 30;
 
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 365;
 
-/** Strava の直近活動を取得して Activity[] を返す。refresh_token はローテートして保存し直す。 */
-export async function GET(): Promise<NextResponse> {
+/**
+ * Strava の直近活動を取得して Activity[] を返す。refresh_token はローテートして保存し直す。
+ */
+export const GET = async (): Promise<NextResponse> => {
   const cookieStore = await cookies();
   const result = await listActivitiesHandler(cookieStore.get(STRAVA_REFRESH_COOKIE)?.value);
   if (!result.ok) {
@@ -38,11 +40,13 @@ export async function GET(): Promise<NextResponse> {
     maxAge: REFRESH_MAX_AGE,
   });
   return res;
-}
+};
 
-/** 連携解除（Cookie 削除）。 */
-export async function DELETE(): Promise<NextResponse> {
+/**
+ * 連携解除（Cookie 削除）。
+ */
+export const DELETE = async (): Promise<NextResponse> => {
   const res = NextResponse.json({ ok: true });
   res.cookies.set(STRAVA_REFRESH_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
   return res;
-}
+};

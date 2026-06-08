@@ -23,10 +23,14 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** 周回路（トップ）がアクティブ。 */
+/**
+ * 周回路（トップ）がアクティブ。
+ */
 export const Home: Story = {};
 
-/** トレーニングページがアクティブ。 */
+/**
+ * トレーニングページがアクティブ。
+ */
 export const Training: Story = {
   parameters: {
     nextjs: { navigation: { pathname: "/training" } },

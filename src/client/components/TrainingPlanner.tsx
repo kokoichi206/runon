@@ -48,7 +48,9 @@ const paceLabel = (secPerKm: number): string => {
   return `${m}:${String(s).padStart(2, "0")}/km`;
 };
 
-/** "h:mm:ss" / "mm:ss" -> 秒。不正なら null。 */
+/**
+ * "h:mm:ss" / "mm:ss" -> 秒。不正なら null。
+ */
 const parseClock = (s: string): number | null => {
   const parts = s
     .trim()
@@ -68,7 +70,9 @@ const parseClock = (s: string): number | null => {
   return sec > 0 ? sec : null;
 };
 
-/** 秒 -> "h:mm:ss" / "m:ss"。 */
+/**
+ * 秒 -> "h:mm:ss" / "m:ss"。
+ */
 const formatClock = (sec: number): string => {
   const h = Math.floor(sec / 3600);
   const m = Math.floor((sec % 3600) / 60);
@@ -92,7 +96,7 @@ const mmddw = (ymd: string): string => {
   return `${m}/${d}(${WEEKDAYS[wd]})`;
 };
 
-export function TrainingPlanner(): React.JSX.Element {
+export const TrainingPlanner = (): React.JSX.Element => {
   const store = useTrainingStore();
   const [today, setToday] = useState(todayYmd());
   const [csvError, setCsvError] = useState<string | null>(null);
@@ -134,7 +138,7 @@ export function TrainingPlanner(): React.JSX.Element {
     } finally {
       setStravaBusy(false);
     }
-  }, [store.setActivities, store.setAthleteProfile]);
+  }, [store]);
 
   const disconnectStrava = useCallback(async () => {
     try {
@@ -636,7 +640,7 @@ export function TrainingPlanner(): React.JSX.Element {
       </footer>
     </div>
   );
-}
+};
 
 const FEASIBILITY_STYLE: Record<ProgressionSummary["feasibility"], string> = {
   現実的: "bg-success-soft text-success-fg",
@@ -645,11 +649,11 @@ const FEASIBILITY_STYLE: Record<ProgressionSummary["feasibility"], string> = {
   不明: "bg-surface-3 text-muted",
 };
 
-function ProgressionPanel({
+const ProgressionPanel = ({
   progression: pr,
 }: {
   progression: ProgressionSummary;
-}): React.JSX.Element {
+}): React.JSX.Element => {
   const zones: { label: string; sec: number }[] = [
     { label: "E(イージー)", sec: pr.goalPaces.easy },
     { label: "M(マラソン)", sec: pr.goalPaces.marathon },
@@ -723,7 +727,7 @@ function ProgressionPanel({
       </p>
     </div>
   );
-}
+};
 
 interface PlanViewProps {
   plan: PlannedWorkout[];
@@ -738,7 +742,7 @@ interface PlanViewProps {
   race: Race;
 }
 
-function PlanView({
+const PlanView = ({
   plan,
   weeks,
   today,
@@ -748,7 +752,7 @@ function PlanView({
   onToggleSkip,
   onSkipWeek,
   race,
-}: PlanViewProps): React.JSX.Element {
+}: PlanViewProps): React.JSX.Element => {
   const done = new Set(doneDates);
   const skip = new Set(skippedDates);
   const totalKm = Math.round(plan.reduce((s, w) => s + w.distanceKm, 0));
@@ -879,4 +883,4 @@ function PlanView({
       })}
     </div>
   );
-}
+};

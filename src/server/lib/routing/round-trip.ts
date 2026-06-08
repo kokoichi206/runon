@@ -14,21 +14,33 @@ import type { Reachable } from "@/server/lib/routing/isochrone";
 import { evaluateWalk, removeOutAndBack, type WalkMetrics } from "@/server/lib/routing/walk";
 
 export interface PolygonSpec {
-  /** 頂点列（vertices[0] は始点 start と一致）。 */
+  /**
+   * 頂点列（vertices[0] は始点 start と一致）。
+   */
   vertices: LatLng[];
   bearingDeg: number;
-  /** 楕円の縦横比メタ（デバッグ用）。 */
+  /**
+   * 楕円の縦横比メタ（デバッグ用）。
+   */
   aspect: { along: number; across: number };
 }
 
 export interface GenerateOptions {
-  /** 多角形の頂点数 n（始点含む）。論文の例は n=4。 */
+  /**
+   * 多角形の頂点数 n（始点含む）。論文の例は n=4。
+   */
   vertexCounts?: number[];
-  /** 方位スイープの本数。 */
+  /**
+   * 方位スイープの本数。
+   */
   bearingCount?: number;
-  /** 楕円アスペクト比 [along(β方向), across(直交)] のリスト。 */
+  /**
+   * 楕円アスペクト比 [along(β方向), across(直交)] のリスト。
+   */
   aspects?: [number, number][];
-  /** 既使用エッジへの再使用ペナルティ係数。 */
+  /**
+   * 既使用エッジへの再使用ペナルティ係数。
+   */
   penaltyFactor?: number;
 }
 
@@ -48,13 +60,13 @@ const DEFAULTS: Required<GenerateOptions> = {
  * ローカル平面（forward=β方向 u, perp=直交 v）で楕円上に n 頂点を置き、
  * 実際の辺長合計が目標周長 k になるよう一様スケールする。
  */
-export function buildPolygon(
+export const buildPolygon = (
   start: LatLng,
   targetMeters: number,
   bearing: number,
   n: number,
   aspect: [number, number],
-): PolygonSpec {
+): PolygonSpec => {
   const [alongRaw, acrossRaw] = aspect;
   // φ_0 = π としたとき頂点0が楕円の「後端」= start に来る。
   const phi0 = Math.PI;
@@ -100,15 +112,17 @@ export function buildPolygon(
   });
 
   return { vertices, bearingDeg: bearing, aspect: { along: alongRaw, across: acrossRaw } };
-}
+};
 
-/** 多方位・多アスペクト・多 n の多角形候補を生成。 */
-export function generatePolygons(
+/**
+ * 多方位・多アスペクト・多 n の多角形候補を生成。
+ */
+export const generatePolygons = (
   start: LatLng,
   targetMeters: number,
   baseBearingDeg: number,
   options: GenerateOptions = {},
-): PolygonSpec[] {
+): PolygonSpec[] => {
   const opts = { ...DEFAULTS, ...options };
   const polygons: PolygonSpec[] = [];
   const step = 360 / opts.bearingCount;
@@ -121,7 +135,7 @@ export function generatePolygons(
     }
   }
   return polygons;
-}
+};
 
 export interface RoutedCandidate {
   walk: NodeId[];
@@ -137,14 +151,14 @@ export interface RoutedCandidate {
  * - 結合した閉路に out-and-back 除去を適用し (f1,f2) を評価
  * 経路が繋がらない、または退化した場合は null。
  */
-export function routePolygon(
+export const routePolygon = (
   graph: StreetGraph,
   startNode: NodeId,
   polygon: PolygonSpec,
   targetMeters: number,
   reachable: Reachable,
   penaltyFactor: number,
-): RoutedCandidate | null {
+): RoutedCandidate | null => {
   // 頂点をノードへスナップ（vertices[0]=start は startNode 固定）。
   const snapped: NodeId[] = [startNode];
   for (let i = 1; i < polygon.vertices.length; i++) {
@@ -202,24 +216,26 @@ export function routePolygon(
     polygon,
     metrics,
   };
-}
+};
 
-/** 多角形の直線距離の周長（メートル）。 */
-export function polygonPerimeterMeters(polygon: PolygonSpec): number {
+/**
+ * 多角形の直線距離の周長（メートル）。
+ */
+export const polygonPerimeterMeters = (polygon: PolygonSpec): number => {
   const v = polygon.vertices;
   let p = 0;
   for (let i = 0; i < v.length; i++) {
     p += haversineMeters(v[i]!, v[(i + 1) % v.length]!);
   }
   return p;
-}
+};
 
 /**
  * 多角形をルート化し、実距離が目標から外れていれば
  * 「周長 × (目標/実距離)」で多角形を再スケールして再ルートする（論文 Stage 3 の回帰補正を簡略化）。
  * 既に許容範囲内なら追加ルートはしない。
  */
-export function refineRoute(
+export const refineRoute = (
   graph: StreetGraph,
   startNode: NodeId,
   start: LatLng,
@@ -229,7 +245,7 @@ export function refineRoute(
   penaltyFactor: number,
   maxIters = 2,
   tolerance = 0.06,
-): RoutedCandidate | null {
+): RoutedCandidate | null => {
   let best = routePolygon(graph, startNode, polygon, targetMeters, reachable, penaltyFactor);
   for (let i = 0; i < maxIters && best; i++) {
     const len = best.metrics.lengthMeters;
@@ -252,17 +268,19 @@ export function refineRoute(
     }
   }
   return best;
-}
+};
 
-/** start に最も近いノードを返す（snap）。距離が遠すぎる場合は null。 */
-export function snapStart(
+/**
+ * start に最も近いノードを返す（snap）。距離が遠すぎる場合は null。
+ */
+export const snapStart = (
   graph: StreetGraph,
   start: LatLng,
   maxSnapMeters = 500,
   allowed?: Set<NodeId>,
-): NodeId | null {
+): NodeId | null => {
   const node = nearestNode(graph, start, allowed);
   if (node === null) return null;
   const d = haversineMeters(start, graph.nodes.get(node)!);
   return d <= maxSnapMeters ? node : null;
-}
+};

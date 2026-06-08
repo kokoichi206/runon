@@ -12,7 +12,7 @@ interface OverpassResponse {
  * coarse=true（長距離）では走路価値の低い細道（駐車場通路 service・階段 steps・未舗装 track）も
  * 除外し、グラフの辺数を抑えて計算量を下げる（公園/河川敷の遊歩道 footway/path は温存）。
  */
-function highwayFilter(profile: Profile, coarse: boolean): string {
+const highwayFilter = (profile: Profile, coarse: boolean): string => {
   // 徒歩/自転車のいずれでも自動車専用路や工事中などは除外する。
   const baseExcluded =
     "motorway|motorway_link|trunk|trunk_link|construction|proposed|abandoned|raceway|bus_guideway|escape|corridor|platform";
@@ -28,14 +28,14 @@ function highwayFilter(profile: Profile, coarse: boolean): string {
   }
   // walk: 歩行者禁止のみ除外。
   return `${base}["foot"!~"no"]`;
-}
+};
 
-export function buildOverpassQuery(
+export const buildOverpassQuery = (
   center: LatLng,
   radiusM: number,
   profile: Profile,
   coarse = false,
-): string {
+): string => {
   const r = Math.round(radiusM);
   const lat = center.lat.toFixed(6);
   const lon = center.lng.toFixed(6);
@@ -46,7 +46,7 @@ export function buildOverpassQuery(
     ");",
     "out geom;",
   ].join("\n");
-}
+};
 
 export interface OverpassFetchResult {
   ways: OverpassWay[];
@@ -57,7 +57,9 @@ export interface OverpassFetchOptions {
   endpoint?: string;
   userAgent?: string;
   signal?: AbortSignal;
-  /** 長距離向けに細道（service/track/steps）も除外して辺数を抑える。 */
+  /**
+   * 長距離向けに細道（service/track/steps）も除外して辺数を抑える。
+   */
   coarse?: boolean;
 }
 
@@ -65,7 +67,9 @@ const DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter";
 const DEFAULT_USER_AGENT =
   "runon/0.1 (https://github.com/kokoichi206/runon; round-trip generator)";
 
-/** Overpass API（道路網取得）への外部 I/O を担う repository。 */
+/**
+ * Overpass API（道路網取得）への外部 I/O を担う repository。
+ */
 export const overpassRepository = {
   /**
    * 指定半径内の道路網を取得する。

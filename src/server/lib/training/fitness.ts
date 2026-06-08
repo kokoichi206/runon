@@ -8,7 +8,9 @@ import type {
   RecentLoad,
 } from "@/shared/types/training";
 
-/** 走力推定のデフォルト（履歴が無い/少ない場合の控えめな初期値）。 */
+/**
+ * 走力推定のデフォルト（履歴が無い/少ない場合の控えめな初期値）。
+ */
 const FALLBACK: Fitness = {
   weeklyKm: 10,
   longestKm: 5,
@@ -27,7 +29,7 @@ const LOAD_MIN_COVERAGE = 0.6; // 直近28日のラン中、relativeEffort を�
  * 欠損(非サブスク/心拍なし)を 0 負荷とみなすと比が偽性高値になるため、
  * 「本数・被覆率」の品質ゲートを満たす場合のみ算出し、満たさなければ null を返す。
  */
-function computeRecentLoad(runs: Activity[], nowMs: number): RecentLoad | null {
+const computeRecentLoad = (runs: Activity[], nowMs: number): RecentLoad | null => {
   const since = (days: number) =>
     runs.filter((a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= days * 86_400_000);
 
@@ -52,7 +54,7 @@ function computeRecentLoad(runs: Activity[], nowMs: number): RecentLoad | null {
     chronic: Math.round(chronic),
     ratio: Math.round((acute / chronic) * 100) / 100,
   };
-}
+};
 
 /**
  * 直近のラン履歴から走力を推定する。
@@ -64,11 +66,11 @@ function computeRecentLoad(runs: Activity[], nowMs: number): RecentLoad | null {
  *
  * profile（Strava の長期集計）があれば weeklyKm の過小評価を補正する。
  */
-export function estimateFitness(
+export const estimateFitness = (
   activities: Activity[],
   nowMs: number,
   profile?: AthleteProfile,
-): Fitness {
+): Fitness => {
   const runs = activities.filter(
     (a) => a.distanceKm > 0 && a.durationSec > 0,
   );
@@ -111,4 +113,4 @@ export function estimateFitness(
     maxHrObserved,
     recentLoad: computeRecentLoad(runs, nowMs),
   };
-}
+};

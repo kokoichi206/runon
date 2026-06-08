@@ -17,11 +17,11 @@ export interface WalkMetrics {
   overlapPercent: number;
 }
 
-export function evaluateWalk(
+export const evaluateWalk = (
   graph: StreetGraph,
   walk: NodeId[],
   targetMeters: number,
-): WalkMetrics {
+): WalkMetrics => {
   const lengthMeters = walkLengthMeters(graph, walk);
   const lengthError = Math.abs(targetMeters - lengthMeters);
 
@@ -44,7 +44,7 @@ export function evaluateWalk(
   const overlapPercent = lengthMeters > 0 ? (100 * repeated) / lengthMeters : 0;
 
   return { lengthMeters, lengthError, overlapPercent };
-}
+};
 
 /**
  * out-and-back（U ターンの行き止まり）除去。
@@ -53,7 +53,7 @@ export function evaluateWalk(
  *   [.., A, B, A, ..] で A==両隣 なら B への往復を取り除き [.., A, ..] にする。
  * ネストした行き止まり (A,B,C,B,A) も反復で除去できる。閉路性を保つ。
  */
-export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
+export const removeOutAndBack = (walk: NodeId[], start: NodeId): NodeId[] => {
   let current = walk.slice();
   for (;;) {
     let removedAt = -1;
@@ -71,12 +71,14 @@ export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
     current.splice(removedAt, 2);
   }
   return current;
-}
+};
 
-/** a が b をパレート支配するか（(f1,f2) で全て以下かつどこかで真に小さい）。 */
-export function dominates(a: WalkMetrics, b: WalkMetrics): boolean {
+/**
+ * a が b をパレート支配するか（(f1,f2) で全て以下かつどこかで真に小さい）。
+ */
+export const dominates = (a: WalkMetrics, b: WalkMetrics): boolean => {
   const le = a.lengthError <= b.lengthError && a.overlapPercent <= b.overlapPercent;
   const strict =
     a.lengthError < b.lengthError || a.overlapPercent < b.overlapPercent;
   return le && strict;
-}
+};

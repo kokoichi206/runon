@@ -10,7 +10,7 @@ export type ResolvedTheme = "light" | "dark";
 export const THEME_STORAGE_KEY = "runon:theme";
 const SYSTEM_DARK_QUERY = "(prefers-color-scheme: dark)";
 
-export function resolveTheme(mode: ThemeMode): ResolvedTheme {
+export const resolveTheme = (mode: ThemeMode): ResolvedTheme => {
   if (mode === "system") {
     return typeof window !== "undefined" &&
       window.matchMedia(SYSTEM_DARK_QUERY).matches
@@ -18,9 +18,11 @@ export function resolveTheme(mode: ThemeMode): ResolvedTheme {
       : "light";
   }
   return mode;
-}
+};
 
-/** 各テーマでのページ背景色（ブラウザクロム/PWA の theme-color に使う）。--bg と一致させる。 */
+/**
+ * 各テーマでのページ背景色（ブラウザクロム/PWA の theme-color に使う）。--bg と一致させる。
+ */
 const THEME_BG: Record<ResolvedTheme, string> = {
   dark: "#0b0e11",
   light: "#fbfaf8",
@@ -31,7 +33,7 @@ const THEME_BG: Record<ResolvedTheme, string> = {
  * static metadata の theme-color は prefers-color-scheme 依存で、アプリ内のテーマ選択を反映できないため、
  * 実行時に専用 meta を head 末尾へ挿入して上書きする（最後に適用される meta が勝つ）。
  */
-function syncThemeColorMeta(resolved: ResolvedTheme): void {
+const syncThemeColorMeta = (resolved: ResolvedTheme): void => {
   let meta = document.head.querySelector<HTMLMetaElement>(
     'meta[name="theme-color"][data-runon]',
   );
@@ -42,19 +44,21 @@ function syncThemeColorMeta(resolved: ResolvedTheme): void {
     document.head.appendChild(meta);
   }
   meta.setAttribute("content", THEME_BG[resolved]);
-}
+};
 
-/** <html> に解決済みテーマと選択モードを反映する。 */
-export function applyTheme(mode: ThemeMode): ResolvedTheme {
+/**
+ * <html> に解決済みテーマと選択モードを反映する。
+ */
+export const applyTheme = (mode: ThemeMode): ResolvedTheme => {
   const resolved = resolveTheme(mode);
   const el = document.documentElement;
   el.dataset.theme = resolved;
   el.dataset.themeMode = mode;
   syncThemeColorMeta(resolved);
   return resolved;
-}
+};
 
-export function readStoredMode(): ThemeMode {
+export const readStoredMode = (): ThemeMode => {
   if (typeof window === "undefined") return "system";
   try {
     const v = window.localStorage.getItem(THEME_STORAGE_KEY);
@@ -63,15 +67,15 @@ export function readStoredMode(): ThemeMode {
     // ストレージ不可（Cookie 全ブロック/サンドボックス iframe 等）。OS 追従の既定にフォールバック。
     return "system";
   }
-}
+};
 
-export function storeMode(mode: ThemeMode): void {
+export const storeMode = (mode: ThemeMode): void => {
   try {
     window.localStorage.setItem(THEME_STORAGE_KEY, mode);
   } catch {
     // プライベートモード等で保存不可。テーマは当該セッション内では効くので無視する。
   }
-}
+};
 
 /**
  * 初回描画前に <head> で同期実行し、チラつき(FOUC)を防ぐスクリプト。

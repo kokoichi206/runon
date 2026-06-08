@@ -12,9 +12,13 @@ export type ErrorType =
 
 export interface AppError {
   type: ErrorType;
-  /** ユーザー向けメッセージ（日本語）。内部実装の詳細は載せない。 */
+  /**
+   * ユーザー向けメッセージ（日本語）。内部実装の詳細は載せない。
+   */
   message: string;
-  /** 元エラー。ログ/デバッグ用でレスポンスには含めない。 */
+  /**
+   * 元エラー。ログ/デバッグ用でレスポンスには含めない。
+   */
   cause?: unknown;
 }
 
@@ -36,10 +40,14 @@ const STATUS: Record<ErrorType, number> = {
   internal: 500,
 };
 
-/** AppError を HTTP ステータスコードへ変換する（route handler 用）。 */
+/**
+ * AppError を HTTP ステータスコードへ変換する（route handler 用）。
+ */
 export const httpStatusFor = (error: AppError): number => STATUS[error.type];
 
 const USER_ERROR_TYPES = new Set<ErrorType>(["validation", "config", "unauthorized", "not_found"]);
 
-/** ユーザー起因のエラーか（true ならクライアント責任、false ならサーバー/外部起因）。 */
+/**
+ * ユーザー起因のエラーか（true ならクライアント責任、false ならサーバー/外部起因）。
+ */
 export const isUserError = (error: AppError): boolean => USER_ERROR_TYPES.has(error.type);

@@ -24,12 +24,12 @@ import {
 import { computeRoundTrips } from "@/server/usecases/compute-round-trips";
 
 // 50m 間隔の格子状ストリートを Overpass way 群として合成する。
-function gridWays(
+const gridWays = (
   rows: number,
   cols: number,
   spacingM: number,
   origin: LatLng,
-): OverpassWay[] {
+): OverpassWay[] => {
   const dLat = spacingM / 111_320;
   const dLng = spacingM / (111_320 * Math.cos((origin.lat * Math.PI) / 180));
   const nodeId = (r: number, c: number) => 1000 + r * cols + c;
@@ -60,7 +60,7 @@ function gridWays(
     ways.push({ type: "way", id: 2_000_000 + c, nodes: ids, geometry, tags: { highway: "residential" } });
   }
   return ways;
-}
+};
 
 const ORIGIN: LatLng = { lat: 35.0, lng: 139.0 };
 

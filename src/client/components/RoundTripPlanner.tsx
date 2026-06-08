@@ -8,10 +8,14 @@ import { useRoundTrip } from "@/client/hooks/useRoundTrip";
 import { routeColor } from "@/client/lib/map-style";
 import type { LngLat } from "@/shared/types/round-trip";
 
-/** 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。 */
+/**
+ * 候補の見せ方。compare=全候補を比較 / focus=選択した1本に集中。
+ */
 type RouteView = "compare" | "focus";
 
-/** ボトムシートの段階。peek=つまみのみ / mid=半分 / full=ほぼ全面。 */
+/**
+ * ボトムシートの段階。peek=つまみのみ / mid=半分 / full=ほぼ全面。
+ */
 type SheetSnap = "peek" | "mid" | "full";
 
 const MapView = dynamic(() => import("@/client/components/MapView"), {
@@ -45,7 +49,7 @@ interface HomeLocation {
 
 // 経路の「形を決める点」を最大 k 個選ぶ（Ramer–Douglas–Peucker の貪欲版）。
 // 等間隔サンプルより曲がり角を残せるため、Google の再探索でも本来の道を辿りやすい。
-function simplifyToK(path: LngLat[], k: number): LngLat[] {
+const simplifyToK = (path: LngLat[], k: number): LngLat[] => {
   const n = path.length;
   if (n <= k) return path;
   // 緯度経度を近似的に平面化（perpendicular 距離計算用）。
@@ -88,7 +92,7 @@ function simplifyToK(path: LngLat[], k: number): LngLat[] {
     keep.add(bestIdx);
   }
   return [...keep].sort((a, b) => a - b).map((i) => path[i]!);
-}
+};
 
 /**
  * 計算した周回路を Google マップ（経路モード・徒歩）で開く URL を作る。
@@ -96,7 +100,7 @@ function simplifyToK(path: LngLat[], k: number): LngLat[] {
  * 「曲がり角」を優先選択(simplifyToK)して渡すことで再探索の精度を上げる。
  * それでも Google が点間を自前データで補うため「近似」になる（完全一致は GPX で）。
  */
-function googleMapsDirUrl(start: LngLat, path: LngLat[], maxWaypoints = 9): string {
+const googleMapsDirUrl = (start: LngLat, path: LngLat[], maxWaypoints = 9): string => {
   const ll = ([lngV, latV]: LngLat) => `${latV.toFixed(6)},${lngV.toFixed(6)}`;
   const origin = ll(start);
   // 始点・終点(=start)を含めて簡約し、中間の形状点だけ waypoint にする。
@@ -112,15 +116,17 @@ function googleMapsDirUrl(start: LngLat, path: LngLat[], maxWaypoints = 9): stri
   // waypoints は URLSearchParams だと | が %7C になる。Google はどちらも解釈する。
   const wp = waypoints ? `&waypoints=${encodeURIComponent(waypoints)}` : "";
   return `https://www.google.com/maps/dir/?${params.toString()}${wp}`;
-}
+};
 
 const escapeXml = (s: string): string =>
   s.replace(/[<>&'"]/g, (c) =>
     ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!,
   );
 
-/** 経路を GPX(トラック) 文字列にする。全点をそのまま出力＝正確な経路。 */
-function toGpx(path: LngLat[], name: string): string {
+/**
+ * 経路を GPX(トラック) 文字列にする。全点をそのまま出力＝正確な経路。
+ */
+const toGpx = (path: LngLat[], name: string): string => {
   const pts = path
     .map(([lng, lat]) => `<trkpt lat="${lat.toFixed(6)}" lon="${lng.toFixed(6)}"/>`)
     .join("");
@@ -129,10 +135,12 @@ function toGpx(path: LngLat[], name: string): string {
     `<gpx version="1.1" creator="Running Planner" xmlns="http://www.topografix.com/GPX/1/1">` +
     `<trk><name>${escapeXml(name)}</name><trkseg>${pts}</trkseg></trk></gpx>`
   );
-}
+};
 
-/** GPX をダウンロードさせる。 */
-function downloadGpx(path: LngLat[], name: string): void {
+/**
+ * GPX をダウンロードさせる。
+ */
+const downloadGpx = (path: LngLat[], name: string): void => {
   const blob = new Blob([toGpx(path, name)], { type: "application/gpx+xml" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -140,13 +148,13 @@ function downloadGpx(path: LngLat[], name: string): void {
   a.download = `${name}.gpx`;
   a.click();
   URL.revokeObjectURL(url);
-}
+};
 
 /**
  * GPX をスマホの共有シートに出す（Web Share API）。OsmAnd/Komoot/AirDrop 等へ直接渡せる。
  * 共有が使えない環境（多くの PC）ではダウンロードにフォールバック。
  */
-async function shareGpx(path: LngLat[], name: string): Promise<void> {
+const shareGpx = async (path: LngLat[], name: string): Promise<void> => {
   const file = new File([toGpx(path, name)], `${name}.gpx`, {
     type: "application/gpx+xml",
   });
@@ -160,9 +168,9 @@ async function shareGpx(path: LngLat[], name: string): Promise<void> {
     }
   }
   downloadGpx(path, name);
-}
+};
 
-export function RoundTripPlanner(): React.JSX.Element {
+export const RoundTripPlanner = (): React.JSX.Element => {
   const [lat, setLat] = useState(35.681);
   const [lng, setLng] = useState(139.767);
   const [targetKm, setTargetKm] = useState(3);
@@ -356,7 +364,7 @@ export function RoundTripPlanner(): React.JSX.Element {
     }
   };
 
-  const useCurrentLocation = async () => {
+  const applyCurrentLocation = async () => {
     setLocating(true);
     setGeoError(null);
     setGeoNote(null);
@@ -498,7 +506,7 @@ export function RoundTripPlanner(): React.JSX.Element {
           <div>
             <button
               type="button"
-              onClick={() => void useCurrentLocation()}
+              onClick={() => void applyCurrentLocation()}
               disabled={locating}
               className="flex min-h-11 w-full items-center justify-center gap-1.5 rounded-lg border border-accent-soft-border bg-accent-soft px-2 py-1.5 text-sm font-semibold text-accent-soft-fg transition-colors hover:brightness-105 disabled:opacity-50"
             >
@@ -767,4 +775,4 @@ export function RoundTripPlanner(): React.JSX.Element {
       </aside>
     </div>
   );
-}
+};

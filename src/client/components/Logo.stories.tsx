@@ -16,14 +16,18 @@ export default meta;
 
 type Story = StoryObj<typeof meta>;
 
-/** マーク + ワードマーク（sm 以上でワードマーク表示）。 */
+/**
+ * マーク + ワードマーク（sm 以上でワードマーク表示）。
+ */
 export const Default: Story = {};
 
 export const Large: Story = {
   args: { size: 64 },
 };
 
-/** マーク単体（アクセント色のグラデーション + グロー）。 */
+/**
+ * マーク単体（アクセント色のグラデーション + グロー）。
+ */
 export const MarkOnly: StoryObj<typeof LogoMark> = {
   render: (args) => <LogoMark {...args} />,
   args: { size: 48 },

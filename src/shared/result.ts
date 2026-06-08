@@ -11,10 +11,10 @@ export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
  * 例外を投げうる処理（fetch / JSON parse 等）を Result に統一する。
  * 主に repository 層で外部 I/O を包むために使う。
  */
-export async function safeTry<T>(fn: () => Promise<T> | T): Promise<Result<T, unknown>> {
+export const safeTry = async <T>(fn: () => Promise<T> | T): Promise<Result<T, unknown>> => {
   try {
     return ok(await fn());
   } catch (cause) {
     return err(cause);
   }
-}
+};

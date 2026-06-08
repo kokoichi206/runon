@@ -13,8 +13,10 @@ const baseUrl = (request: Request): string =>
 
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 365; // 1年
 
-/** Strava からのコールバック。認可コードをトークンに交換し refresh_token を Cookie 保存。 */
-export async function GET(request: Request): Promise<NextResponse> {
+/**
+ * Strava からのコールバック。認可コードをトークンに交換し refresh_token を Cookie 保存。
+ */
+export const GET = async (request: Request): Promise<NextResponse> => {
   const base = baseUrl(request);
   const url = new URL(request.url);
   const home = new URL("/training", base);
@@ -38,4 +40,4 @@ export async function GET(request: Request): Promise<NextResponse> {
     secure: url.protocol === "https:",
   });
   return res;
-}
+};
