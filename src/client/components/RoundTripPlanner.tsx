@@ -458,12 +458,12 @@ export function RoundTripPlanner(): React.JSX.Element {
         >
           <header>
             <h1 className="font-display text-lg font-extrabold tracking-tight text-fg">
-              周回路を作る
+              目標距離から、最適なループを導く
             </h1>
             <p className="mt-1 text-xs leading-relaxed text-muted">
-              目標距離のループコースを生成します（Lewis &amp; Corcoran 2024 の等時線多角形法
-              + パレート局所探索 / OpenStreetMap データ）。
+              等時線ポリゴン法でコース候補を張り、パレート最適化で最良の一周を選抜。
             </p>
+            <p className="mt-2 text-[10px] text-faint">Lewis &amp; Corcoran 2024</p>
           </header>
 
           <section className="flex flex-col gap-3">
@@ -585,7 +585,7 @@ export function RoundTripPlanner(): React.JSX.Element {
             disabled={state.status === "loading"}
             className="min-h-11 rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-fg shadow-sm transition-colors hover:bg-accent-hover disabled:opacity-50"
           >
-            {state.status === "loading" ? "計算中…（数秒）" : "周回路を計算"}
+            {state.status === "loading" ? "計算中…（数秒）" : "コースを計算"}
           </button>
 
           <p className="text-[10px] text-faint">
