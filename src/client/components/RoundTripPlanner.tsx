@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useResolvedTheme } from "@/client/hooks/useResolvedTheme";
 import { useRoundTrip } from "@/client/hooks/useRoundTrip";
-import { routeColor } from "@/client/lib/map-style";
+import { routeColor, type Basemap } from "@/client/lib/map-style";
 import type { LngLat } from "@/shared/types/round-trip";
 
 /**
@@ -179,6 +179,7 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const [avoidSignals, setAvoidSignals] = useState(false);
   // 細い道（路地・遊歩道など）を避けた経路を優先する（生成に細道ペナルティ、並べ替えにも反映）。
   const [avoidNarrowRoads, setAvoidNarrowRoads] = useState(false);
+  const [basemap, setBasemap] = useState<Basemap>("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<RouteView>("compare");
   const [locating, setLocating] = useState(false);
@@ -423,6 +424,8 @@ export const RoundTripPlanner = (): React.JSX.Element => {
           selectedId={selectedId}
           view={view}
           theme={theme}
+          basemap={basemap}
+          onToggleBasemap={() => setBasemap((b) => (b === "satellite" ? "map" : "satellite"))}
           onPick={(pLng, pLat) => {
             setLng(Number(pLng.toFixed(6)));
             setLat(Number(pLat.toFixed(6)));

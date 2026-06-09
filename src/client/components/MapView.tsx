@@ -4,7 +4,7 @@ import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useEffect, useRef } from "react";
 
-import { MAP_COLORS, mapStyle } from "@/client/lib/map-style";
+import { MAP_COLORS, mapStyle, type Basemap } from "@/client/lib/map-style";
 import type { ResolvedTheme } from "@/client/lib/theme";
 import type { LngLat, RoundTripCandidate } from "@/shared/types/round-trip";
 
@@ -23,6 +23,10 @@ export interface MapViewProps {
    */
   theme: ResolvedTheme;
   /**
+   * ベースマップ（地図 / 衛星写真）。
+   */
+  basemap: Basemap;
+  /**
    * 地図クリックで始点を選ぶ。
    */
   onPick: (lng: number, lat: number) => void;
@@ -30,6 +34,10 @@ export interface MapViewProps {
    * ルート（ループ）クリックでその候補を選ぶ。
    */
   onSelectRoute: (id: string) => void;
+  /**
+   * ベースマップ切替ボタンの操作。
+   */
+  onToggleBasemap: () => void;
 }
 
 const DEFAULT_CENTER: [number, number] = [139.767, 35.681]; // 東京駅
@@ -44,15 +52,17 @@ export default function MapView({
   selectedId,
   view,
   theme,
+  basemap,
   onPick,
   onSelectRoute,
+  onToggleBasemap,
 }: MapViewProps): React.JSX.Element {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const readyRef = useRef(false);
   const startMarkerRef = useRef<maplibregl.Marker | null>(null);
-  // 現在の地図スタイルが反映しているテーマ。themeRef と食い違ったら setStyle で収束させる。
-  const appliedThemeRef = useRef<ResolvedTheme | null>(null);
+  // 現在の地図スタイルが反映している「テーマ:ベースマップ」。styleKey と食い違ったら setStyle で収束させる。
+  const appliedStyleRef = useRef<string | null>(null);
 
   // 最新の props を ref に保持し、地図再生成を避ける。
   const onPickRef = useRef(onPick);
@@ -63,6 +73,9 @@ export default function MapView({
   stateRef.current = { start, candidates, selectedId, view };
   const themeRef = useRef(theme);
   themeRef.current = theme;
+  const basemapRef = useRef(basemap);
+  basemapRef.current = basemap;
+  const styleKey = (): string => `${themeRef.current}:${basemapRef.current}`;
 
   // ルート用のソース+レイヤーを（再）追加する。setStyle はカスタムレイヤーを消すため再投入に使う。
   const addRouteLayers = useRef((_map: maplibregl.Map) => {});
@@ -176,15 +189,15 @@ export default function MapView({
     }
   };
 
-  // 地図スタイルを現在のテーマへ収束させる（load 前後どちらの変更も取りこぼさない）。
+  // 地図スタイルを現在のテーマ/ベースマップへ収束させる（load 前後どちらの変更も取りこぼさない）。
   // 実際に setStyle を発行したら true を返す（styledata 経路で再描画されるため呼び出し側の render は不要）。
-  const syncTheme = useRef((): boolean => false);
-  syncTheme.current = () => {
+  const syncStyle = useRef((): boolean => false);
+  syncStyle.current = () => {
     const map = mapRef.current;
     if (!map || !readyRef.current) return false;
-    if (appliedThemeRef.current === themeRef.current) return false;
-    appliedThemeRef.current = themeRef.current;
-    map.setStyle(mapStyle(themeRef.current));
+    if (appliedStyleRef.current === styleKey()) return false;
+    appliedStyleRef.current = styleKey();
+    map.setStyle(mapStyle(themeRef.current, basemapRef.current));
     // マーカーは生成後に色を変えられないため作り直す。
     startMarkerRef.current?.remove();
     startMarkerRef.current = null;
@@ -198,10 +211,10 @@ export default function MapView({
   // 初回マウント：地図生成。
   useEffect(() => {
     if (!containerRef.current) return;
-    const builtTheme = themeRef.current;
+    const builtStyleKey = styleKey();
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle(builtTheme),
+      style: mapStyle(themeRef.current, basemapRef.current),
       center: start ?? DEFAULT_CENTER,
       zoom: 14,
       // 既定（auto）: 狭幅では "i" ボタンに折りたたみ、広幅では帰属を展開表示。
@@ -238,17 +251,17 @@ export default function MapView({
 
     map.on("load", () => {
       readyRef.current = true;
-      // 生成時に使ったテーマを記録し、その後に変わっていれば収束させる。
-      appliedThemeRef.current = builtTheme;
+      // 生成時に使ったスタイルを記録し、その後に変わっていれば収束させる。
+      appliedStyleRef.current = builtStyleKey;
       addRouteLayers.current(map);
-      // テーマが食い違っていれば setStyle が走り、styledata 経路で再描画される。
+      // スタイルが食い違っていれば setStyle が走り、styledata 経路で再描画される。
       // その場合ここで render すると破棄されるソースに対する無駄打ちになるためスキップ。
-      if (!syncTheme.current()) render.current();
+      if (!syncStyle.current()) render.current();
     });
 
     return () => {
       readyRef.current = false;
-      appliedThemeRef.current = null;
+      appliedStyleRef.current = null;
       startMarkerRef.current?.remove();
       startMarkerRef.current = null;
       map.remove();
@@ -263,10 +276,22 @@ export default function MapView({
     render.current();
   }, [start, candidates, selectedId, view]);
 
-  // テーマ変更でタイルスタイル/色を収束。
+  // テーマ/ベースマップ変更でタイルスタイル/色を収束。
   useEffect(() => {
-    syncTheme.current();
-  }, [theme]);
+    syncStyle.current();
+  }, [theme, basemap]);
 
-  return <div ref={containerRef} className="h-full w-full" />;
+  return (
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="h-full w-full" />
+      <button
+        type="button"
+        onClick={onToggleBasemap}
+        aria-pressed={basemap === "satellite"}
+        className="absolute left-2 top-2 z-10 min-h-9 rounded-md border border-black/10 bg-white/90 px-3 py-1.5 text-xs font-semibold text-gray-800 shadow-sm backdrop-blur transition-colors hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+      >
+        {basemap === "satellite" ? "地図" : "衛星写真"}
+      </button>
+    </div>
+  );
 }
