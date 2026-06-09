@@ -295,14 +295,16 @@ export interface FetchActivitiesResult {
 export const stravaRepository = {
   /**
    * 認可画面の URL。scope は活動の読み取り。
+   * state は CSRF 対策の使い捨てトークン（呼び出し側が生成・cookie 保存・照合する）。
    */
-  buildAuthorizeUrl(redirectUri: string): string {
+  buildAuthorizeUrl(redirectUri: string, state: string): string {
     const params = new URLSearchParams({
       client_id: serverEnv.STRAVA_CLIENT_ID ?? "",
       redirect_uri: redirectUri,
       response_type: "code",
       scope: "activity:read_all",
       approval_prompt: "auto",
+      state,
     });
     return `${AUTHORIZE_URL}?${params.toString()}`;
   },

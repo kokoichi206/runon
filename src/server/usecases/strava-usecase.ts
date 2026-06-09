@@ -36,9 +36,9 @@ export const stravaUsecase = {
   /**
    * 認可画面 URL を返す。未設定なら config エラー。
    */
-  authorizeUrl(redirectUri: string): Result<string, AppError> {
+  authorizeUrl(redirectUri: string, state: string): Result<string, AppError> {
     if (!isStravaConfigured()) return err(NOT_CONFIGURED);
-    return ok(stravaRepository.buildAuthorizeUrl(redirectUri));
+    return ok(stravaRepository.buildAuthorizeUrl(redirectUri, state));
   },
 
   /**
