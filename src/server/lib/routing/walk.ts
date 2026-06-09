@@ -37,6 +37,19 @@ export const countSignals = (graph: StreetGraph, walk: NodeId[]): number => {
   return seen.size;
 };
 
+// 経路が通る「細い道」区間の本数（重複する無向エッジは1本として数える）。
+export const countNarrowSegments = (graph: StreetGraph, walk: NodeId[]): number => {
+  const seen = new Set<string>();
+  for (let i = 0; i + 1 < walk.length; i++) {
+    const a = walk[i]!;
+    const b = walk[i + 1]!;
+    if (a === b) continue;
+    const key = undirectedEdgeKey(a, b);
+    if (graph.narrowEdges.has(key)) seen.add(key);
+  }
+  return seen.size;
+};
+
 /**
  * 閉じた歩行 S の評価値。論文 Definition 6 の 2 目的。
  * - lengthError  f1(S) = |k - L(S)|

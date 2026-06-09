@@ -73,6 +73,11 @@ export interface DijkstraOptions {
    * 信号ノード(graph.signalNodes)へ入る弧へ加算するコスト(m)。0/未指定で無効。実距離には影響しない。
    */
   signalPenaltyM?: number;
+  /**
+   * 細道エッジ(graph.narrowEdges)の探索コストに乗算する係数。1/未指定で無効。実距離には影響しない。
+   * 例: 3 なら細い道の区間を実距離の3倍コストとして扱い、広い道を優先する。
+   */
+  narrowPenaltyFactor?: number;
 }
 
 export interface DijkstraResult {
@@ -107,6 +112,8 @@ export const dijkstra = (
   const maxD = opts.maxDistanceM ?? Infinity;
   const signalPenaltyM = opts.signalPenaltyM ?? 0;
   const signalNodes = graph.signalNodes;
+  const narrowPenaltyFactor = opts.narrowPenaltyFactor ?? 1;
+  const narrowEdges = graph.narrowEdges;
 
   dist.set(source, 0);
   cost.set(source, 0);
@@ -124,8 +131,11 @@ export const dijkstra = (
       if (blocked && blocked.has(directedKey(u, arc.to))) continue;
       const realNext = baseDist + arc.weightM;
       if (realNext > maxD) continue;
-      const stepCost =
-        penalized && penalized.has(arc.edgeKey) ? arc.weightM * penalty : arc.weightM;
+      let stepCost = penalized && penalized.has(arc.edgeKey) ? arc.weightM * penalty : arc.weightM;
+      // 細い道の区間は探索コストを乗算で増やす（実距離 realNext には乗せない）。
+      if (narrowPenaltyFactor > 1 && narrowEdges.has(arc.edgeKey)) {
+        stepCost *= narrowPenaltyFactor;
+      }
       // 信号ノードへ入る弧へコストを加算（実距離 realNext には乗せない）。
       const signalCost = signalPenaltyM > 0 && signalNodes.has(arc.to) ? signalPenaltyM : 0;
       const nextCost = (cost.get(u) ?? Infinity) + stepCost + signalCost;

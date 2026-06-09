@@ -14,7 +14,12 @@ import {
   routePolygon,
   snapStart,
 } from "@/server/lib/routing/round-trip";
-import { countSignals, countTurns, type WalkMetrics } from "@/server/lib/routing/walk";
+import {
+  countNarrowSegments,
+  countSignals,
+  countTurns,
+  type WalkMetrics,
+} from "@/server/lib/routing/walk";
 import {
   overpassRepository,
   type OverpassFetchResult,
@@ -79,6 +84,9 @@ export const computeRoundTrips = async (
   // 信号回避: 信号ノードへ入る弧へ加えるコスト(m)。曲がり/信号の少なさで並べ替えもする。
   const avoidSignals = req.avoidSignals;
   const signalPenaltyM = avoidSignals ? 120 : 0;
+  // 細道回避: 細い道(narrowEdges)の探索コストに掛ける係数。細道の少なさで並べ替えもする。
+  const avoidNarrowRoads = req.avoidNarrowRoads;
+  const narrowPenaltyFactor = avoidNarrowRoads ? 3 : 1;
   const center: LatLng = { lat: req.lat, lng: req.lng };
   const radius = fetchRadiusMeters(req.targetMeters);
 
@@ -198,7 +206,8 @@ export const computeRoundTrips = async (
       5,
       isLong ? 1 : 2, // 長距離は精緻化反復を減らす
       0.06,
-      signalPenaltyM
+      signalPenaltyM,
+      narrowPenaltyFactor
     );
     if (routed) {
       stage1.push({
@@ -277,6 +286,7 @@ export const computeRoundTrips = async (
     source: RoundTripCandidate["source"];
     turnCount: number;
     signalCount: number | null;
+    narrowCount: number | null;
   }
   const built: Built[] = limited.map((entry) => {
     const sig = sigOf(entry.sol.metrics);
@@ -297,15 +307,25 @@ export const computeRoundTrips = async (
       turnCount: countTurns(graph, entry.sol.walk),
       // 信号は avoidSignals 時のみ取得・計測している（それ以外は未計測=null）。
       signalCount: avoidSignals ? countSignals(graph, entry.sol.walk) : null,
+      // 細道は avoidNarrowRoads 時のみ計測している（それ以外は未計測=null）。
+      narrowCount: avoidNarrowRoads ? countNarrowSegments(graph, entry.sol.walk) : null,
     };
   });
 
-  // 信号回避モードでは「信号 → 曲がり → 距離スコア」の少ない順に並べ替える。
-  if (avoidSignals) {
+  // 回避モードでは「細道 → 信号 → 曲がり → 距離スコア」の少ない順に並べ替える。
+  // 有効なフラグの指標のみ比較に効かせる（無効な指標は null=未計測のため 0 とみなさず素通り）。
+  if (avoidNarrowRoads || avoidSignals) {
     built.sort((a, b) => {
-      const sa = a.signalCount ?? 0;
-      const sb = b.signalCount ?? 0;
-      if (sa !== sb) return sa - sb;
+      if (avoidNarrowRoads) {
+        const na = a.narrowCount ?? 0;
+        const nb = b.narrowCount ?? 0;
+        if (na !== nb) return na - nb;
+      }
+      if (avoidSignals) {
+        const sa = a.signalCount ?? 0;
+        const sb = b.signalCount ?? 0;
+        if (sa !== sb) return sa - sb;
+      }
       if (a.turnCount !== b.turnCount) return a.turnCount - b.turnCount;
       return (
         score(a.entry.sol.metrics, req.targetMeters) - score(b.entry.sol.metrics, req.targetMeters)
@@ -316,10 +336,11 @@ export const computeRoundTrips = async (
   let recommendedId = "";
   const candidates: RoundTripCandidate[] = built.map((b, idx) => {
     const id = `cand-${idx}`;
-    // 通常モードはパレート最良を推奨に。信号回避モードは並べ替え後の先頭を推奨にする。
+    // 通常モードはパレート最良を推奨に。回避モード（信号/細道）は並べ替え後の先頭を推奨にする。
     if (
       recommendedId === "" &&
       !avoidSignals &&
+      !avoidNarrowRoads &&
       b.entry.onFront &&
       sigOf(b.entry.sol.metrics) === recommendedSig
     ) {
@@ -335,6 +356,7 @@ export const computeRoundTrips = async (
       onParetoFront: b.entry.onFront,
       turnCount: b.turnCount,
       signalCount: b.signalCount,
+      narrowCount: b.narrowCount,
       source: b.source,
     };
   });

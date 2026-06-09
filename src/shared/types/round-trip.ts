@@ -21,6 +21,8 @@ export const roundTripRequestSchema = z.object({
   profile: profileSchema.default("walk"),
   // true のとき、信号（traffic_signals）を避ける経路を生成し、信号・曲がりの少なさで並べ替える。
   avoidSignals: z.boolean().default(false),
+  // true のとき、細い道（路地・遊歩道など highway 種別ベース）を避ける経路を生成し、細道の少なさで並べ替える。
+  avoidNarrowRoads: z.boolean().default(false),
 });
 export type RoundTripRequest = z.infer<typeof roundTripRequestSchema>;
 
@@ -75,6 +77,10 @@ export interface RoundTripCandidate {
    * 経路が通る信号（traffic_signals）の数。信号データを取得しなかった場合は null。
    */
   signalCount: number | null;
+  /**
+   * 経路が通る「細い道」区間の本数。細道回避を有効にしなかった場合は null。
+   */
+  narrowCount: number | null;
   /**
    * この候補を生み出した手法。
    */

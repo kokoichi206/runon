@@ -177,6 +177,8 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const [targetKm, setTargetKm] = useState(3);
   // 信号・曲がりの少ない経路を優先する（生成に信号ペナルティ、並べ替えにも反映）。
   const [avoidSignals, setAvoidSignals] = useState(false);
+  // 細い道（路地・遊歩道など）を避けた経路を優先する（生成に細道ペナルティ、並べ替えにも反映）。
+  const [avoidNarrowRoads, setAvoidNarrowRoads] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<RouteView>("compare");
   const [locating, setLocating] = useState(false);
@@ -340,6 +342,7 @@ export const RoundTripPlanner = (): React.JSX.Element => {
       targetMeters: Math.round(targetKm * 1000),
       profile: "walk",
       avoidSignals,
+      avoidNarrowRoads,
     });
   };
 
@@ -603,6 +606,16 @@ export const RoundTripPlanner = (): React.JSX.Element => {
               信号・曲がりを減らす（信号を避ける経路を優先）
             </label>
 
+            <label className="flex items-center gap-2 text-xs text-muted">
+              <input
+                type="checkbox"
+                checked={avoidNarrowRoads}
+                onChange={(e) => setAvoidNarrowRoads(e.target.checked)}
+                className="size-4"
+              />
+              細い道を避ける（路地・遊歩道より広い通りを優先）
+            </label>
+
             <button
               type="button"
               onClick={onSubmit}
@@ -731,6 +744,7 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                         <div className="mt-0.5 flex gap-3 text-[11px] text-faint tabular-nums">
                           <span>曲がり {c.turnCount}回</span>
                           {c.signalCount !== null && <span>信号 {c.signalCount}</span>}
+                          {c.narrowCount !== null && <span>細道 {c.narrowCount}本</span>}
                         </div>
                       </button>
                     </li>
