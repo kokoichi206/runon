@@ -1,0 +1,11 @@
+node_modules/
+.next/
+out/
+build/
+coverage/
+storybook-static/
+pnpm-lock.yaml
+
+# 生成物・ベンダーディレクトリ
+public/
+design/

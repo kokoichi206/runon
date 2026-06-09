@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>runon - 周回路比較 / B. スワイプ・カルーセル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0b0e11; --surface:#14181d; --surface-2:#1b2128; --surface-3:#232a31; --border:#2a323b;
+    --fg:#f5f7fa; --muted:#9aa7b4; --faint:#7e8b99; --accent:#ff5a1f; --accent-2:#ffb020; --success:#34d399;
+    --routeA:#ff5a1f; --routeB:#22d3ee; --routeC:#a78bfa;
+    --frame-w:390px;
+    --shadow: 0 18px 50px rgba(0,0,0,.55);
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:#3a3f45;
+    background-image: radial-gradient(circle at 50% 0%, #474d54 0%, #2f3439 60%, #25292e 100%);
+    color:var(--fg);
+    font-family:"Noto Sans JP", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+    min-height:100vh;
+    display:flex; flex-direction:column; align-items:center;
+    padding:24px 12px 48px;
+    gap:18px;
+  }
+
+  /* ===== ページ見出し ===== */
+  .page-head{
+    max-width:var(--frame-w); width:100%; color:#e8edf2;
+  }
+  .page-head .badge{
+    display:inline-block; font-size:11px; font-weight:700; letter-spacing:.06em;
+    color:var(--accent-2); border:1px solid rgba(255,176,32,.4);
+    padding:3px 9px; border-radius:999px; margin-bottom:8px; background:rgba(255,176,32,.06);
+  }
+  .page-head h1{ font-size:18px; margin:0 0 6px; font-weight:700; }
+  .page-head p{ font-size:12.5px; line-height:1.55; margin:0; color:#b9c2cc; }
+  .page-head p b{ color:#e8edf2; font-weight:700; }
+
+  /* ===== 端末フレーム ===== */
+  .device{
+    width:var(--frame-w); height:820px; max-height:calc(100vh - 40px);
+    background:var(--bg); border-radius:42px; position:relative;
+    box-shadow: var(--shadow), 0 0 0 11px #05070a, 0 0 0 13px #1c2127;
+    overflow:hidden; flex:0 0 auto;
+  }
+  .notch{
+    position:absolute; top:0; left:50%; transform:translateX(-50%);
+    width:148px; height:26px; background:#05070a; border-radius:0 0 18px 18px; z-index:60;
+  }
+  .notch::after{
+    content:""; position:absolute; top:9px; left:50%; transform:translateX(-50%);
+    width:46px; height:5px; border-radius:3px; background:#171b20;
+  }
+  .screen{ position:absolute; inset:0; overflow:hidden; }
+
+  /* ===== アプリバー ===== */
+  .appbar{
+    position:absolute; top:0; left:0; right:0; height:54px; z-index:50;
+    display:flex; align-items:center; gap:8px; padding:0 14px;
+    padding-top:6px;
+    background:linear-gradient(180deg, rgba(11,14,17,.96) 60%, rgba(11,14,17,0));
+    backdrop-filter:blur(6px);
+  }
+  .brand{ display:flex; align-items:center; gap:7px; }
+  .brand .logo{ width:22px; height:22px; flex:0 0 auto; }
+  .brand .name{ font-weight:700; font-size:15px; letter-spacing:.02em; }
+  .tabs{ display:flex; gap:4px; margin-left:auto; background:var(--surface-2); border-radius:999px; padding:3px; }
+  .tab{
+    font-size:11.5px; font-weight:500; color:var(--muted);
+    padding:6px 11px; border-radius:999px; cursor:pointer; border:none; background:transparent;
+    font-family:inherit; min-height:34px;
+  }
+  .tab.active{ background:var(--surface-3); color:var(--fg); box-shadow:inset 0 0 0 1px var(--border); }
+  .theme-btn{
+    width:36px; height:36px; flex:0 0 auto; border-radius:50%; border:1px solid var(--border);
+    background:var(--surface-2); color:var(--muted); display:grid; place-items:center; cursor:pointer;
+  }
+
+  /* ===== 地図 ===== */
+  .map-wrap{ position:absolute; inset:0; background:var(--bg); }
+  .map{ position:absolute; inset:0; width:100%; height:100%; display:block; }
+  .map-attr{
+    position:absolute; right:8px; z-index:20;
+    bottom: calc(18vh + 8px);
+    font-size:9px; color:rgba(154,167,180,.55); background:rgba(11,14,17,.4);
+    padding:2px 6px; border-radius:5px; pointer-events:none;
+    transition: bottom .25s ease;
+  }
+  /* 経路ストローク状態 */
+  .route{ fill:none; stroke-linecap:round; stroke-linejoin:round; transition: stroke-width .25s, opacity .25s, stroke-dasharray .25s; }
+  .route.focus{ stroke-width:5; opacity:1; filter:drop-shadow(0 0 6px rgba(0,0,0,.5)); }
+  .route.ghost{ stroke-width:2.4; opacity:.34; stroke-dasharray:6 8; }
+  .route.compare{ stroke-width:3.6; opacity:.95; stroke-dasharray:none; }
+  .pin{ filter: drop-shadow(0 2px 4px rgba(0,0,0,.6)); }
+
+  /* 地図上の小フローティング操作 */
+  .map-fab{
+    position:absolute; z-index:25; left:14px; top:62px;
+    display:flex; flex-direction:column; gap:8px;
+  }
+  .fab{
+    display:flex; align-items:center; gap:6px;
+    background:var(--surface-2); border:1px solid var(--border); color:var(--fg);
+    border-radius:999px; padding:8px 12px; font-size:11.5px; font-weight:500; cursor:pointer;
+    font-family:inherit; min-height:36px; box-shadow:0 4px 14px rgba(0,0,0,.35);
+  }
+  .fab .ic{ font-size:13px; line-height:1; }
+  .fab.on{ background:rgba(255,90,31,.16); border-color:var(--accent); color:#ffd9c7; }
+
+  /* ===== ボトムシート ===== */
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; z-index:40;
+    height:100%;
+    background:var(--surface);
+    border-radius:20px 20px 0 0;
+    box-shadow: 0 -10px 30px rgba(0,0,0,.45);
+    transform: translateY(82%); /* JSで制御 */
+    touch-action:none;
+    will-change: transform;
+    display:flex; flex-direction:column;
+    border-top:1px solid var(--border);
+  }
+  .sheet.animate{ transition: transform .25s cubic-bezier(.22,.61,.36,1); }
+
+  /* ハンドル領域(ドラッグ起点) */
+  .handle{
+    flex:0 0 auto; cursor:grab; user-select:none;
+    padding:8px 16px 6px;
+    touch-action:none;
+  }
+  .handle:active{ cursor:grabbing; }
+  .grabber{ width:42px; height:5px; border-radius:3px; background:var(--surface-3); margin:0 auto 8px; }
+  .summary-row{ display:flex; align-items:center; gap:10px; }
+  .summary-row .title{ font-size:13.5px; font-weight:700; }
+  .summary-row .sub{ font-size:11px; color:var(--muted); }
+  .summary-row .rec-pill{
+    margin-left:auto; font-size:10.5px; font-weight:700; color:#0b0e11; background:var(--accent);
+    padding:3px 8px; border-radius:999px;
+  }
+  .drag-hint{
+    font-size:10.5px; color:var(--faint); margin-top:7px; display:flex; align-items:center; gap:5px;
+  }
+
+  /* シート本体(スクロール領域) */
+  .sheet-body{
+    flex:1 1 auto; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding:6px 0 26px; touch-action:pan-y;
+  }
+  .body-head{ padding:4px 18px 10px; display:flex; align-items:center; }
+  .body-head h2{ font-size:13px; margin:0; font-weight:700; }
+  .body-head .count{ font-size:11px; color:var(--muted); margin-left:6px; }
+  .recalc{
+    margin-left:auto; display:flex; align-items:center; gap:5px; font-size:11px; color:var(--accent-2);
+    background:transparent; border:1px solid rgba(255,176,32,.35); border-radius:999px;
+    padding:6px 10px; cursor:pointer; font-family:inherit; min-height:34px;
+  }
+
+  /* ===== カルーセル ===== */
+  .carousel{
+    display:flex; gap:14px; overflow-x:auto; overflow-y:hidden;
+    scroll-snap-type:x mandatory; -webkit-overflow-scrolling:touch;
+    padding:4px 0 4px; scrollbar-width:none;
+    touch-action: pan-x;
+  }
+  .carousel::-webkit-scrollbar{ display:none; }
+  /* 端のパディング: 1枚目/最後を中央寄せできるよう余白カードを使う */
+  .rail-pad{ flex:0 0 calc((100% - var(--card-w)) / 2); }
+  :root{ --card-w: 300px; }
+  .card{
+    flex:0 0 var(--card-w); width:var(--card-w);
+    scroll-snap-align:center;
+    background:var(--surface-2); border:1px solid var(--border); border-radius:18px;
+    padding:16px 16px 14px; position:relative;
+    transition: transform .25s, opacity .25s, border-color .25s, box-shadow .25s;
+    transform: scale(.94); opacity:.55;
+  }
+  .card.is-active{ transform:scale(1); opacity:1; box-shadow:0 10px 28px rgba(0,0,0,.4); }
+  .card[data-route="A"].is-active{ border-color: rgba(255,90,31,.55); }
+  .card[data-route="B"].is-active{ border-color: rgba(34,211,238,.5); }
+  .card[data-route="C"].is-active{ border-color: rgba(167,139,250,.5); }
+
+  .card-top{ display:flex; align-items:center; gap:9px; margin-bottom:12px; }
+  .route-dot{ width:14px; height:14px; border-radius:50%; flex:0 0 auto; box-shadow:0 0 0 3px rgba(255,255,255,.06); }
+  .card[data-route="A"] .route-dot{ background:var(--routeA); }
+  .card[data-route="B"] .route-dot{ background:var(--routeB); }
+  .card[data-route="C"] .route-dot{ background:var(--routeC); }
+  .card .route-label{ font-size:15px; font-weight:700; }
+  .card .dir{ font-size:11.5px; color:var(--muted); margin-left:2px; }
+  .rec-tag{
+    margin-left:auto; font-size:10.5px; font-weight:700; color:#0b0e11;
+    background:linear-gradient(90deg,var(--accent),var(--accent-2));
+    padding:4px 9px; border-radius:999px; display:flex; align-items:center; gap:3px;
+  }
+
+  .metrics{ display:flex; gap:8px; margin-bottom:14px; }
+  .metric{
+    flex:1; background:var(--surface-3); border-radius:12px; padding:10px 6px; text-align:center;
+  }
+  .metric .v{ font-size:17px; font-weight:700; line-height:1.1; }
+  .metric .v .u{ font-size:11px; font-weight:500; color:var(--muted); margin-left:1px; }
+  .metric .k{ font-size:10px; color:var(--faint); margin-top:4px; }
+  .metric.overlap .v{ color:var(--success); }
+  .metric.overlap.warn .v{ color:var(--accent-2); }
+
+  /* ミニルートプレビュー(カード内) */
+  .mini-map{
+    width:100%; height:96px; background:var(--surface-3); border-radius:12px; margin-bottom:14px;
+    display:block; border:1px solid var(--border);
+  }
+
+  .decide{
+    width:100%; border:none; border-radius:12px; padding:12px; font-size:13px; font-weight:700;
+    cursor:pointer; font-family:inherit; color:#0b0e11; min-height:46px;
+    background:linear-gradient(90deg,var(--accent),#ff7a45);
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .card[data-route="B"] .decide{ background:linear-gradient(90deg,#22d3ee,#5fe3f5); }
+  .card[data-route="C"] .decide{ background:linear-gradient(90deg,#a78bfa,#c0aafb); }
+
+  .actions{ display:flex; gap:8px; margin-top:9px; }
+  .act{
+    flex:1; display:flex; align-items:center; justify-content:center; gap:6px;
+    background:transparent; border:1px solid var(--border); color:var(--fg);
+    border-radius:11px; padding:9px; font-size:11.5px; font-weight:500; cursor:pointer;
+    font-family:inherit; min-height:42px;
+  }
+  .act .ic{ font-size:13px; }
+
+  /* ページドット */
+  .dots{ display:flex; justify-content:center; gap:8px; padding:14px 0 6px; }
+  .dot{
+    width:7px; height:7px; border-radius:50%; background:var(--surface-3); cursor:pointer;
+    transition: width .25s, background .25s; border:none; padding:0;
+  }
+  .dot.active{ width:20px; background:var(--accent); }
+  .dot[data-route="B"].active{ background:var(--routeB); }
+  .dot[data-route="C"].active{ background:var(--routeC); }
+
+  /* ヒント・トースト */
+  .toast{
+    position:absolute; left:50%; bottom:18px; transform:translate(-50%, 12px);
+    background:var(--surface-3); color:var(--fg); border:1px solid var(--border);
+    padding:9px 14px; border-radius:12px; font-size:12px; z-index:80; opacity:0;
+    pointer-events:none; transition:opacity .2s, transform .2s; box-shadow:0 8px 22px rgba(0,0,0,.5);
+    max-width:80%; text-align:center;
+  }
+  .toast.show{ opacity:1; transform:translate(-50%,0); }
+
+  :focus-visible{ outline:2px solid var(--accent-2); outline-offset:2px; }
+
+  @media (prefers-reduced-motion: reduce){
+    .sheet.animate, .card, .route, .dot, .map-attr{ transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+  <header class="page-head">
+    <span class="badge">案 B / 比較UI</span>
+    <h1>スワイプ・カルーセル</h1>
+    <p>
+      <b>狙い:</b> 一度に1件＝最もごちゃつかない。シート下部のカードを指で1枚ずつ吟味するモバイル体験。<br>
+      <b>操作:</b> カードを左右スワイプで候補切替（地図フォーカスも追従）。<b>⊞ すべて比較</b>で3本を一時同時表示。ハンドルを上下にドラッグでシート開閉。
+    </p>
+  </header>
+
+  <div class="device" role="application" aria-label="runon 周回路比較モック">
+    <div class="notch"></div>
+    <div class="screen">
+
+      <!-- 地図 -->
+      <div class="map-wrap">
+        <svg class="map" viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <defs>
+            <radialGradient id="mapVignette" cx="50%" cy="40%" r="75%">
+              <stop offset="0%" stop-color="#11161c"/>
+              <stop offset="100%" stop-color="#0a0d10"/>
+            </radialGradient>
+            <filter id="soft"><feGaussianBlur stdDeviation="1.1"/></filter>
+          </defs>
+
+          <rect x="0" y="0" width="390" height="300" fill="url(#mapVignette)"/>
+
+          <!-- 水域 / 公園ブロブ -->
+          <path d="M-10 220 C60 200 120 250 180 235 C250 218 300 250 400 230 L400 320 L-10 320 Z"
+                fill="#0e2030" opacity=".8"/>
+          <path d="M250 40 C300 30 350 55 360 95 C368 130 330 150 300 140 C260 126 240 70 250 40 Z"
+                fill="#13241a" opacity=".85"/>
+          <path d="M30 60 C70 48 110 70 105 105 C100 135 55 140 38 115 C24 95 18 72 30 60 Z"
+                fill="#13241a" opacity=".7"/>
+
+          <!-- 道路網(細線) -->
+          <g stroke="#222a32" stroke-width="2" fill="none" opacity=".9">
+            <path d="M0 90 H390"/><path d="M0 150 H390"/><path d="M0 210 H390"/>
+            <path d="M70 0 V300"/><path d="M160 0 V300"/><path d="M250 0 V300"/><path d="M330 0 V300"/>
+          </g>
+          <g stroke="#1a2128" stroke-width="1.2" fill="none" opacity=".8">
+            <path d="M0 120 H390"/><path d="M0 180 H390"/><path d="M0 250 H390"/>
+            <path d="M115 0 V300"/><path d="M205 0 V300"/><path d="M290 0 V300"/>
+            <path d="M20 0 L120 90 L250 60 L390 120"/>
+            <path d="M0 240 L130 200 L260 250 L390 200"/>
+          </g>
+
+          <!-- 経路ループ -->
+          <path id="routeA" class="route" stroke="var(--routeA)"
+                d="M120 80 C160 50 250 60 290 110 S320 210 250 240 S130 250 100 190 S80 110 120 80 Z"/>
+          <path id="routeB" class="route" stroke="var(--routeB)"
+                d="M150 70 C210 50 270 95 280 150 S250 235 180 238 S110 210 112 150 S100 90 150 70 Z"/>
+          <path id="routeC" class="route" stroke="var(--routeC)"
+                d="M108 120 C150 88 230 86 268 122 S300 200 240 232 S128 240 110 182 S88 132 108 120 Z"/>
+
+          <!-- 始点ピン -->
+          <g class="pin" transform="translate(120,80)">
+            <path d="M0 -14 C7 -14 12 -9 12 -3 C12 5 0 16 0 16 C0 16 -12 5 -12 -3 C-12 -9 -7 -14 0 -14 Z"
+                  fill="var(--accent)"/>
+            <circle cx="0" cy="-3" r="4.2" fill="#0b0e11"/>
+          </g>
+        </svg>
+
+        <div class="map-attr">© OpenStreetMap · © CARTO</div>
+
+        <div class="map-fab">
+          <button class="fab" id="compareToggle" aria-pressed="false">
+            <span class="ic">⊞</span><span>すべて比較</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- アプリバー -->
+      <div class="appbar">
+        <div class="brand">
+          <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="9" fill="none" stroke="var(--accent)" stroke-width="3.2"
+                    stroke-linecap="round" stroke-dasharray="44 14" transform="rotate(35 12 12)"/>
+          </svg>
+          <span class="name">runon</span>
+        </div>
+        <div class="tabs" role="tablist">
+          <button class="tab active" role="tab" aria-selected="true">周回路</button>
+          <button class="tab" role="tab" aria-selected="false">トレーニング</button>
+        </div>
+        <button class="theme-btn" aria-label="テーマ切替">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- ボトムシート -->
+      <section class="sheet" id="sheet" aria-label="計算結果シート">
+        <div class="handle" id="handle">
+          <div class="grabber"></div>
+          <div class="summary-row">
+            <div>
+              <div class="title">周回路 3件</div>
+              <div class="sub" id="summarySub">選択中: ルートA · 5.02 km · 北回り</div>
+            </div>
+            <span class="rec-pill">おすすめ A</span>
+          </div>
+          <div class="drag-hint">↑ ハンドルを摘んで上下にドラッグ</div>
+        </div>
+
+        <div class="sheet-body" id="sheetBody">
+          <div class="body-head">
+            <h2>計算結果</h2>
+            <span class="count">候補3件・スワイプで比較</span>
+            <button class="recalc"><span>↻</span>再計算</button>
+          </div>
+
+          <div class="carousel" id="carousel">
+            <div class="rail-pad" aria-hidden="true"></div>
+
+            <!-- ルートA -->
+            <article class="card is-active" data-route="A" data-km="5.02" data-dir="北回り">
+              <div class="card-top">
+                <span class="route-dot"></span>
+                <span class="route-label">ルートA</span>
+                <span class="dir">北回り</span>
+                <span class="rec-tag">★ おすすめ</span>
+              </div>
+              <svg class="mini-map" viewBox="0 0 268 96" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <rect width="268" height="96" fill="#1a2128"/>
+                <g stroke="#222a32" stroke-width="1.2"><path d="M0 32 H268"/><path d="M0 64 H268"/><path d="M89 0 V96"/><path d="M179 0 V96"/></g>
+                <path d="M70 26 C100 16 168 20 196 44 S210 78 168 86 S88 88 74 64 S52 36 70 26 Z"
+                      fill="none" stroke="var(--routeA)" stroke-width="3.2" stroke-linecap="round"/>
+                <circle cx="70" cy="26" r="4" fill="var(--accent)"/>
+              </svg>
+              <div class="metrics">
+                <div class="metric"><div class="v">5.02<span class="u">km</span></div><div class="k">距離</div></div>
+                <div class="metric overlap"><div class="v">6<span class="u">%</span></div><div class="k">重複</div></div>
+                <div class="metric"><div class="v">北</div><div class="k">方位</div></div>
+              </div>
+              <button class="decide" data-route="A">このコースに決定</button>
+              <div class="actions">
+                <button class="act" data-action="gpx" data-route="A"><span class="ic">⤓</span>GPXを共有</button>
+                <button class="act" data-action="google" data-route="A"><span class="ic">↗</span>Googleで開く</button>
+              </div>
+            </article>
+
+            <!-- ルートB -->
+            <article class="card" data-route="B" data-km="4.88" data-dir="東回り">
+              <div class="card-top">
+                <span class="route-dot"></span>
+                <span class="route-label">ルートB</span>
+                <span class="dir">東回り</span>
+              </div>
+              <svg class="mini-map" viewBox="0 0 268 96" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <rect width="268" height="96" fill="#1a2128"/>
+                <g stroke="#222a32" stroke-width="1.2"><path d="M0 32 H268"/><path d="M0 64 H268"/><path d="M89 0 V96"/><path d="M179 0 V96"/></g>
+                <path d="M96 22 C144 12 186 36 192 56 S172 88 124 90 S76 80 78 56 S70 32 96 22 Z"
+                      fill="none" stroke="var(--routeB)" stroke-width="3.2" stroke-linecap="round"/>
+                <circle cx="96" cy="22" r="4" fill="var(--routeB)"/>
+              </svg>
+              <div class="metrics">
+                <div class="metric"><div class="v">4.88<span class="u">km</span></div><div class="k">距離</div></div>
+                <div class="metric overlap warn"><div class="v">12<span class="u">%</span></div><div class="k">重複</div></div>
+                <div class="metric"><div class="v">東</div><div class="k">方位</div></div>
+              </div>
+              <button class="decide" data-route="B">このコースに決定</button>
+              <div class="actions">
+                <button class="act" data-action="gpx" data-route="B"><span class="ic">⤓</span>GPXを共有</button>
+                <button class="act" data-action="google" data-route="B"><span class="ic">↗</span>Googleで開く</button>
+              </div>
+            </article>
+
+            <!-- ルートC -->
+            <article class="card" data-route="C" data-km="5.15" data-dir="南回り">
+              <div class="card-top">
+                <span class="route-dot"></span>
+                <span class="route-label">ルートC</span>
+                <span class="dir">南回り</span>
+              </div>
+              <svg class="mini-map" viewBox="0 0 268 96" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+                <rect width="268" height="96" fill="#1a2128"/>
+                <g stroke="#222a32" stroke-width="1.2"><path d="M0 32 H268"/><path d="M0 64 H268"/><path d="M89 0 V96"/><path d="M179 0 V96"/></g>
+                <path d="M64 44 C100 26 168 24 192 46 S214 78 168 88 S82 90 70 66 S48 50 64 44 Z"
+                      fill="none" stroke="var(--routeC)" stroke-width="3.2" stroke-linecap="round"/>
+                <circle cx="64" cy="44" r="4" fill="var(--routeC)"/>
+              </svg>
+              <div class="metrics">
+                <div class="metric"><div class="v">5.15<span class="u">km</span></div><div class="k">距離</div></div>
+                <div class="metric overlap"><div class="v">9<span class="u">%</span></div><div class="k">重複</div></div>
+                <div class="metric"><div class="v">南</div><div class="k">方位</div></div>
+              </div>
+              <button class="decide" data-route="C">このコースに決定</button>
+              <div class="actions">
+                <button class="act" data-action="gpx" data-route="C"><span class="ic">⤓</span>GPXを共有</button>
+                <button class="act" data-action="google" data-route="C"><span class="ic">↗</span>Googleで開く</button>
+              </div>
+            </article>
+
+            <div class="rail-pad" aria-hidden="true"></div>
+          </div>
+
+          <div class="dots" id="dots" role="tablist" aria-label="候補ページ">
+            <button class="dot active" data-route="A" data-idx="0" aria-label="ルートA"></button>
+            <button class="dot" data-route="B" data-idx="1" aria-label="ルートB"></button>
+            <button class="dot" data-route="C" data-idx="2" aria-label="ルートC"></button>
+          </div>
+        </div>
+      </section>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    </div>
+  </div>
+
+<script>
+(function(){
+  "use strict";
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const sheet   = document.getElementById("sheet");
+  const handle  = document.getElementById("handle");
+  const body    = document.getElementById("sheetBody");
+  const carousel= document.getElementById("carousel");
+  const dotsWrap= document.getElementById("dots");
+  const dots    = Array.from(dotsWrap.querySelectorAll(".dot"));
+  const cards   = Array.from(carousel.querySelectorAll(".card"));
+  const summarySub = document.getElementById("summarySub");
+  const compareToggle = document.getElementById("compareToggle");
+  const toast = document.getElementById("toast");
+
+  const routes = {
+    A:{ km:"5.02", dir:"北回り", overlap:"6%" },
+    B:{ km:"4.88", dir:"東回り", overlap:"12%" },
+    C:{ km:"5.15", dir:"南回り", overlap:"9%" }
+  };
+
+  /* ============ ボトムシート: スナップ ============ */
+  // 露出量(vh)からシートの translateY(% of sheet height) を算出。
+  // sheet height = 100% of screen. PEEK=露出18vh, MID=55vh, FULL=ほぼ全面(アプリバー直下)。
+  function screenH(){ return sheet.parentElement.clientHeight; }
+  const APPBAR = 50; // FULL時に上に残す余白(px)
+
+  function snapTargets(){
+    const H = screenH();
+    return {
+      PEEK: H - H * 0.18,      // 18vh露出
+      MID:  H - H * 0.55,      // 55vh露出
+      FULL: APPBAR             // ほぼ全面
+    };
+  }
+  const ORDER = ["PEEK","MID","FULL"];
+  let currentSnap = "PEEK";
+
+  function applyTransform(px, animate){
+    sheet.classList.toggle("animate", !!animate && !reduceMotion);
+    sheet.style.transform = "translateY(" + px + "px)";
+    // 地図帰属を PEEK露出に合わせて持ち上げる(被り回避)
+  }
+  function snapTo(name, animate){
+    currentSnap = name;
+    const t = snapTargets()[name];
+    applyTransform(t, animate);
+    // スクロールはFULL/MIDのみ実用。PEEKでは先頭へ。
+    if(name === "PEEK"){ body.scrollTop = 0; }
+  }
+
+  // 初期化
+  function initSheet(){
+    // transformはJSで管理。最初はPEEK。
+    applyTransform(snapTargets().PEEK, false);
+  }
+  window.addEventListener("resize", ()=> snapTo(currentSnap, false));
+
+  /* ---- ドラッグ ---- */
+  let dragging=false, startY=0, startTransform=0, lastY=0, lastT=0, velocity=0;
+
+  function currentTransformPx(){
+    const m = sheet.style.transform.match(/translateY\(([-0-9.]+)px\)/);
+    return m ? parseFloat(m[1]) : snapTargets().PEEK;
+  }
+
+  handle.addEventListener("pointerdown", (e)=>{
+    dragging = true;
+    handle.setPointerCapture(e.pointerId);
+    startY = e.clientY;
+    startTransform = currentTransformPx();
+    lastY = e.clientY; lastT = performance.now(); velocity = 0;
+    sheet.classList.remove("animate");
+    e.preventDefault();
+  });
+
+  handle.addEventListener("pointermove", (e)=>{
+    if(!dragging) return;
+    const dy = e.clientY - startY;
+    let next = startTransform + dy;
+    const min = snapTargets().FULL;
+    const max = snapTargets().PEEK + 40; // 少し下に引けるが弾性風に丸める
+    if(next < min) next = min;
+    if(next > max) next = max;
+    applyTransform(next, false);
+
+    const now = performance.now();
+    const dt = now - lastT;
+    if(dt > 0){ velocity = (e.clientY - lastY) / dt; } // px/ms (正=下方向)
+    lastY = e.clientY; lastT = now;
+  });
+
+  function endDrag(e){
+    if(!dragging) return;
+    dragging = false;
+    try{ handle.releasePointerCapture(e.pointerId); }catch(_){}
+
+    const pos = currentTransformPx();
+    const T = snapTargets();
+    const FLICK = 0.6; // px/ms
+
+    let target;
+    if(velocity > FLICK){
+      // 下向きフリック -> 1段下げる
+      target = stepFrom(pos, +1, T);
+    } else if(velocity < -FLICK){
+      // 上向きフリック -> 1段上げる
+      target = stepFrom(pos, -1, T);
+    } else {
+      target = nearest(pos, T);
+    }
+    snapTo(target, true);
+  }
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+
+  function nearest(pos, T){
+    let best="PEEK", d=Infinity;
+    for(const k of ORDER){
+      const dd = Math.abs(T[k] - pos);
+      if(dd < d){ d=dd; best=k; }
+    }
+    return best;
+  }
+  function stepFrom(pos, dir, T){
+    // 現在位置に最も近いスナップを基準に dir 方向へ1段
+    const base = nearest(pos, T);
+    let i = ORDER.indexOf(base) + dir;
+    if(i < 0) i = 0;
+    if(i > ORDER.length-1) i = ORDER.length-1;
+    return ORDER[i];
+  }
+
+  // ハンドルのタップで PEEK<->FULL トグル(ドラッグ無し時のみ)
+  let downX=0, downTime=0, moved=false;
+  handle.addEventListener("pointerdown",(e)=>{ downX=e.clientY; downTime=performance.now(); moved=false; });
+  handle.addEventListener("pointermove",(e)=>{ if(Math.abs(e.clientY-downX)>6) moved=true; });
+  handle.addEventListener("pointerup",(e)=>{
+    const dt = performance.now()-downTime;
+    if(!moved && dt < 250){
+      snapTo(currentSnap === "FULL" ? "PEEK" : "FULL", true);
+    }
+  });
+
+  /* ============ カルーセル: 同期 ============ */
+  let activeIdx = 0;
+
+  function setActive(idx, scroll){
+    idx = Math.max(0, Math.min(cards.length-1, idx));
+    activeIdx = idx;
+    const route = cards[idx].dataset.route;
+
+    cards.forEach((c,i)=> c.classList.toggle("is-active", i===idx));
+    dots.forEach((d,i)=>{
+      const on = i===idx;
+      d.classList.toggle("active", on);
+      d.setAttribute("aria-selected", on ? "true":"false");
+    });
+
+    if(scroll){
+      const card = cards[idx];
+      const left = card.offsetLeft - (carousel.clientWidth - card.clientWidth)/2;
+      carousel.scrollTo({ left, behavior: reduceMotion ? "auto":"smooth" });
+    }
+
+    // 地図フォーカス追従(比較モードでなければ)
+    if(!compareMode){ focusRoute(route); }
+
+    const r = routes[route];
+    summarySub.textContent = "選択中: ルート" + route + " · " + r.km + " km · " + r.dir;
+  }
+
+  // スクロールで中央のカードを検出して同期
+  let scrollRAF=null;
+  carousel.addEventListener("scroll", ()=>{
+    if(scrollRAF) return;
+    scrollRAF = requestAnimationFrame(()=>{
+      scrollRAF=null;
+      const center = carousel.scrollLeft + carousel.clientWidth/2;
+      let best=0, bd=Infinity;
+      cards.forEach((c,i)=>{
+        const cc = c.offsetLeft + c.clientWidth/2;
+        const d = Math.abs(cc - center);
+        if(d<bd){ bd=d; best=i; }
+      });
+      if(best !== activeIdx){ setActive(best, false); }
+    });
+  }, {passive:true});
+
+  // ドット直接タップ
+  dots.forEach((d)=> d.addEventListener("click", ()=> setActive(parseInt(d.dataset.idx,10), true)));
+
+  /* ============ 地図フォーカス制御 ============ */
+  const routeEls = { A:document.getElementById("routeA"), B:document.getElementById("routeB"), C:document.getElementById("routeC") };
+  let compareMode=false;
+
+  function focusRoute(route){
+    for(const k in routeEls){
+      const el = routeEls[k];
+      el.classList.remove("focus","ghost","compare");
+      el.classList.add(k===route ? "focus":"ghost");
+    }
+  }
+  function showAllCompare(){
+    for(const k in routeEls){
+      const el = routeEls[k];
+      el.classList.remove("focus","ghost");
+      el.classList.add("compare");
+    }
+  }
+
+  compareToggle.addEventListener("click", ()=>{
+    compareMode = !compareMode;
+    compareToggle.classList.toggle("on", compareMode);
+    compareToggle.setAttribute("aria-pressed", compareMode ? "true":"false");
+    if(compareMode){
+      showAllCompare();
+      showToast("3本を色分け同時表示中");
+    } else {
+      focusRoute(cards[activeIdx].dataset.route);
+    }
+  });
+
+  /* ============ 決定 / アクション ============ */
+  carousel.addEventListener("click",(e)=>{
+    const decide = e.target.closest(".decide");
+    if(decide){
+      const r = decide.dataset.route;
+      showToast("ルート" + r + " を選択しました");
+      return;
+    }
+    const act = e.target.closest(".act");
+    if(act){
+      const r = act.dataset.route;
+      const a = act.dataset.action;
+      showToast(a==="gpx" ? ("ルート"+r+" の GPX を共有") : ("ルート"+r+" を Google マップで開く"));
+    }
+  });
+
+  document.querySelector(".recalc").addEventListener("click", ()=> showToast("周回路を再計算中…"));
+
+  /* ============ トースト ============ */
+  let toastTimer=null;
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toast.classList.remove("show"), 1800);
+  }
+
+  /* ============ 起動 ============ */
+  function boot(){
+    initSheet();
+    focusRoute("A");
+    setActive(0, false);
+    // 初期スクロール位置を先頭カード中央へ
+    requestAnimationFrame(()=>{
+      const c = cards[0];
+      carousel.scrollLeft = c.offsetLeft - (carousel.clientWidth - c.clientWidth)/2;
+    });
+  }
+  // フォント読込やレイアウト確定後に位置決定
+  if(document.readyState === "complete"){ boot(); }
+  else { window.addEventListener("load", boot); }
+  // 早めに一度スナップ初期化(loadが遅い場合のちらつき低減)
+  initSheet();
+})();
+</script>
+</body>
+</html>

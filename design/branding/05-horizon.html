@@ -1,0 +1,1099 @@
+<!doctype html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>runon — Horizon ブランド方向案</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     Horizon — 夕暮れラン / 大胆 / モダン
+     全色は CSS 変数で定義し、[data-theme] で上書きする
+     ============================================================ */
+  :root {
+    --font-display: "Sora", "Space Grotesk", "Noto Sans JP", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: "Noto Sans JP", system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Segoe UI", sans-serif;
+
+    /* accent gradient: rose -> orange -> amber */
+    --rose: #FB7185;
+    --orange: #F97316;
+    --amber: #FBBF24;
+    --accent: #FB7185;
+    --success: #34D399;
+    --grad-accent: linear-gradient(100deg, #FB7185 0%, #F97316 52%, #FBBF24 100%);
+    --grad-accent-soft: linear-gradient(100deg, rgba(251,113,133,.18), rgba(249,115,22,.12) 55%, rgba(251,191,36,.16));
+
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 22px;
+    --tap: 44px;
+
+    --maxw: 1180px;
+  }
+
+  /* ---------- DARK (default) ---------- */
+  [data-theme="dark"] {
+    --bg: #120A14;
+    --surface: #1C1020;
+    --surface-2: #261430;
+    --border: #34203F;
+    --text: #FCEFF6;
+    --muted: #B089A0;
+
+    --map-land: #170D1B;
+    --map-block: #20122A;
+    --map-park: #1B2A22;
+    --map-water: #122230;
+    --map-road-minor: rgba(180,140,170,.16);
+    --map-road-major: rgba(208,170,196,.30);
+    --map-route-dim: rgba(252,239,246,.22);
+
+    --shadow-1: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --shadow-2: 0 18px 50px rgba(0,0,0,.55);
+    --ring: rgba(251,113,133,.55);
+    --glass: rgba(28,16,32,.72);
+    --backdrop: radial-gradient(120% 90% at 88% -8%, rgba(251,191,36,.10), transparent 42%),
+                radial-gradient(110% 80% at 8% 4%, rgba(251,113,133,.12), transparent 46%),
+                radial-gradient(140% 120% at 50% 120%, rgba(249,115,22,.07), transparent 55%);
+  }
+
+  /* ---------- LIGHT ---------- */
+  [data-theme="light"] {
+    --bg: #FFF8FB;
+    --surface: #FFFFFF;
+    --surface-2: #FFF1F6;
+    --border: #F0DCE6;
+    --text: #1A0D14;
+    --muted: #7A5A6C;
+
+    --map-land: #FFF3F8;
+    --map-block: #FBE7EF;
+    --map-park: #E6F4EB;
+    --map-water: #DCEEF6;
+    --map-road-minor: rgba(120,70,95,.14);
+    --map-road-major: rgba(110,60,85,.28);
+    --map-route-dim: rgba(26,13,20,.20);
+
+    --shadow-1: 0 1px 2px rgba(120,60,90,.10), 0 8px 22px rgba(180,90,120,.10);
+    --shadow-2: 0 20px 50px rgba(180,90,120,.18);
+    --ring: rgba(249,115,22,.40);
+    --glass: rgba(255,255,255,.78);
+    --backdrop: radial-gradient(120% 90% at 88% -8%, rgba(251,191,36,.18), transparent 42%),
+                radial-gradient(110% 80% at 8% 4%, rgba(251,113,133,.16), transparent 46%),
+                radial-gradient(140% 120% at 50% 120%, rgba(249,115,22,.08), transparent 55%);
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    background-image: var(--backdrop);
+    background-attachment: fixed;
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    transition: background-color .35s ease, color .35s ease;
+  }
+
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
+
+  /* ---------------- Brand header (mock page header) ---------------- */
+  .page-header {
+    position: sticky; top: 0; z-index: 40;
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    background: var(--glass);
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header .wrap {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 72px;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .wordmark {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 26px;
+    letter-spacing: -.02em;
+    line-height: 1;
+  }
+  .wordmark .on {
+    background: var(--grad-accent);
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .logo-mark { display: block; width: 40px; height: 40px; flex: none; }
+
+  .theme-toggle {
+    display: inline-flex; align-items: center; gap: 8px;
+    min-height: var(--tap); height: var(--tap); padding: 0 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-body); font-weight: 500; font-size: 14px;
+    cursor: pointer;
+    transition: border-color .2s ease, transform .12s ease, background-color .25s ease;
+  }
+  .theme-toggle:hover { border-color: var(--ring); }
+  .theme-toggle:active { transform: scale(.97); }
+  .theme-toggle svg { width: 18px; height: 18px; }
+  .theme-toggle .icon-sun { display: none; }
+  [data-theme="light"] .theme-toggle .icon-sun { display: inline; }
+  [data-theme="light"] .theme-toggle .icon-moon { display: none; }
+  .theme-toggle .label-dark { display: none; }
+  [data-theme="dark"] .theme-toggle .label-dark { display: inline; }
+  [data-theme="light"] .theme-toggle .label-light { display: inline; }
+  [data-theme="dark"] .theme-toggle .label-light { display: none; }
+
+  /* ---------------- Hero / concept ---------------- */
+  .hero { padding: 64px 0 36px; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 600;
+    font-size: 12px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--muted);
+    padding: 6px 14px; border: 1px solid var(--border); border-radius: 999px;
+    background: var(--grad-accent-soft);
+  }
+  .eyebrow .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--grad-accent); }
+  .hero h1 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: clamp(40px, 7vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -.03em;
+    margin: 22px 0 14px;
+  }
+  .hero h1 .grad {
+    background: var(--grad-accent);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero .concept { font-size: clamp(17px, 2.2vw, 21px); font-weight: 500; max-width: 720px; }
+  .hero .tagline { color: var(--muted); font-size: 15px; margin-top: 6px; max-width: 720px; }
+
+  /* ---------------- Section scaffolding ---------------- */
+  section.block { padding: 30px 0 14px; }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .section-head .kicker {
+    font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    letter-spacing: .14em; text-transform: uppercase;
+    color: var(--accent);
+  }
+  .section-head h2 {
+    font-family: var(--font-display); font-weight: 700;
+    font-size: clamp(22px, 3vw, 30px); letter-spacing: -.02em; margin: 0;
+  }
+  .section-head .desc { color: var(--muted); font-size: 14px; }
+
+  /* ============================================================
+     APP UI tokens (shared by PC + mobile previews)
+     ============================================================ */
+  .app-topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    height: 58px; padding: 0 18px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .app-topbar .left { display: flex; align-items: center; gap: 22px; }
+  .app-topbar .brand-mini { display: flex; align-items: center; gap: 9px; }
+  .app-topbar .brand-mini .wm { font-family: var(--font-display); font-weight: 800; font-size: 18px; letter-spacing: -.02em; }
+  .app-topbar .brand-mini .wm .on { background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab {
+    font-family: var(--font-display); font-weight: 600; font-size: 14px;
+    color: var(--muted);
+    padding: 8px 14px; border-radius: 999px; cursor: pointer;
+    border: 1px solid transparent;
+    transition: color .2s, background .2s, border-color .2s;
+  }
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active {
+    color: #fff;
+    background: var(--grad-accent);
+    box-shadow: 0 6px 16px rgba(249,115,22,.32);
+  }
+  [data-theme="light"] .nav-tab.active { color: #fff; }
+  .app-topbar .right { display: flex; align-items: center; gap: 8px; }
+  .icon-btn {
+    width: var(--tap); height: var(--tap); min-width: var(--tap);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text); cursor: pointer;
+    transition: border-color .2s, transform .12s;
+  }
+  .icon-btn:hover { border-color: var(--ring); }
+  .icon-btn:active { transform: scale(.95); }
+  .icon-btn svg { width: 19px; height: 19px; }
+  .icon-btn .icon-sun { display: none; }
+  [data-theme="light"] .icon-btn .icon-sun { display: inline; }
+  [data-theme="light"] .icon-btn .icon-moon { display: none; }
+
+  /* ---------- PC preview frame ---------- */
+  .pc-frame {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+    box-shadow: var(--shadow-2);
+  }
+  .pc-chrome {
+    display: flex; align-items: center; gap: 7px;
+    height: 38px; padding: 0 16px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .pc-chrome .dot { width: 11px; height: 11px; border-radius: 50%; opacity: .85; }
+  .pc-chrome .d1 { background: #FB7185; }
+  .pc-chrome .d2 { background: #FBBF24; }
+  .pc-chrome .d3 { background: #34D399; }
+  .pc-chrome .addr {
+    margin-left: 14px; font-size: 12px; color: var(--muted);
+    font-family: var(--font-display);
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 12px;
+  }
+
+  .planner {
+    display: grid; grid-template-columns: 360px 1fr;
+    min-height: 600px;
+  }
+  .planner .panel {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    padding: 22px;
+    overflow: auto;
+    max-height: 660px;
+  }
+  .planner .map-area { position: relative; background: var(--map-land); min-height: 600px; }
+
+  /* ---------- left control panel ---------- */
+  .panel h3 {
+    font-family: var(--font-display); font-weight: 700; font-size: 20px;
+    letter-spacing: -.01em; margin: 0 0 4px;
+  }
+  .panel .sub { color: var(--muted); font-size: 13px; margin: 0 0 20px; }
+  .field-label {
+    font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    letter-spacing: .08em; text-transform: uppercase; color: var(--muted);
+    display: block; margin: 18px 0 9px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip {
+    min-height: 40px; padding: 0 14px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: border-color .2s, background .2s, transform .12s;
+  }
+  .chip:hover { border-color: var(--ring); }
+  .chip:active { transform: scale(.97); }
+  .chip.is-active {
+    border-color: transparent;
+    background: var(--grad-accent-soft);
+    box-shadow: inset 0 0 0 1px var(--ring);
+  }
+
+  .btn {
+    width: 100%; min-height: var(--tap);
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    border-radius: 12px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+    font-family: var(--font-body); font-weight: 600; font-size: 14px;
+    cursor: pointer; transition: border-color .2s, transform .12s, background .2s;
+  }
+  .btn:hover { border-color: var(--ring); }
+  .btn:active { transform: scale(.99); }
+  .btn.ghost { margin-top: 12px; }
+
+  .btn.cta {
+    margin-top: 8px;
+    min-height: 54px;
+    border: none; color: #fff; font-weight: 700; font-size: 16px;
+    letter-spacing: .01em;
+    background: var(--grad-accent);
+    box-shadow: 0 10px 26px rgba(249,115,22,.38), inset 0 1px 0 rgba(255,255,255,.25);
+    position: relative; overflow: hidden;
+  }
+  .btn.cta::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.18), transparent 45%);
+    pointer-events: none;
+  }
+  .btn.cta:hover { box-shadow: 0 14px 34px rgba(249,115,22,.5), inset 0 1px 0 rgba(255,255,255,.3); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .input-group { display: flex; flex-direction: column; }
+  .input-group .ig-label { font-size: 11px; color: var(--muted); margin-bottom: 5px; font-weight: 600; letter-spacing: .04em; }
+  .input {
+    min-height: 44px; padding: 0 12px;
+    border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text);
+    font-family: var(--font-display); font-size: 15px; font-weight: 500;
+    outline: none; transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { border-color: var(--ring); box-shadow: 0 0 0 3px var(--grad-accent-soft); }
+
+  /* slider */
+  .slider-row { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+  .slider-val {
+    font-family: var(--font-display); font-weight: 700; font-size: 22px;
+    background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .slider-range-hint { font-size: 11px; color: var(--muted); }
+  input[type="range"].slider {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 8px; border-radius: 999px;
+    background: linear-gradient(to right, var(--rose), var(--orange) 50%, var(--amber)) 0 / var(--fill,40%) 100% no-repeat,
+                var(--surface-2);
+    outline: none; cursor: pointer;
+  }
+  input[type="range"].slider::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--orange);
+    box-shadow: 0 3px 10px rgba(249,115,22,.5); cursor: pointer;
+  }
+  input[type="range"].slider::-moz-range-thumb {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; border: 3px solid var(--orange);
+    box-shadow: 0 3px 10px rgba(249,115,22,.5); cursor: pointer; border: 3px solid var(--orange);
+  }
+
+  /* results */
+  .results-head {
+    display: flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 600; font-size: 13px;
+    color: var(--muted); margin: 24px 0 12px;
+  }
+  .results-head .badge {
+    color: var(--success); font-weight: 700;
+  }
+  .cands { display: flex; flex-direction: column; gap: 10px; }
+  .cand {
+    position: relative;
+    border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 15px; background: var(--surface-2); cursor: pointer;
+    transition: border-color .2s, transform .12s;
+  }
+  .cand:hover { border-color: var(--ring); }
+  .cand:active { transform: scale(.99); }
+  .cand .row1 { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .cand .name {
+    font-family: var(--font-display); font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cand .swatch { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+  .cand .dist {
+    font-family: var(--font-display); font-weight: 700; font-size: 17px; letter-spacing: -.01em;
+  }
+  .cand .meta { color: var(--muted); font-size: 12.5px; margin-top: 5px; }
+  .cand.is-selected {
+    border-color: transparent;
+    background:
+      linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+      var(--grad-accent) border-box;
+    border: 1.5px solid transparent;
+    box-shadow: 0 0 0 1px rgba(251,113,133,.2), 0 12px 28px rgba(249,115,22,.18);
+  }
+  .star {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 700;
+    color: #fff; background: var(--grad-accent);
+    padding: 3px 9px; border-radius: 999px;
+  }
+
+  .export-row { display: flex; gap: 10px; margin-top: 18px; }
+  .export-row .btn { font-size: 13px; font-weight: 600; }
+
+  /* ---------- map (PC) ---------- */
+  .map-svg { width: 100%; height: 100%; display: block; }
+  .map-attr {
+    position: absolute; right: 10px; bottom: 9px;
+    font-size: 10.5px; color: var(--muted);
+    background: var(--glass); border: 1px solid var(--border);
+    padding: 3px 9px; border-radius: 7px;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  }
+  .map-pill {
+    position: absolute; left: 14px; top: 14px;
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--font-display); font-weight: 600; font-size: 12.5px;
+    color: var(--text);
+    background: var(--glass); border: 1px solid var(--border);
+    padding: 8px 13px; border-radius: 999px;
+    backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-1);
+  }
+  .map-pill .ic { color: var(--accent); display: inline-flex; }
+
+  /* ---------------- Mobile preview ---------------- */
+  .mobile-stage {
+    display: flex; gap: 40px; align-items: center; flex-wrap: wrap;
+    padding: 14px 0 0;
+  }
+  .phone {
+    width: 340px; max-width: 100%; flex: none;
+    aspect-ratio: 340 / 720;
+    border-radius: 46px;
+    background: #050308;
+    padding: 12px;
+    box-shadow: var(--shadow-2), 0 0 0 2px var(--border);
+    position: relative;
+  }
+  .phone-screen {
+    position: relative; width: 100%; height: 100%;
+    border-radius: 36px; overflow: hidden;
+    background: var(--map-land);
+    border: 1px solid var(--border);
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 26px; background: #050308;
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    z-index: 20;
+  }
+  .m-appbar {
+    position: absolute; top: 0; left: 0; right: 0; z-index: 15;
+    height: 64px; padding: 14px 16px 0;
+    display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(180deg, var(--glass), transparent);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  }
+  .m-appbar .brand-mini { display: flex; align-items: center; gap: 7px; }
+  .m-appbar .wm { font-family: var(--font-display); font-weight: 800; font-size: 16px; letter-spacing: -.02em; }
+  .m-appbar .wm .on { background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .m-appbar .pillbtn {
+    min-height: 36px; height: 36px; padding: 0 12px;
+    display: inline-flex; align-items: center; gap: 6px;
+    border-radius: 999px; border: 1px solid var(--border);
+    background: var(--glass); color: var(--text);
+    font-size: 12px; font-weight: 600; cursor: pointer;
+  }
+  .m-appbar .pillbtn svg { width: 15px; height: 15px; }
+  .m-appbar .pillbtn .icon-sun { display: none; }
+  [data-theme="light"] .m-appbar .pillbtn .icon-sun { display: inline; }
+  [data-theme="light"] .m-appbar .pillbtn .icon-moon { display: none; }
+
+  .m-map { position: absolute; inset: 0; }
+  .m-map svg { width: 100%; height: 100%; display: block; }
+  .m-attr {
+    position: absolute; right: 10px; bottom: 158px; z-index: 12;
+    font-size: 8.5px; color: var(--muted);
+    background: var(--glass); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 6px;
+  }
+
+  .fab {
+    position: absolute; right: 16px; bottom: 168px; z-index: 18;
+    width: 56px; height: 56px; border-radius: 18px; border: none;
+    background: var(--grad-accent); color: #fff; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+    box-shadow: 0 12px 28px rgba(249,115,22,.5), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .fab svg { width: 24px; height: 24px; }
+
+  .sheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 16;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-top-left-radius: 24px; border-top-right-radius: 24px;
+    padding: 8px 16px 18px;
+    box-shadow: 0 -12px 40px rgba(0,0,0,.35);
+  }
+  .sheet .handle {
+    width: 42px; height: 5px; border-radius: 999px;
+    background: var(--border); margin: 4px auto 12px;
+  }
+  .sheet .s-title {
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: var(--font-display); font-weight: 700; font-size: 15px; margin-bottom: 4px;
+  }
+  .sheet .s-sub { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  .sheet .s-dist {
+    font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .m-cands { display: flex; gap: 8px; }
+  .m-cand {
+    flex: 1; border: 1px solid var(--border); border-radius: 12px;
+    padding: 9px 10px; background: var(--surface-2); text-align: center;
+  }
+  .m-cand .mc-d { font-family: var(--font-display); font-weight: 700; font-size: 14px; }
+  .m-cand .mc-m { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .m-cand.sel {
+    border: 1.5px solid transparent;
+    background:
+      linear-gradient(var(--surface-2), var(--surface-2)) padding-box,
+      var(--grad-accent) border-box;
+  }
+  .m-cand.sel .mc-d { background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .mobile-notes { flex: 1; min-width: 260px; }
+  .mobile-notes h3 { font-family: var(--font-display); font-weight: 700; font-size: 20px; margin: 0 0 14px; letter-spacing: -.01em; }
+  .mobile-notes ul { margin: 0; padding-left: 0; list-style: none; }
+  .mobile-notes li {
+    position: relative; padding-left: 26px; margin-bottom: 12px;
+    color: var(--text); font-size: 14px;
+  }
+  .mobile-notes li::before {
+    content: ""; position: absolute; left: 0; top: 8px;
+    width: 12px; height: 12px; border-radius: 4px;
+    background: var(--grad-accent);
+  }
+  .mobile-notes li span { color: var(--muted); }
+
+  /* ---------------- Color palette ---------------- */
+  .pal-group { margin-top: 8px; }
+  .pal-group .pg-title {
+    font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    letter-spacing: .04em; margin: 22px 0 12px;
+    display: inline-flex; align-items: center; gap: 9px;
+  }
+  .pal-group .pg-title .tag {
+    font-size: 11px; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--border); color: var(--muted); font-weight: 600;
+  }
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .swatch-card {
+    border: 1px solid var(--border); border-radius: 14px; overflow: hidden;
+    background: var(--surface); box-shadow: var(--shadow-1);
+  }
+  .swatch-chip { height: 78px; border-bottom: 1px solid var(--border); }
+  .swatch-card .meta { padding: 10px 12px; }
+  .swatch-card .use { font-family: var(--font-display); font-weight: 600; font-size: 13px; }
+  .swatch-card .hex { font-family: var(--font-display); font-size: 12px; color: var(--muted); letter-spacing: .03em; margin-top: 2px; }
+  .grad-card .swatch-chip { background: var(--grad-accent); }
+
+  /* ---------------- Footer ---------------- */
+  footer.page-footer {
+    margin-top: 56px; padding: 32px 0 60px;
+    border-top: 1px solid var(--border);
+  }
+  .page-footer .wrap { display: flex; justify-content: space-between; gap: 28px; flex-wrap: wrap; }
+  .page-footer .fonts h4 { font-family: var(--font-display); font-weight: 700; font-size: 14px; margin: 0 0 6px; }
+  .page-footer .fonts p { color: var(--muted); font-size: 13px; margin: 0; }
+  .page-footer .impression { max-width: 520px; }
+  .page-footer .impression p { color: var(--text); font-size: 15px; margin: 0; }
+  .page-footer .impression p .grad { background: var(--grad-accent); -webkit-background-clip: text; background-clip: text; color: transparent; font-weight: 700; }
+  .font-sample-display { font-family: var(--font-display); font-weight: 700; }
+  .font-sample-body { font-family: var(--font-body); }
+
+  /* ---------------- Responsive ---------------- */
+  @media (max-width: 880px) {
+    .planner { grid-template-columns: 1fr; }
+    .planner .panel { border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
+    .planner .map-area { min-height: 380px; }
+    .pc-chrome .addr { display: none; }
+    .nav-tabs { display: none; }
+  }
+  @media (max-width: 560px) {
+    .wrap { padding: 0 16px; }
+    .hero { padding: 40px 0 26px; }
+    .mobile-stage { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- ============ 1) Brand header (mock page) ============ -->
+  <header class="page-header">
+    <div class="wrap">
+      <div class="brand">
+        <!-- Logo mark: horizon + rising/setting sun + running track -->
+        <svg class="logo-mark" viewBox="0 0 48 48" role="img" aria-label="runon ロゴ">
+          <defs>
+            <linearGradient id="lg-mark" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#FB7185"/>
+              <stop offset="0.52" stop-color="#F97316"/>
+              <stop offset="1" stop-color="#FBBF24"/>
+            </linearGradient>
+            <clipPath id="clip-horizon"><rect x="2" y="2" width="44" height="26"/></clipPath>
+          </defs>
+          <!-- sun rising over the horizon -->
+          <g clip-path="url(#clip-horizon)">
+            <circle cx="24" cy="27" r="13" fill="url(#lg-mark)"/>
+          </g>
+          <!-- horizon line -->
+          <line x1="4" y1="28" x2="44" y2="28" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round"/>
+          <!-- running track / loop curving toward horizon -->
+          <path d="M10 41 C18 35 30 35 38 41" fill="none" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round" opacity="0.92"/>
+          <circle cx="38" cy="41" r="2.6" fill="#FBBF24"/>
+        </svg>
+        <span class="wordmark">run<span class="on">on</span></span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="テーマを切り替える">
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+        </svg>
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/>
+          <g stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/>
+          </g>
+        </svg>
+        <span class="label-dark">ダーク</span>
+        <span class="label-light">ライト</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ 2) Concept / tagline ============ -->
+  <main class="wrap">
+    <section class="hero">
+      <span class="eyebrow"><span class="dot"></span>Brand Direction — Horizon</span>
+      <h1>夕暮れを、<span class="grad">走り抜ける。</span></h1>
+      <p class="concept">目標距離からループコースを描き、レースまでの計画を立てる。地図はキー不要・無料。</p>
+      <p class="tagline">大胆で記憶に残る夕景のグラデーション。ひと目で「runon だ」と分かる、モダンで温度のあるブランド。</p>
+    </section>
+
+    <!-- ============ 3) PC preview ============ -->
+    <section class="block">
+      <div class="section-head">
+        <span class="kicker">Desktop</span>
+        <h2>周回路プランナー</h2>
+        <span class="desc">トップバー + 左コントロールパネル + 地図</span>
+      </div>
+
+      <div class="pc-frame">
+        <div class="pc-chrome">
+          <span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span>
+          <span class="addr">runon.app / loop</span>
+        </div>
+
+        <!-- app top bar -->
+        <div class="app-topbar">
+          <div class="left">
+            <div class="brand-mini">
+              <svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true">
+                <g clip-path="url(#clip-horizon)"><circle cx="24" cy="27" r="13" fill="url(#lg-mark)"/></g>
+                <line x1="4" y1="28" x2="44" y2="28" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round"/>
+                <path d="M10 41 C18 35 30 35 38 41" fill="none" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round"/>
+              </svg>
+              <span class="wm">run<span class="on">on</span></span>
+            </div>
+            <nav class="nav-tabs">
+              <span class="nav-tab active">周回路</span>
+              <span class="nav-tab">トレーニング</span>
+            </nav>
+          </div>
+          <div class="right">
+            <button class="icon-btn theme-toggle-mini" type="button" aria-label="テーマ切替">
+              <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/></g></svg>
+            </button>
+            <button class="icon-btn" type="button" aria-label="GitHub">
+              <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.5 2 2 6.6 2 12.3c0 4.5 2.9 8.4 6.8 9.7.5.1.7-.2.7-.5v-1.7c-2.8.6-3.4-1.4-3.4-1.4-.5-1.2-1.1-1.5-1.1-1.5-.9-.6.1-.6.1-.6 1 .1 1.5 1 1.5 1 .9 1.6 2.4 1.1 3 .9.1-.7.4-1.1.6-1.4-2.2-.3-4.6-1.1-4.6-5 0-1.1.4-2 1-2.7-.1-.3-.5-1.3.1-2.7 0 0 .8-.3 2.7 1a9.3 9.3 0 0 1 5 0c1.9-1.3 2.7-1 2.7-1 .6 1.4.2 2.4.1 2.7.6.7 1 1.6 1 2.7 0 3.9-2.3 4.7-4.6 5 .4.3.7.9.7 1.9v2.8c0 .3.2.6.7.5A10.3 10.3 0 0 0 22 12.3C22 6.6 17.5 2 12 2Z"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- planner body -->
+        <div class="planner">
+          <!-- left panel -->
+          <aside class="panel">
+            <h3>周回路を作る</h3>
+            <p class="sub">目標距離のループコースを生成（OpenStreetMap）</p>
+
+            <span class="field-label">プリセット</span>
+            <div class="chips">
+              <button class="chip is-active" type="button">🏠 自宅</button>
+              <button class="chip" type="button">東京駅</button>
+              <button class="chip" type="button">京都駅</button>
+              <button class="chip" type="button">NYセントラルパーク</button>
+            </div>
+
+            <button class="btn ghost" type="button">📍 現在地を始点にする</button>
+
+            <span class="field-label">始点座標</span>
+            <div class="two-col">
+              <div class="input-group">
+                <label class="ig-label" for="lat">緯度 (lat)</label>
+                <input class="input" id="lat" value="35.6810" inputmode="decimal" />
+              </div>
+              <div class="input-group">
+                <label class="ig-label" for="lng">経度 (lng)</label>
+                <input class="input" id="lng" value="139.7670" inputmode="decimal" />
+              </div>
+            </div>
+
+            <span class="field-label">目標距離</span>
+            <div class="slider-row">
+              <span class="slider-val" id="dist-val">5.0 km</span>
+              <span class="slider-range-hint">0.2 – 25 km</span>
+            </div>
+            <input type="range" class="slider" id="dist-slider" min="0.2" max="25" step="0.1" value="5.0" style="--fill:20%" />
+
+            <button class="btn cta" type="button">コースを生成</button>
+
+            <div class="results-head">
+              候補 3件 ・ <span class="badge">推奨を選択中</span>
+            </div>
+
+            <div class="cands">
+              <div class="cand is-selected" role="button" tabindex="0">
+                <div class="row1">
+                  <span class="name"><span class="swatch" style="background:var(--grad-accent)"></span>候補A</span>
+                  <span class="star">★ おすすめ</span>
+                </div>
+                <div class="row1" style="margin-top:6px">
+                  <span class="dist">5.02 km</span>
+                </div>
+                <div class="meta">重複 6% ・ 北回り</div>
+              </div>
+
+              <div class="cand" role="button" tabindex="0">
+                <div class="row1">
+                  <span class="name"><span class="swatch" style="background:var(--muted)"></span>候補B</span>
+                  <span class="dist">4.88 km</span>
+                </div>
+                <div class="meta">重複 12% ・ 東回り</div>
+              </div>
+
+              <div class="cand" role="button" tabindex="0">
+                <div class="row1">
+                  <span class="name"><span class="swatch" style="background:var(--muted)"></span>候補C</span>
+                  <span class="dist">5.15 km</span>
+                </div>
+                <div class="meta">重複 9% ・ 南回り</div>
+              </div>
+            </div>
+
+            <div class="export-row">
+              <button class="btn" type="button">⤓ GPXを共有</button>
+              <button class="btn" type="button">↗ Googleマップで開く</button>
+            </div>
+          </aside>
+
+          <!-- map -->
+          <div class="map-area">
+            <div class="map-pill">
+              <span class="ic">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.4" stroke="currentColor" stroke-width="1.8"/></svg>
+              </span>
+              始点 35.6810, 139.7670
+            </div>
+            <svg class="map-svg" viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice" role="img" aria-label="周回路プレビュー地図">
+              <defs>
+                <linearGradient id="route-grad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0" stop-color="#FB7185"/>
+                  <stop offset="0.52" stop-color="#F97316"/>
+                  <stop offset="1" stop-color="#FBBF24"/>
+                </linearGradient>
+                <filter id="route-glow" x="-30%" y="-30%" width="160%" height="160%">
+                  <feGaussianBlur stdDeviation="14" />
+                </filter>
+              </defs>
+
+              <!-- land -->
+              <rect x="0" y="0" width="1200" height="760" fill="var(--map-land)"/>
+
+              <!-- subtle block fills -->
+              <g fill="var(--map-block)">
+                <rect x="120" y="90" width="220" height="150" rx="6"/>
+                <rect x="380" y="120" width="160" height="120" rx="6"/>
+                <rect x="860" y="90" width="240" height="170" rx="6"/>
+                <rect x="150" y="520" width="200" height="150" rx="6"/>
+                <rect x="900" y="540" width="200" height="150" rx="6"/>
+                <rect x="640" y="650" width="170" height="100" rx="6"/>
+              </g>
+
+              <!-- park blob -->
+              <path d="M250 300 C320 250 430 260 470 330 C510 400 460 470 380 480 C300 490 220 440 220 370 C220 335 220 330 250 300 Z" fill="var(--map-park)"/>
+              <!-- water blob -->
+              <path d="M880 360 C960 330 1080 350 1110 430 C1130 490 1080 560 1000 560 C920 560 850 510 850 440 C850 405 850 385 880 360 Z" fill="var(--map-water)"/>
+
+              <!-- minor roads (thin grid-ish) -->
+              <g stroke="var(--map-road-minor)" stroke-width="2" fill="none">
+                <path d="M0 160 H1200"/><path d="M0 300 H1200"/><path d="M0 440 H1200"/><path d="M0 600 H1200"/>
+                <path d="M170 0 V760"/><path d="M340 0 V760"/><path d="M560 0 V760"/><path d="M760 0 V760"/><path d="M980 0 V760"/>
+                <path d="M0 80 L1200 240"/><path d="M0 560 L1200 700"/>
+              </g>
+
+              <!-- major roads -->
+              <g stroke="var(--map-road-major)" stroke-width="7" fill="none" stroke-linecap="round">
+                <path d="M0 380 C300 360 500 420 1200 400"/>
+                <path d="M620 0 C600 250 660 500 600 760"/>
+                <path d="M80 720 C400 600 800 660 1160 540"/>
+              </g>
+
+              <!-- other candidate routes (dim) -->
+              <g fill="none" stroke="var(--map-route-dim)" stroke-width="3.5">
+                <path d="M540 360 C600 300 700 320 760 380 S840 520 760 560 S620 600 560 540 S500 420 540 360 Z"/>
+                <path d="M500 400 C560 340 640 340 700 400 S780 520 700 560 S560 580 520 520 S460 460 500 400 Z"/>
+              </g>
+
+              <!-- selected route glow + stroke -->
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="url(#route-grad)" stroke-width="10" filter="url(#route-glow)" opacity="0.55"/>
+              <path d="M520 380 C560 300 660 280 740 320 S880 420 840 520 S700 640 600 600 S460 540 460 460 S480 400 520 380 Z"
+                    fill="none" stroke="url(#route-grad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+
+              <!-- start marker -->
+              <g>
+                <circle cx="520" cy="380" r="16" fill="url(#route-grad)" opacity="0.28"/>
+                <circle cx="520" cy="380" r="9" fill="#fff"/>
+                <circle cx="520" cy="380" r="5.5" fill="url(#route-grad)"/>
+              </g>
+            </svg>
+            <div class="map-attr">© OpenStreetMap contributors · © CARTO</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 4) Mobile preview ============ -->
+    <section class="block">
+      <div class="section-head">
+        <span class="kicker">Mobile</span>
+        <h2>スマホ体験</h2>
+        <span class="desc">地図フルブリード + ボトムシート + フローティングCTA</span>
+      </div>
+
+      <div class="mobile-stage">
+        <div class="phone">
+          <div class="phone-screen">
+            <div class="notch"></div>
+
+            <!-- map full bleed -->
+            <div class="m-map">
+              <svg viewBox="0 0 360 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="モバイル地図">
+                <rect x="0" y="0" width="360" height="720" fill="var(--map-land)"/>
+                <g fill="var(--map-block)">
+                  <rect x="20" y="120" width="120" height="90" rx="5"/>
+                  <rect x="230" y="150" width="110" height="120" rx="5"/>
+                  <rect x="30" y="470" width="120" height="120" rx="5"/>
+                  <rect x="220" y="520" width="120" height="110" rx="5"/>
+                </g>
+                <path d="M40 280 C90 250 160 260 175 310 C190 360 150 400 100 400 C55 400 20 360 25 320 C28 298 30 295 40 280 Z" fill="var(--map-park)"/>
+                <path d="M250 340 C300 320 350 340 352 390 C352 430 320 460 280 455 C240 450 220 410 225 375 C228 355 230 352 250 340 Z" fill="var(--map-water)"/>
+                <g stroke="var(--map-road-minor)" stroke-width="1.6" fill="none">
+                  <path d="M0 180 H360"/><path d="M0 320 H360"/><path d="M0 470 H360"/>
+                  <path d="M120 0 V720"/><path d="M250 0 V720"/>
+                </g>
+                <g stroke="var(--map-road-major)" stroke-width="5" fill="none" stroke-linecap="round">
+                  <path d="M0 250 C120 230 220 290 360 270"/>
+                  <path d="M180 0 C170 250 200 480 175 720"/>
+                </g>
+                <!-- other candidates -->
+                <g fill="none" stroke="var(--map-route-dim)" stroke-width="2.6">
+                  <path d="M150 280 C185 245 240 255 268 295 S312 400 268 425 S205 445 175 410 S122 320 150 280 Z"/>
+                </g>
+                <!-- selected route -->
+                <path d="M130 300 C160 250 220 245 268 285 S330 360 305 420 S225 470 175 445 S115 380 115 330 S120 320 130 300 Z"
+                      fill="none" stroke="url(#route-grad)" stroke-width="9" filter="url(#route-glow)" opacity="0.55"/>
+                <path d="M130 300 C160 250 220 245 268 285 S330 360 305 420 S225 470 175 445 S115 380 115 330 S120 320 130 300 Z"
+                      fill="none" stroke="url(#route-grad)" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+                <g>
+                  <circle cx="130" cy="300" r="12" fill="url(#route-grad)" opacity="0.28"/>
+                  <circle cx="130" cy="300" r="7" fill="#fff"/>
+                  <circle cx="130" cy="300" r="4" fill="url(#route-grad)"/>
+                </g>
+              </svg>
+            </div>
+
+            <!-- app bar -->
+            <div class="m-appbar">
+              <div class="brand-mini">
+                <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true">
+                  <g clip-path="url(#clip-horizon)"><circle cx="24" cy="27" r="13" fill="url(#lg-mark)"/></g>
+                  <line x1="4" y1="28" x2="44" y2="28" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round"/>
+                  <path d="M10 41 C18 35 30 35 38 41" fill="none" stroke="url(#lg-mark)" stroke-width="3.2" stroke-linecap="round"/>
+                </svg>
+                <span class="wm">run<span class="on">on</span></span>
+              </div>
+              <button class="pillbtn theme-toggle-mini" type="button" aria-label="テーマ切替">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4.2" stroke="currentColor" stroke-width="1.8"/><g stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2.5v2.6M12 18.9v2.6M2.5 12h2.6M18.9 12h2.6M5.2 5.2l1.9 1.9M16.9 16.9l1.9 1.9M18.8 5.2l-1.9 1.9M7.1 16.9l-1.9 1.9"/></g></svg>
+                テーマ
+              </button>
+            </div>
+
+            <div class="m-attr">© OpenStreetMap · © CARTO</div>
+
+            <!-- floating CTA -->
+            <button class="fab" type="button" aria-label="コースを生成">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+
+            <!-- bottom sheet -->
+            <div class="sheet">
+              <div class="handle"></div>
+              <div class="s-title">
+                <span>周回路を作る</span>
+                <span class="s-dist">5.02 km</span>
+              </div>
+              <div class="s-sub">候補 3件 ・ 推奨を選択中（北回り）</div>
+              <div class="m-cands">
+                <div class="m-cand sel"><div class="mc-d">5.02</div><div class="mc-m">A ・ 重複6%</div></div>
+                <div class="m-cand"><div class="mc-d">4.88</div><div class="mc-m">B ・ 重複12%</div></div>
+                <div class="m-cand"><div class="mc-d">5.15</div><div class="mc-m">C ・ 重複9%</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mobile-notes">
+          <h3>モバイル UX の要点</h3>
+          <ul>
+            <li>地図を主役にフルブリード表示。<span>夕景グラデのルートが暗い地図上で発光して読みやすい。</span></li>
+            <li>ボトムシートで操作を集約。<span>ハンドルで上下にドラッグ、候補の比較も親指圏内で完結。</span></li>
+            <li>右下フローティングCTA。<span>「生成」を常に親指の届く位置に固定。</span></li>
+            <li>テーマは即時追従。<span>地図・経路・パネルの全色が dark/light に切替わる。</span></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ 5) Color palette ============ -->
+    <section class="block">
+      <div class="section-head">
+        <span class="kicker">Palette</span>
+        <h2>カラートークン</h2>
+        <span class="desc">dark / light 両対応 + アクセントグラデーション</span>
+      </div>
+
+      <div class="pal-group">
+        <div class="pg-title">アクセント <span class="tag">共通</span></div>
+        <div class="swatches">
+          <div class="swatch-card grad-card">
+            <div class="swatch-chip"></div>
+            <div class="meta"><div class="use">Accent Gradient</div><div class="hex">rose → orange → amber</div></div>
+          </div>
+          <div class="swatch-card">
+            <div class="swatch-chip" style="background:#FB7185"></div>
+            <div class="meta"><div class="use">Accent (rose)</div><div class="hex">#FB7185</div></div>
+          </div>
+          <div class="swatch-card">
+            <div class="swatch-chip" style="background:#F97316"></div>
+            <div class="meta"><div class="use">Accent (orange)</div><div class="hex">#F97316</div></div>
+          </div>
+          <div class="swatch-card">
+            <div class="swatch-chip" style="background:#FBBF24"></div>
+            <div class="meta"><div class="use">Accent (amber)</div><div class="hex">#FBBF24</div></div>
+          </div>
+          <div class="swatch-card">
+            <div class="swatch-chip" style="background:#34D399"></div>
+            <div class="meta"><div class="use">Success</div><div class="hex">#34D399</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="pal-group">
+        <div class="pg-title">Dark <span class="tag">既定</span></div>
+        <div class="swatches">
+          <div class="swatch-card"><div class="swatch-chip" style="background:#120A14"></div><div class="meta"><div class="use">Background</div><div class="hex">#120A14</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#1C1020"></div><div class="meta"><div class="use">Surface</div><div class="hex">#1C1020</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#261430"></div><div class="meta"><div class="use">Surface-2</div><div class="hex">#261430</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#34203F"></div><div class="meta"><div class="use">Border</div><div class="hex">#34203F</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#FCEFF6"></div><div class="meta"><div class="use">Text</div><div class="hex">#FCEFF6</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#B089A0"></div><div class="meta"><div class="use">Muted</div><div class="hex">#B089A0</div></div></div>
+        </div>
+      </div>
+
+      <div class="pal-group">
+        <div class="pg-title">Light</div>
+        <div class="swatches">
+          <div class="swatch-card"><div class="swatch-chip" style="background:#FFF8FB"></div><div class="meta"><div class="use">Background</div><div class="hex">#FFF8FB</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#FFFFFF"></div><div class="meta"><div class="use">Surface</div><div class="hex">#FFFFFF</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#F0DCE6"></div><div class="meta"><div class="use">Border</div><div class="hex">#F0DCE6</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#1A0D14"></div><div class="meta"><div class="use">Text</div><div class="hex">#1A0D14</div></div></div>
+          <div class="swatch-card"><div class="swatch-chip" style="background:#7A5A6C"></div><div class="meta"><div class="use">Muted</div><div class="hex">#7A5A6C</div></div></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============ 6) Footer ============ -->
+  <footer class="page-footer">
+    <div class="wrap">
+      <div class="fonts">
+        <h4>Font Pairing</h4>
+        <p class="font-sample-display">Sora / Space Grotesk — 見出し</p>
+        <p class="font-sample-body">Noto Sans JP — 日本語本文</p>
+      </div>
+      <div class="impression">
+        <p><span class="grad">Horizon</span> が狙うのは、夕暮れに走り出したくなる高揚感。鮮やかなグラデと深い夜色で、機能アプリでありながら記憶に残る大胆でモダンな印象を与える。</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- shared SVG defs accessible to all inline icons that reference url(#...) -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <linearGradient id="lg-mark-shared" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#FB7185"/><stop offset="0.52" stop-color="#F97316"/><stop offset="1" stop-color="#FBBF24"/>
+      </linearGradient>
+    </defs>
+  </svg>
+
+  <script>
+    (function () {
+      "use strict";
+      var root = document.documentElement;
+
+      function toggleTheme() {
+        var next = root.getAttribute("data-theme") === "dark" ? "light" : "dark";
+        root.setAttribute("data-theme", next);
+      }
+
+      // main header toggle
+      var main = document.getElementById("theme-toggle");
+      if (main) main.addEventListener("click", toggleTheme);
+
+      // in-app mini toggles (PC + mobile)
+      var minis = document.querySelectorAll(".theme-toggle-mini");
+      minis.forEach(function (el) { el.addEventListener("click", toggleTheme); });
+
+      // slider live value + gradient fill
+      var slider = document.getElementById("dist-slider");
+      var val = document.getElementById("dist-val");
+      if (slider && val) {
+        var min = parseFloat(slider.min), max = parseFloat(slider.max);
+        function update() {
+          var v = parseFloat(slider.value);
+          val.textContent = v.toFixed(1) + " km";
+          var pct = ((v - min) / (max - min)) * 100;
+          slider.style.setProperty("--fill", pct + "%");
+        }
+        slider.addEventListener("input", update);
+        update();
+      }
+
+      // preset chips: single active
+      var chips = document.querySelectorAll(".chips .chip");
+      chips.forEach(function (c) {
+        c.addEventListener("click", function () {
+          chips.forEach(function (x) { x.classList.remove("is-active"); });
+          c.classList.add("is-active");
+        });
+      });
+
+      // candidate cards: single selected
+      var cands = document.querySelectorAll(".cands .cand");
+      cands.forEach(function (c) {
+        c.addEventListener("click", function () {
+          cands.forEach(function (x) { x.classList.remove("is-selected"); });
+          c.classList.add("is-selected");
+        });
+      });
+
+      // nav tabs
+      var tabs = document.querySelectorAll(".nav-tab");
+      tabs.forEach(function (t) {
+        t.addEventListener("click", function () {
+          tabs.forEach(function (x) { x.classList.remove("active"); });
+          t.classList.add("active");
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

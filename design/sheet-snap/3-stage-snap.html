@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>runon — ボトムシート 3段スナップ デモ</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #0b0e11; --surface: #14181d; --surface-2: #1b2128; --surface-3: #232a31;
+        --border: #2a323b; --fg: #f5f7fa; --muted: #9aa7b4; --faint: #7e8b99;
+        --accent: #ff5a1f; --accent-2: #ffb020;
+        font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; background: #16181c; color: var(--fg); }
+      .wrap { max-width: 860px; margin: 0 auto; padding: 24px 20px 60px; }
+      h1 { font-size: 22px; margin: 0 0 6px; letter-spacing: -0.02em; }
+      .lead { color: var(--muted); font-size: 14px; line-height: 1.8; margin: 4px 0 18px; }
+      .lead b { color: var(--fg); }
+      .stage { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 14px 0 22px; }
+      .stage div { border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; background: var(--surface); font-size: 12.5px; line-height: 1.6; color: var(--muted); }
+      .stage b { display: block; color: var(--fg); font-size: 13px; margin-bottom: 2px; }
+      .stage .k { color: var(--accent); }
+
+      .stageWrap { display: flex; gap: 26px; align-items: flex-start; flex-wrap: wrap; }
+      /* 端末フレーム */
+      .phone { position: relative; width: 320px; height: 660px; border-radius: 36px; background: #000; padding: 10px; box-shadow: 0 20px 60px rgb(0 0 0 / 0.5); flex: none; }
+      .screen { position: relative; width: 100%; height: 100%; border-radius: 28px; overflow: hidden; background: var(--bg); }
+      .topbar { position: absolute; inset: 0 0 auto 0; height: 46px; z-index: 5; display: flex; align-items: center; gap: 8px; padding: 0 14px; background: color-mix(in srgb, var(--surface) 80%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); font-weight: 800; font-size: 14px; }
+      .topbar .dot { width: 16px; height: 16px; border-radius: 999px; border: 3px solid var(--accent); border-top-color: transparent; transform: rotate(20deg); }
+      /* 地図風 */
+      .map { position: absolute; inset: 0; background:
+        radial-gradient(circle at 30% 25%, #1c2730 0 14%, transparent 14%),
+        radial-gradient(circle at 75% 65%, #14202a 0 18%, transparent 18%),
+        repeating-linear-gradient(0deg, #11151a 0 1px, transparent 1px 38px),
+        repeating-linear-gradient(90deg, #11151a 0 1px, transparent 1px 38px),
+        #0d1116; }
+      .loop { position: absolute; left: 50%; top: 40%; width: 150px; height: 130px; transform: translate(-50%,-50%); border: 4px solid var(--accent); border-radius: 46% 54% 50% 50% / 52% 48% 52% 48%; filter: drop-shadow(0 0 6px rgb(255 90 31 / .5)); }
+      .pin { position: absolute; left: 50%; top: calc(40% + 64px); width: 14px; height: 14px; transform: translate(-50%,-50%); background: var(--accent); border: 2px solid #fff; border-radius: 999px; }
+
+      /* シート */
+      .sheet { position: absolute; left: 0; right: 0; bottom: 0; height: calc(100% - 46px); background: var(--surface); border-top: 1px solid var(--border); border-radius: 18px 18px 0 0; box-shadow: 0 -10px 30px rgb(0 0 0 / .35); z-index: 8; transition: transform .28s cubic-bezier(.22,.61,.36,1); touch-action: none; will-change: transform; }
+      .sheet.dragging { transition: none; }
+      .grab { display: flex; align-items: center; justify-content: center; height: 30px; cursor: grab; }
+      .grab:active { cursor: grabbing; }
+      .grab span { width: 38px; height: 5px; border-radius: 999px; background: var(--surface-3); }
+      .summary { padding: 0 16px 8px; display: flex; align-items: center; justify-content: space-between; }
+      .summary .t { font-weight: 800; font-size: 15px; }
+      .summary .s { color: var(--accent); font-size: 12px; font-weight: 700; }
+      .body { padding: 4px 16px 20px; overflow-y: auto; height: calc(100% - 68px); display: flex; flex-direction: column; gap: 10px; }
+      .row { border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; font-size: 13px; color: var(--muted); }
+      .row b { color: var(--fg); }
+      .slider { height: 6px; border-radius: 999px; background: var(--surface-3); position: relative; margin: 6px 0 2px; }
+      .slider::after { content: ""; position: absolute; left: 0; top: 50%; width: 38%; height: 6px; border-radius: 999px; background: var(--accent); transform: translateY(-50%); }
+      .slider .knob { position: absolute; left: 38%; top: 50%; width: 18px; height: 18px; border-radius: 999px; background: var(--accent); transform: translate(-50%,-50%); }
+      .cta { margin-top: 4px; background: var(--accent); color: #1a0e07; font-weight: 800; text-align: center; border-radius: 10px; padding: 11px; font-size: 14px; }
+
+      /* スナップ目盛り */
+      .ticks { position: absolute; right: 4px; top: 46px; bottom: 0; width: 2px; z-index: 9; pointer-events: none; }
+      .tick { position: absolute; right: 0; transform: translateY(-50%); display: flex; align-items: center; gap: 4px; }
+      .tick i { display: block; width: 16px; height: 2px; background: var(--faint); }
+      .tick em { font-style: normal; font-size: 9px; color: var(--faint); background: rgb(0 0 0 / .4); padding: 1px 3px; border-radius: 3px; }
+      .tick.on i { background: var(--accent); height: 3px; } .tick.on em { color: var(--accent); }
+
+      .side { flex: 1; min-width: 240px; }
+      .now { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+      .now b { color: var(--accent); font-size: 16px; }
+      .hint { font-size: 12.5px; color: var(--faint); line-height: 1.9; }
+      .hint b { color: var(--fg); }
+      .btns { display: flex; gap: 8px; margin: 12px 0; flex-wrap: wrap; }
+      .btns button { border: 1px solid var(--border); background: var(--surface); color: var(--fg); border-radius: 999px; padding: 7px 14px; font-size: 13px; cursor: pointer; }
+      .btns button:hover { background: var(--surface-2); }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <h1>ボトムシート 3段スナップ（peek / mid / full）</h1>
+      <p class="lead">
+        ハンドルを<b>掴んで上下にドラッグ</b>すると指に追従し、離すと<b>最寄りの段に吸い付き（スナップ）</b>ます。タップでも次の段へ。<br />
+        いまの実装は <b>2段（PEEK↔FULL）</b>。これに <b>MID（半分）</b>を足したのが 3段です。
+      </p>
+
+      <div class="stage">
+        <div><b><span class="k">PEEK</span></b>つまみ＋1行だけ。地図を最大に見る。候補ループ全体を眺める。</div>
+        <div><b><span class="k">MID</span></b>画面の約半分。地図を見ながら距離スライダーや上位候補を操作。</div>
+        <div><b><span class="k">FULL</span></b>ほぼ全面。候補リスト全部＋GPX 書き出しをじっくり。</div>
+      </div>
+
+      <div class="stageWrap">
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar"><span class="dot"></span> runon</div>
+            <div class="map"><div class="loop"></div><div class="pin"></div></div>
+
+            <div class="ticks" id="ticks">
+              <div class="tick" data-k="full"><em>FULL</em><i></i></div>
+              <div class="tick" data-k="mid"><em>MID</em><i></i></div>
+              <div class="tick" data-k="peek"><em>PEEK</em><i></i></div>
+            </div>
+
+            <div class="sheet" id="sheet">
+              <div class="grab" id="grab"><span></span></div>
+              <div class="summary"><span class="t">周回路を作る</span><span class="s">候補 8件</span></div>
+              <div class="body">
+                <div class="row">目標距離 <b>3.0 km</b><div class="slider"><div class="knob"></div></div></div>
+                <div class="cta">周回路を計算</div>
+                <div class="row"><b>#1</b> 推奨 ・ 3.00km ・ 重複 0%</div>
+                <div class="row"><b>#2</b> 3.00km ・ 別方向</div>
+                <div class="row"><b>#3</b> 2.99km ・ 別方向</div>
+                <div class="row"><b>#4</b> 2.99km ・ 別方向</div>
+                <div class="row"><b>#5</b> 2.97km ・ 別方向</div>
+                <div class="row">GPX をスマホに送る / 保存</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="side">
+          <p class="now">現在の段: <b id="state">MID</b></p>
+          <div class="btns">
+            <button data-go="peek">PEEK へ</button>
+            <button data-go="mid">MID へ</button>
+            <button data-go="full">FULL へ</button>
+          </div>
+          <p class="hint">
+            操作:<br />
+            ・<b>つまみをドラッグ</b> → 指に追従、離すと最寄りの段へスナップ<br />
+            ・速く弾く（フリック）→ 1段進む<br />
+            ・つまみ<b>タップ</b> → 次の段へ循環<br /><br />
+            この案を採用なら、いまの周回路画面（2段）に MID を足し、<b>地図を見ながら距離調整できる中間</b>を作ります。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var sheet = document.getElementById("sheet");
+        var grab = document.getElementById("grab");
+        var stateEl = document.getElementById("state");
+        var ticks = document.getElementById("ticks");
+
+        // スナップ位置（translateY px）。screen 高 660 - topbar 46 = 614 がシート高。
+        var H = 614;
+        var SNAPS = { full: 40, mid: 300, peek: 540 }; // 小さいほど上＝開く
+        var order = ["full", "mid", "peek"];
+        var cur = "mid";
+        var y = SNAPS[cur];
+
+        function place(yy, withTransition) {
+          sheet.style.transform = "translateY(" + yy + "px)";
+          if (withTransition) sheet.classList.remove("dragging");
+        }
+        function nearest(yy) {
+          var best = "mid", bd = Infinity;
+          order.forEach(function (k) {
+            var d = Math.abs(SNAPS[k] - yy);
+            if (d < bd) { bd = d; best = k; }
+          });
+          return best;
+        }
+        function setState(k) {
+          cur = k; y = SNAPS[k];
+          stateEl.textContent = k.toUpperCase();
+          place(y, true);
+          // 目盛りのハイライト
+          Array.prototype.forEach.call(ticks.children, function (t) {
+            t.classList.toggle("on", t.getAttribute("data-k") === k);
+          });
+        }
+        // 目盛りを SNAPS 位置に配置（topbar 下基準）。tick top = snapY + シート上端の見かけ位置。
+        Array.prototype.forEach.call(ticks.children, function (t) {
+          var k = t.getAttribute("data-k");
+          t.style.top = SNAPS[k] + "px";
+        });
+
+        // ドラッグ
+        var dragging = false, startY = 0, startTop = 0, moved = false, lastY = 0, lastT = 0, vel = 0;
+        grab.addEventListener("pointerdown", function (e) {
+          grab.setPointerCapture(e.pointerId);
+          dragging = true; moved = false;
+          startY = e.clientY; startTop = y;
+          lastY = e.clientY; lastT = e.timeStamp; vel = 0;
+          sheet.classList.add("dragging");
+        });
+        grab.addEventListener("pointermove", function (e) {
+          if (!dragging) return;
+          var dy = e.clientY - startY;
+          if (Math.abs(dy) > 4) moved = true;
+          y = Math.min(SNAPS.peek, Math.max(SNAPS.full, startTop + dy));
+          // 速度（px/ms）
+          var dt = e.timeStamp - lastT;
+          if (dt > 0) vel = (e.clientY - lastY) / dt;
+          lastY = e.clientY; lastT = e.timeStamp;
+          place(y, false);
+        });
+        function endDrag() {
+          if (!dragging) return;
+          dragging = false;
+          if (!moved) {
+            // タップ → 次の段へ循環
+            var i = order.indexOf(cur);
+            setState(order[(i + 1) % order.length]);
+            return;
+          }
+          // フリック（速度大）なら方向に1段
+          if (Math.abs(vel) > 0.6) {
+            var idx = order.indexOf(nearest(y));
+            if (vel > 0) idx = Math.min(order.length - 1, idx + 1); // 下向き＝閉じる
+            else idx = Math.max(0, idx - 1); // 上向き＝開く
+            setState(order[idx]);
+          } else {
+            setState(nearest(y));
+          }
+        }
+        grab.addEventListener("pointerup", endDrag);
+        grab.addEventListener("pointercancel", endDrag);
+
+        document.querySelectorAll("[data-go]").forEach(function (b) {
+          b.addEventListener("click", function () { setState(b.getAttribute("data-go")); });
+        });
+
+        setState("mid");
+      })();
+    </script>
+  </body>
+</html>

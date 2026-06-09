@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>runon / 案A 比較↔フォーカス トグル</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg:#0b0e11; --surface:#14181d; --surface-2:#1b2128; --surface-3:#232a31; --border:#2a323b;
+    --fg:#f5f7fa; --muted:#9aa7b4; --faint:#7e8b99; --accent:#ff5a1f; --accent-2:#ffb020; --success:#34d399;
+    --route-a:#ff5a1f; --route-b:#22d3ee; --route-c:#a78bfa;
+    --frame-w: 390px;
+    --shadow-soft: 0 8px 28px rgba(0,0,0,.45);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0;
+    background: #2a2f36; /* 中立グレー */
+    color: var(--fg);
+    font-family: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* ===== ページ見出し ===== */
+  .page-head {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 22px 20px 6px;
+    color: #e7ecf1;
+  }
+  .page-head .badge {
+    display: inline-block;
+    font-size: 11px; font-weight: 700; letter-spacing: .08em;
+    color: var(--bg); background: var(--accent);
+    padding: 3px 9px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .page-head h1 { font-size: 19px; font-weight: 700; margin: 0 0 6px; }
+  .page-head p { font-size: 13px; line-height: 1.6; color: #aeb8c2; margin: 0; }
+  .page-head .how { color: #c7d0d9; }
+  .page-head .how b { color: var(--accent-2); font-weight: 700; }
+
+  /* ===== 端末フレーム ===== */
+  .stage {
+    display: flex; justify-content: center;
+    padding: 18px 12px 40px;
+  }
+  .device {
+    position: relative;
+    width: var(--frame-w);
+    height: 820px;
+    max-height: calc(100vh - 30px);
+    background: var(--bg);
+    border-radius: 44px;
+    border: 1px solid #000;
+    box-shadow: var(--shadow-soft), 0 0 0 10px #050708, 0 0 0 11px #1a1f24;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+  }
+  /* ノッチ */
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 150px; height: 26px;
+    background: #050708;
+    border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;
+    z-index: 60;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .notch::before { content:""; width: 46px; height: 5px; background:#1a1f24; border-radius: 4px; }
+  .notch::after { content:""; width: 8px; height: 8px; background:#1a1f24; border-radius: 50%; }
+
+  .screen {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  /* ===== アプリバー ===== */
+  .appbar {
+    position: absolute; top: 0; left: 0; right: 0;
+    height: 64px;
+    padding: 26px 14px 0;
+    display: flex; align-items: center; gap: 10px;
+    background: linear-gradient(to bottom, rgba(11,14,17,.96), rgba(11,14,17,.72) 70%, rgba(11,14,17,0));
+    z-index: 40;
+  }
+  .brand { display: flex; align-items: center; gap: 7px; }
+  .brand .mark {
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 3px solid var(--accent);
+    border-right-color: transparent; /* 開いた円 */
+    transform: rotate(-35deg);
+  }
+  .brand .name { font-weight: 700; font-size: 16px; letter-spacing: .01em; }
+
+  .tabs {
+    display: flex; gap: 2px; margin-left: 6px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px;
+  }
+  .tabs button {
+    font: inherit; font-size: 12px; font-weight: 500;
+    color: var(--muted); background: transparent; border: 0;
+    padding: 6px 11px; border-radius: 999px; cursor: pointer;
+    min-height: 30px;
+  }
+  .tabs button.active { color: var(--fg); background: var(--surface-3); font-weight: 700; }
+  .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  .appbar .spacer { flex: 1; }
+  .icon-btn {
+    width: 40px; height: 40px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--muted); cursor: pointer;
+  }
+  .icon-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* ===== 地図 ===== */
+  .map { position: absolute; inset: 0; }
+  .map svg { width: 100%; height: 100%; display: block; }
+
+  .attrib {
+    position: absolute; right: 8px;
+    bottom: calc(18vh + 8px);
+    font-size: 9px; color: var(--faint);
+    background: rgba(11,14,17,.55);
+    padding: 2px 6px; border-radius: 5px;
+    z-index: 30; pointer-events: none;
+    transition: bottom .25s ease;
+  }
+
+  /* ループの状態クラス */
+  .loop { fill: none; stroke-width: 5; stroke-linejoin: round; cursor: pointer; transition: stroke-width .2s, opacity .2s, stroke-dasharray .2s; }
+  .loop.route-a { stroke: var(--route-a); }
+  .loop.route-b { stroke: var(--route-b); }
+  .loop.route-c { stroke: var(--route-c); }
+  /* フォーカス時のゴースト */
+  .map[data-mode="focus"] .loop { opacity: .28; stroke-width: 3; stroke-dasharray: 3 7; }
+  .map[data-mode="focus"] .loop.is-selected { opacity: 1; stroke-width: 6.5; stroke-dasharray: none; filter: drop-shadow(0 0 6px currentColor); }
+
+  .loop-hit { fill: none; stroke: transparent; stroke-width: 22; cursor: pointer; }
+
+  .startpin .pin-body { fill: var(--accent); }
+  .startpin .pin-ring { fill: rgba(255,90,31,.18); }
+
+  /* ===== ボトムシート ===== */
+  .sheet {
+    position: absolute; left: 0; right: 0; top: 0;
+    height: 100%;
+    background: var(--surface);
+    border-top-left-radius: 22px; border-top-right-radius: 22px;
+    box-shadow: 0 -10px 30px rgba(0,0,0,.5);
+    z-index: 50;
+    display: flex; flex-direction: column;
+    will-change: transform;
+    touch-action: none;
+  }
+  .sheet.animate { transition: transform .25s cubic-bezier(.22,.61,.36,1); }
+
+  /* ドラッグ可能ハンドル領域 */
+  .sheet-handle {
+    flex: 0 0 auto;
+    padding: 8px 16px 10px;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .sheet-handle:active { cursor: grabbing; }
+  .sheet-handle:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 14px; }
+  .grabber {
+    width: 40px; height: 5px; border-radius: 999px;
+    background: var(--surface-3); margin: 2px auto 8px;
+  }
+
+  .drag-hint {
+    text-align: center; font-size: 11px; color: var(--faint);
+    margin: -2px 0 6px;
+  }
+
+  /* サマリ行（PEEK時に見える1行） */
+  .summary-row {
+    display: flex; align-items: center; gap: 10px;
+    padding-top: 2px;
+  }
+  .summary-row .summary-main { font-size: 14px; font-weight: 700; }
+  .summary-row .summary-sub { font-size: 12px; color: var(--muted); }
+  .summary-row .summary-dot {
+    width: 9px; height: 9px; border-radius: 50%; background: var(--route-a);
+    flex: 0 0 auto;
+  }
+  .summary-row .chev { margin-left: auto; color: var(--faint); }
+  .summary-row .chev svg { width: 16px; height: 16px; display:block; transition: transform .25s; }
+
+  /* シート本体（スクロール領域） */
+  .sheet-body {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 4px 16px 22px;
+    touch-action: pan-y;
+  }
+
+  /* セグメント（比較 | 選択中） */
+  .topbar {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 14px;
+  }
+  .segment {
+    display: flex; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 3px; flex: 1; position: relative;
+  }
+  .segment button {
+    flex: 1; font: inherit; font-size: 13px; font-weight: 700;
+    color: var(--muted); background: transparent; border: 0;
+    padding: 9px 0; border-radius: 9px; cursor: pointer; min-height: 40px;
+    transition: color .2s;
+  }
+  .segment button[aria-selected="true"] { color: var(--fg); }
+  .segment button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .segment .seg-thumb {
+    position: absolute; top: 3px; bottom: 3px; left: 3px;
+    width: calc(50% - 3px);
+    background: var(--surface-3);
+    border-radius: 9px;
+    transition: transform .22s cubic-bezier(.22,.61,.36,1);
+    z-index: 0;
+    box-shadow: 0 1px 0 rgba(255,255,255,.04) inset;
+  }
+  .segment[data-seg="focus"] .seg-thumb { transform: translateX(100%); }
+  .segment button { position: relative; z-index: 1; }
+
+  .recalc {
+    flex: 0 0 auto;
+    display: flex; align-items: center; gap: 5px;
+    font: inherit; font-size: 12px; font-weight: 500;
+    color: var(--muted); background: transparent; border: 0;
+    padding: 8px 6px; cursor: pointer; min-height: 40px;
+  }
+  .recalc svg { width: 14px; height: 14px; }
+  .recalc:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 8px; }
+  .recalc.spin svg { animation: spin .7s linear; }
+  @keyframes spin { from{transform:rotate(0)} to{transform:rotate(360deg)} }
+
+  /* ===== 比較ビュー: 3チップ ===== */
+  .view { animation: fade .22s ease; }
+  @keyframes fade { from{opacity:0; transform: translateY(4px)} to{opacity:1; transform:none} }
+
+  .view-label {
+    font-size: 11px; font-weight: 700; letter-spacing: .06em;
+    color: var(--faint); margin: 0 2px 10px;
+  }
+
+  .chip {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%; text-align: left;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 14px; padding: 13px 14px; margin-bottom: 10px;
+    cursor: pointer; font: inherit; color: var(--fg);
+    transition: border-color .15s, background .15s, transform .08s;
+  }
+  .chip:active { transform: scale(.99); }
+  .chip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .chip .dot {
+    width: 14px; height: 14px; border-radius: 50%; flex: 0 0 auto;
+    box-shadow: 0 0 0 3px rgba(255,255,255,.04);
+  }
+  .chip[data-route="A"] .dot { background: var(--route-a); }
+  .chip[data-route="B"] .dot { background: var(--route-b); }
+  .chip[data-route="C"] .dot { background: var(--route-c); }
+  .chip[data-route="A"] { border-color: rgba(255,90,31,.45); }
+
+  .chip .info { flex: 1; min-width: 0; }
+  .chip .line1 { display: flex; align-items: baseline; gap: 8px; }
+  .chip .rlabel { font-size: 13px; font-weight: 700; }
+  .chip .km { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+  .chip .km small { font-size: 11px; font-weight: 500; color: var(--muted); margin-left: 2px; }
+  .chip .line2 { font-size: 12px; color: var(--muted); margin-top: 3px; display: flex; gap: 10px; }
+  .chip .star {
+    font-size: 10px; font-weight: 700; color: var(--bg); background: var(--accent-2);
+    padding: 2px 7px; border-radius: 999px; flex: 0 0 auto; align-self: center;
+  }
+  .chip .go { color: var(--faint); flex: 0 0 auto; }
+  .chip .go svg { width: 16px; height: 16px; display: block; }
+
+  /* ===== フォーカスビュー: 詳細 ===== */
+  .detail-head {
+    display: flex; align-items: center; gap: 11px; margin-bottom: 4px;
+  }
+  .detail-head .dot { width: 16px; height: 16px; border-radius: 50%; flex: 0 0 auto; }
+  .detail-head[data-route="A"] .dot { background: var(--route-a); }
+  .detail-head[data-route="B"] .dot { background: var(--route-b); }
+  .detail-head[data-route="C"] .dot { background: var(--route-c); }
+  .detail-head .rlabel { font-size: 15px; font-weight: 700; }
+  .detail-head .star {
+    font-size: 10px; font-weight: 700; color: var(--bg); background: var(--accent-2);
+    padding: 2px 7px; border-radius: 999px;
+  }
+
+  .detail-km {
+    font-size: 38px; font-weight: 700; letter-spacing: -.02em; margin: 12px 0 2px;
+  }
+  .detail-km small { font-size: 14px; font-weight: 500; color: var(--muted); margin-left: 4px; }
+
+  .metrics {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+    margin: 16px 0 4px;
+  }
+  .metric {
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 12px; padding: 11px 10px;
+  }
+  .metric .mlabel { font-size: 11px; color: var(--faint); margin-bottom: 4px; }
+  .metric .mval { font-size: 16px; font-weight: 700; }
+  .metric .mval.good { color: var(--success); }
+
+  .actions { display: flex; gap: 10px; margin-top: 18px; }
+  .action {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 7px;
+    font: inherit; font-size: 14px; font-weight: 700;
+    padding: 14px 0; border-radius: 13px; cursor: pointer; min-height: 48px;
+    border: 1px solid var(--border);
+  }
+  .action svg { width: 17px; height: 17px; }
+  .action.primary { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .action.secondary { background: var(--surface-2); color: var(--fg); }
+  .action:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  .action:active { transform: scale(.985); }
+
+  .back-compare {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--muted); background: transparent; border: 0;
+    padding: 14px 0 4px; margin-top: 10px; cursor: pointer; min-height: 44px;
+  }
+  .back-compare svg { width: 15px; height: 15px; }
+  .back-compare:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; border-radius: 8px; }
+
+  .hidden { display: none !important; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sheet.animate, .seg-thumb, .view, .chev svg, .loop { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <header class="page-head">
+    <span class="badge">案A</span>
+    <h1>比較↔フォーカス トグル</h1>
+    <p>狙い: 「選択があればそれ、なければ全部出して比較」に最も忠実。2状態セグメントで全色比較と単一フォーカスを行き来する。</p>
+    <p class="how">操作: <b>比較</b>で3本を色分け同時表示 → チップ or 地図のループをタップで<b>選択中</b>へ自動切替（選んだ線だけ太く、他はゴースト）。下のシートは<b>ハンドルを摘んで上下にドラッグ</b>。</p>
+  </header>
+
+  <div class="stage">
+    <div class="device">
+      <div class="notch"></div>
+      <div class="screen">
+
+        <!-- アプリバー -->
+        <div class="appbar">
+          <div class="brand">
+            <span class="mark" aria-hidden="true"></span>
+            <span class="name">runon</span>
+          </div>
+          <div class="tabs" role="tablist" aria-label="モード">
+            <button role="tab" class="active" aria-selected="true">周回路</button>
+            <button role="tab" aria-selected="false">トレーニング</button>
+          </div>
+          <span class="spacer"></span>
+          <button class="icon-btn" aria-label="テーマ切替">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.8A9 9 0 1 1 11.2 3 7 7 0 0 0 21 12.8Z"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- 地図 -->
+        <div class="map" id="map" data-mode="compare">
+          <svg viewBox="0 0 390 300" preserveAspectRatio="xMidYMid slice" aria-label="周回路候補マップ">
+            <defs>
+              <radialGradient id="parkGrad" cx="50%" cy="40%" r="70%">
+                <stop offset="0%" stop-color="#16241b"/>
+                <stop offset="100%" stop-color="#101a14"/>
+              </radialGradient>
+              <radialGradient id="waterGrad" cx="50%" cy="40%" r="70%">
+                <stop offset="0%" stop-color="#0f2630"/>
+                <stop offset="100%" stop-color="#0b1c24"/>
+              </radialGradient>
+            </defs>
+
+            <!-- 背景 -->
+            <rect x="0" y="0" width="390" height="300" fill="#0d1116"/>
+
+            <!-- 公園/水域ブロブ -->
+            <path d="M40 200 C30 150 80 120 130 135 C170 147 165 205 120 225 C85 240 50 240 40 200 Z" fill="url(#parkGrad)"/>
+            <path d="M250 30 C300 20 345 55 340 100 C336 140 280 150 255 120 C232 92 215 38 250 30 Z" fill="url(#waterGrad)"/>
+            <path d="M300 200 C340 195 360 230 345 265 C330 295 285 290 280 255 C276 225 275 203 300 200 Z" fill="url(#parkGrad)"/>
+
+            <!-- 道路網 -->
+            <g stroke="#1c232b" stroke-width="6" fill="none" stroke-linecap="round">
+              <path d="M-10 90 H400"/>
+              <path d="M-10 175 H400"/>
+              <path d="M-10 250 H400"/>
+              <path d="M70 -10 V310"/>
+              <path d="M160 -10 V310"/>
+              <path d="M255 -10 V310"/>
+              <path d="M330 -10 V310"/>
+            </g>
+            <g stroke="#161c23" stroke-width="3" fill="none" stroke-linecap="round">
+              <path d="M-10 50 H400"/>
+              <path d="M-10 130 H400"/>
+              <path d="M-10 215 H400"/>
+              <path d="M115 -10 V310"/>
+              <path d="M205 -10 V310"/>
+              <path d="M295 -10 V310"/>
+              <path d="M0 0 L120 90"/>
+              <path d="M390 60 L255 175"/>
+            </g>
+
+            <!-- 周回路ループ（描画順: C, B, A の順で A を最前面に） -->
+            <path class="loop route-c" id="loopC" d="M108 120 C150 88 230 86 268 122 S300 200 240 232 S128 240 110 182 S88 132 108 120 Z"/>
+            <path class="loop route-b" id="loopB" d="M150 70 C210 50 270 95 280 150 S250 235 180 238 S110 210 112 150 S100 90 150 70 Z"/>
+            <path class="loop route-a" id="loopA" d="M120 80 C160 50 250 60 290 110 S320 210 250 240 S130 250 100 190 S80 110 120 80 Z"/>
+
+            <!-- タップ判定用の太い透明線 -->
+            <path class="loop-hit" data-route="C" d="M108 120 C150 88 230 86 268 122 S300 200 240 232 S128 240 110 182 S88 132 108 120 Z"/>
+            <path class="loop-hit" data-route="B" d="M150 70 C210 50 270 95 280 150 S250 235 180 238 S110 210 112 150 S100 90 150 70 Z"/>
+            <path class="loop-hit" data-route="A" d="M120 80 C160 50 250 60 290 110 S320 210 250 240 S130 250 100 190 S80 110 120 80 Z"/>
+
+            <!-- 始点ピン -->
+            <g class="startpin" transform="translate(120,80)">
+              <circle class="pin-ring" r="13"/>
+              <circle class="pin-body" r="5.5"/>
+              <circle r="2.2" fill="#0b0e11"/>
+            </g>
+          </svg>
+        </div>
+
+        <div class="attrib" id="attrib">© OpenStreetMap · © CARTO</div>
+
+        <!-- ボトムシート -->
+        <div class="sheet animate" id="sheet">
+          <!-- ドラッグハンドル領域 -->
+          <div class="sheet-handle" id="handle" tabindex="0" role="button" aria-label="シートを開閉（ドラッグまたはタップ）">
+            <div class="grabber"></div>
+            <div class="drag-hint" id="dragHint">↑ ハンドルを摘んで上下にドラッグ</div>
+            <div class="summary-row">
+              <span class="summary-dot" id="summaryDot"></span>
+              <span class="summary-main" id="summaryMain">候補3件</span>
+              <span class="summary-sub" id="summarySub">おすすめ A · 5.02km</span>
+              <span class="chev" id="chev">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>
+              </span>
+            </div>
+          </div>
+
+          <!-- スクロール本体 -->
+          <div class="sheet-body" id="sheetBody">
+
+            <!-- セグメント + 再計算 -->
+            <div class="topbar">
+              <div class="segment" id="segment" data-seg="compare" role="tablist" aria-label="表示モード">
+                <span class="seg-thumb" aria-hidden="true"></span>
+                <button id="segCompare" role="tab" aria-selected="true">比較</button>
+                <button id="segFocus" role="tab" aria-selected="false">選択中</button>
+              </div>
+              <button class="recalc" id="recalc" aria-label="再計算">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/></svg>
+                再計算
+              </button>
+            </div>
+
+            <!-- 比較ビュー -->
+            <div class="view" id="viewCompare">
+              <p class="view-label">候補を比較（タップで選択）</p>
+              <!-- A -->
+              <button class="chip" data-route="A" aria-label="ルートA 5.02km 重複6% 北回り おすすめ">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="info">
+                  <span class="line1">
+                    <span class="rlabel">ルートA</span>
+                    <span class="km">5.02<small>km</small></span>
+                  </span>
+                  <span class="line2"><span>重複 6%</span><span>北回り</span></span>
+                </span>
+                <span class="star">★おすすめ</span>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+              <!-- B -->
+              <button class="chip" data-route="B" aria-label="ルートB 4.88km 重複12% 東回り">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="info">
+                  <span class="line1">
+                    <span class="rlabel">ルートB</span>
+                    <span class="km">4.88<small>km</small></span>
+                  </span>
+                  <span class="line2"><span>重複 12%</span><span>東回り</span></span>
+                </span>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+              <!-- C -->
+              <button class="chip" data-route="C" aria-label="ルートC 5.15km 重複9% 南回り">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="info">
+                  <span class="line1">
+                    <span class="rlabel">ルートC</span>
+                    <span class="km">5.15<small>km</small></span>
+                  </span>
+                  <span class="line2"><span>重複 9%</span><span>南回り</span></span>
+                </span>
+                <span class="go" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></span>
+              </button>
+            </div>
+
+            <!-- フォーカスビュー -->
+            <div class="view hidden" id="viewFocus">
+              <div class="detail-head" id="detailHead" data-route="A">
+                <span class="dot" aria-hidden="true"></span>
+                <span class="rlabel" id="detailLabel">ルートA</span>
+                <span class="star" id="detailStar">★おすすめ</span>
+              </div>
+              <div class="detail-km"><span id="detailKm">5.02</span><small>km</small></div>
+              <div class="metrics">
+                <div class="metric">
+                  <div class="mlabel">重複率</div>
+                  <div class="mval good" id="detailOverlap">6%</div>
+                </div>
+                <div class="metric">
+                  <div class="mlabel">方位</div>
+                  <div class="mval" id="detailDir">北回り</div>
+                </div>
+                <div class="metric">
+                  <div class="mlabel">距離誤差</div>
+                  <div class="mval" id="detailErr">+0.02</div>
+                </div>
+              </div>
+              <div class="actions">
+                <button class="action primary" id="actGpx">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+                  GPXを共有
+                </button>
+                <button class="action secondary" id="actGoogle">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M9 7h8v8"/></svg>
+                  Googleで開く
+                </button>
+              </div>
+              <button class="back-compare" id="backCompare">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"/><path d="M5 10h11a4 4 0 0 1 0 8h-1"/></svg>
+                比較に戻す（全色表示）
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ---- データ ----
+  var ROUTES = {
+    A: { label: "ルートA", km: "5.02", overlap: "6%", dir: "北回り", err: "+0.02", best: true,  good: true },
+    B: { label: "ルートB", km: "4.88", overlap: "12%", dir: "東回り", err: "-0.12", best: false, good: false },
+    C: { label: "ルートC", km: "5.15", overlap: "9%", dir: "南回り", err: "+0.15", best: false, good: true }
+  };
+
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- 要素参照 ----
+  var sheet = document.getElementById("sheet");
+  var handle = document.getElementById("handle");
+  var sheetBody = document.getElementById("sheetBody");
+  var map = document.getElementById("map");
+  var attrib = document.getElementById("attrib");
+  var chev = document.getElementById("chev").querySelector("svg");
+
+  var segment = document.getElementById("segment");
+  var segCompare = document.getElementById("segCompare");
+  var segFocus = document.getElementById("segFocus");
+  var viewCompare = document.getElementById("viewCompare");
+  var viewFocus = document.getElementById("viewFocus");
+
+  var summaryDot = document.getElementById("summaryDot");
+  var summaryMain = document.getElementById("summaryMain");
+  var summarySub = document.getElementById("summarySub");
+  var dragHint = document.getElementById("dragHint");
+
+  var loops = { A: document.getElementById("loopA"), B: document.getElementById("loopB"), C: document.getElementById("loopC") };
+
+  var ROUTE_COLOR = { A: "var(--route-a)", B: "var(--route-b)", C: "var(--route-c)" };
+
+  // ============================================================
+  // ボトムシート: ドラッグ式スナップ
+  // ============================================================
+  // 露出量(画面下からの可視割合)で snap を定義し、translateY に変換する。
+  // sheet は screen 全面サイズ。translateY=0 が FULL。
+  var screenH = 0;
+  var snaps = {}; // name -> translateY(px)
+  var snapOrder = ["peek", "mid", "full"];
+  var currentSnap = "peek";
+
+  function computeSnaps() {
+    var screen = sheet.parentElement;
+    screenH = screen.clientHeight;
+    // 露出割合（下から見える高さ）
+    var peekExpose = screenH * 0.18;
+    var midExpose = screenH * 0.55;
+    var fullExpose = screenH - 52; // アプリバー直下まで（約64px - 余白）
+    // translateY = screenH - expose
+    snaps.peek = screenH - peekExpose;
+    snaps.mid = screenH - midExpose;
+    snaps.full = screenH - fullExpose;
+  }
+
+  function applyTranslate(y) {
+    sheet.style.transform = "translateY(" + y + "px)";
+  }
+
+  function setSnap(name, animate) {
+    currentSnap = name;
+    if (animate && !reduceMotion) {
+      sheet.classList.add("animate");
+    } else {
+      sheet.classList.remove("animate");
+      // reflow して即時反映
+      void sheet.offsetHeight;
+    }
+    applyTranslate(snaps[name]);
+    // FULL/MID で本体スクロール許可、PEEK では非スクロール
+    sheetBody.style.overflowY = (name === "peek") ? "hidden" : "auto";
+    // chevron 向き: 開くほど下向き
+    chev.style.transform = (name === "full") ? "rotate(180deg)" : (name === "mid" ? "rotate(90deg)" : "rotate(0deg)");
+    // attrib をシート上端付近に追従させすぎないため peek 時のみ下に
+    attrib.style.bottom = (name === "peek") ? "calc(18vh + 8px)" : "10px";
+  }
+
+  function nearestSnap(y) {
+    var best = snapOrder[0], bestD = Infinity;
+    snapOrder.forEach(function (n) {
+      var d = Math.abs(snaps[n] - y);
+      if (d < bestD) { bestD = d; best = n; }
+    });
+    return best;
+  }
+
+  // ドラッグ状態
+  var dragging = false;
+  var startY = 0;
+  var startTranslate = 0;
+  var lastY = 0;
+  var lastT = 0;
+  var velocity = 0;
+  var moved = false;
+  var activePointer = null;
+
+  function clamp(y) {
+    var min = snaps.full;
+    var max = snaps.peek + 40; // 少しだけ下に引っ張れる遊び
+    return Math.max(min, Math.min(max, y));
+  }
+
+  handle.addEventListener("pointerdown", function (e) {
+    dragging = true;
+    moved = false;
+    activePointer = e.pointerId;
+    startY = e.clientY;
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+    velocity = 0;
+    // 現在の translateY を取得
+    startTranslate = snaps[currentSnap];
+    sheet.classList.remove("animate");
+    try { handle.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+
+  handle.addEventListener("pointermove", function (e) {
+    if (!dragging || e.pointerId !== activePointer) return;
+    var dy = e.clientY - startY;
+    if (Math.abs(dy) > 4) moved = true;
+    var ny = clamp(startTranslate + dy);
+    applyTranslate(ny);
+    // 速度推定
+    var dt = e.timeStamp - lastT;
+    if (dt > 0) velocity = (e.clientY - lastY) / dt; // px/ms, 正=下方向
+    lastY = e.clientY;
+    lastT = e.timeStamp;
+    e.preventDefault();
+  });
+
+  function endDrag(e) {
+    if (!dragging || (activePointer !== null && e.pointerId !== activePointer)) return;
+    dragging = false;
+    try { handle.releasePointerCapture(activePointer); } catch (err) {}
+    activePointer = null;
+
+    if (!moved) {
+      // タップ扱い: PEEK<->FULL トグル
+      var target = (currentSnap === "peek") ? "full" : "peek";
+      setSnap(target, true);
+      return;
+    }
+
+    // 現在位置
+    var curY = snaps[currentSnap];
+    var m = sheet.style.transform.match(/translateY\(([-\d.]+)px\)/);
+    if (m) curY = parseFloat(m[1]);
+
+    // フリック: 速度がしきい値超なら1段送る
+    var FLICK = 0.45; // px/ms
+    var idx = snapOrder.indexOf(nearestSnap(curY));
+    if (velocity < -FLICK) {
+      idx = Math.min(snapOrder.length - 1, idx + 1); // 上方向 → 開く
+    } else if (velocity > FLICK) {
+      idx = Math.max(0, idx - 1); // 下方向 → 閉じる
+    }
+    setSnap(snapOrder[idx], true);
+  }
+
+  handle.addEventListener("pointerup", endDrag);
+  handle.addEventListener("pointercancel", endDrag);
+
+  // キーボード: ハンドルで Enter/Space → トグル, 上下で段移動
+  handle.addEventListener("keydown", function (e) {
+    var idx = snapOrder.indexOf(currentSnap);
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      setSnap(currentSnap === "peek" ? "full" : "peek", true);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setSnap(snapOrder[Math.min(snapOrder.length - 1, idx + 1)], true);
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setSnap(snapOrder[Math.max(0, idx - 1)], true);
+    }
+  });
+
+  // ============================================================
+  // 比較 ↔ フォーカス トグル
+  // ============================================================
+  var selectedRoute = null; // フォーカス時の対象
+
+  function showCompare() {
+    segment.setAttribute("data-seg", "compare");
+    segCompare.setAttribute("aria-selected", "true");
+    segFocus.setAttribute("aria-selected", "false");
+    viewCompare.classList.remove("hidden");
+    viewFocus.classList.add("hidden");
+    map.setAttribute("data-mode", "compare");
+    // 全ループの選択フラグ解除
+    Object.keys(loops).forEach(function (k) { loops[k].classList.remove("is-selected"); });
+    // サマリ行: 比較時はおすすめA
+    summaryDot.style.background = ROUTE_COLOR.A;
+    summaryMain.textContent = "候補3件";
+    summarySub.textContent = "おすすめ A · 5.02km";
+  }
+
+  function showFocus(route) {
+    selectedRoute = route;
+    var r = ROUTES[route];
+
+    segment.setAttribute("data-seg", "focus");
+    segCompare.setAttribute("aria-selected", "false");
+    segFocus.setAttribute("aria-selected", "true");
+    viewCompare.classList.add("hidden");
+    viewFocus.classList.remove("hidden");
+
+    // 地図: 選択を太線、他をゴースト
+    map.setAttribute("data-mode", "focus");
+    Object.keys(loops).forEach(function (k) {
+      loops[k].classList.toggle("is-selected", k === route);
+    });
+    // 選択ループを最前面へ
+    var sel = loops[route];
+    sel.parentNode.insertBefore(sel, null);
+
+    // 詳細を流し込み
+    var head = document.getElementById("detailHead");
+    head.setAttribute("data-route", route);
+    document.getElementById("detailLabel").textContent = r.label;
+    var starEl = document.getElementById("detailStar");
+    starEl.style.display = r.best ? "" : "none";
+    document.getElementById("detailKm").textContent = r.km;
+    var ov = document.getElementById("detailOverlap");
+    ov.textContent = r.overlap;
+    ov.classList.toggle("good", r.good);
+    document.getElementById("detailDir").textContent = r.dir;
+    document.getElementById("detailErr").textContent = r.err;
+
+    // サマリ行も選択中ルートに更新
+    summaryDot.style.background = ROUTE_COLOR[route];
+    summaryMain.textContent = r.label + (r.best ? " ★" : "");
+    summarySub.textContent = r.km + "km · " + r.dir;
+  }
+
+  // セグメントクリック
+  segCompare.addEventListener("click", showCompare);
+  segFocus.addEventListener("click", function () {
+    // 選択中タブ: 直近選択がなければ おすすめA をフォーカス
+    showFocus(selectedRoute || "A");
+  });
+
+  // チップクリック → フォーカスへ
+  Array.prototype.forEach.call(document.querySelectorAll(".chip"), function (chip) {
+    chip.addEventListener("click", function () {
+      var route = chip.getAttribute("data-route");
+      showFocus(route);
+      // シートが PEEK なら MID まで上げて詳細を見せる
+      if (currentSnap === "peek") setSnap("mid", true);
+    });
+  });
+
+  // 地図ループのタップ → フォーカスへ
+  Array.prototype.forEach.call(document.querySelectorAll(".loop-hit"), function (hit) {
+    hit.addEventListener("click", function () {
+      var route = hit.getAttribute("data-route");
+      showFocus(route);
+      if (currentSnap === "peek") setSnap("mid", true);
+    });
+  });
+
+  // 比較に戻すボタン
+  document.getElementById("backCompare").addEventListener("click", function () {
+    selectedRoute = null;
+    showCompare();
+  });
+
+  // 決定操作（デモ: 視覚フィードバックのみ）
+  document.getElementById("actGpx").addEventListener("click", function () { flash(this); });
+  document.getElementById("actGoogle").addEventListener("click", function () { flash(this); });
+  function flash(el) {
+    el.style.transition = "filter .15s";
+    el.style.filter = "brightness(1.25)";
+    setTimeout(function () { el.style.filter = ""; }, 180);
+  }
+
+  // 再計算（デモ: スピン演出 + ヒント消去）
+  document.getElementById("recalc").addEventListener("click", function () {
+    var self = this;
+    self.classList.remove("spin");
+    void self.offsetHeight;
+    self.classList.add("spin");
+    setTimeout(function () { self.classList.remove("spin"); }, 720);
+  });
+
+  // 初回ドラッグ後にヒントを薄める
+  var hintFaded = false;
+  handle.addEventListener("pointerup", function () {
+    if (!hintFaded && moved) {
+      hintFaded = true;
+      dragHint.style.transition = "opacity .4s";
+      dragHint.style.opacity = "0.35";
+    }
+  });
+
+  // ============================================================
+  // 初期化
+  // ============================================================
+  function init() {
+    computeSnaps();
+    setSnap("peek", false);
+    showCompare();
+  }
+
+  // フォント/レイアウト確定後に位置計算
+  if (document.readyState === "complete") {
+    init();
+  } else {
+    window.addEventListener("load", init);
+    // 早期にも一度（フォント未確定でも screen 高さは取れる）
+    requestAnimationFrame(init);
+  }
+
+  window.addEventListener("resize", function () {
+    computeSnaps();
+    setSnap(currentSnap, false);
+  });
+})();
+</script>
+</body>
+</html>
