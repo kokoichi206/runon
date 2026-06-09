@@ -175,6 +175,8 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const [lat, setLat] = useState(35.681);
   const [lng, setLng] = useState(139.767);
   const [targetKm, setTargetKm] = useState(3);
+  // 信号・曲がりの少ない経路を優先する（生成に信号ペナルティ、並べ替えにも反映）。
+  const [avoidSignals, setAvoidSignals] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [view, setView] = useState<RouteView>("compare");
   const [locating, setLocating] = useState(false);
@@ -332,7 +334,13 @@ export const RoundTripPlanner = (): React.JSX.Element => {
 
   const onSubmit = () => {
     // ランニング用途のため徒歩(walk)固定。
-    void run({ lat, lng, targetMeters: Math.round(targetKm * 1000), profile: "walk" });
+    void run({
+      lat,
+      lng,
+      targetMeters: Math.round(targetKm * 1000),
+      profile: "walk",
+      avoidSignals,
+    });
   };
 
   const getPosition = (options: PositionOptions) =>
@@ -585,6 +593,16 @@ export const RoundTripPlanner = (): React.JSX.Element => {
               </p>
             )}
 
+            <label className="flex items-center gap-2 text-xs text-muted">
+              <input
+                type="checkbox"
+                checked={avoidSignals}
+                onChange={(e) => setAvoidSignals(e.target.checked)}
+                className="size-4"
+              />
+              信号・曲がりを減らす（信号を避ける経路を優先）
+            </label>
+
             <button
               type="button"
               onClick={onSubmit}
@@ -709,6 +727,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                           >
                             {c.onParetoFront ? "フロント" : "別方向"}
                           </span>
+                        </div>
+                        <div className="mt-0.5 flex gap-3 text-[11px] text-faint tabular-nums">
+                          <span>曲がり {c.turnCount}回</span>
+                          {c.signalCount !== null && <span>信号 {c.signalCount}</span>}
                         </div>
                       </button>
                     </li>

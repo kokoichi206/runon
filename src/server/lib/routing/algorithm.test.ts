@@ -234,10 +234,16 @@ describe("computeRoundTrips (E2E, Overpass モック注入)", () => {
       lng: ORIGIN.lng + 20 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))),
     };
     const computed = await computeRoundTrips(
-      { lat: center.lat, lng: center.lng, targetMeters: 1200, profile: "walk" },
+      {
+        lat: center.lat,
+        lng: center.lng,
+        targetMeters: 1200,
+        profile: "walk",
+        avoidSignals: false,
+      },
       {
         enableLocalSearch: true,
-        fetchNetwork: async () => ({ ways, fetchMs: 0 }),
+        fetchNetwork: async () => ({ ways, fetchMs: 0, signalNodes: new Set<number>() }),
       }
     );
     expect(computed.ok).toBe(true);

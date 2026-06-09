@@ -32,7 +32,11 @@ const travelDirection = (tags: Record<string, string> | undefined): Direction =>
  * Overpass の way 群から有向ストリートグラフを構築する。
  * 連続ノード間にセグメント弧を張り、共有ノード ID が交差点トポロジを与える。
  */
-export const buildGraphFromOverpass = (ways: OverpassWay[], profile: Profile): StreetGraph => {
+export const buildGraphFromOverpass = (
+  ways: OverpassWay[],
+  profile: Profile,
+  signalNodeIds?: ReadonlySet<number>
+): StreetGraph => {
   const graph = createGraph();
 
   for (const way of ways) {
@@ -58,6 +62,13 @@ export const buildGraphFromOverpass = (ways: OverpassWay[], profile: Profile): S
       const weightM = haversineMeters({ lat: ga.lat, lng: ga.lon }, { lat: gb.lat, lng: gb.lon });
       if (dir === "both" || dir === "forward") addArc(graph, a, b, weightM);
       if (dir === "both" || dir === "reverse") addArc(graph, b, a, weightM);
+    }
+  }
+
+  // 信号ノードのうち、実際にグラフ上に存在するものだけを記録する。
+  if (signalNodeIds) {
+    for (const id of signalNodeIds) {
+      if (graph.nodes.has(id)) graph.signalNodes.add(id);
     }
   }
 

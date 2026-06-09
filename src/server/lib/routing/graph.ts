@@ -24,6 +24,10 @@ export interface Arc {
 export interface StreetGraph {
   nodes: Map<NodeId, LatLng>;
   adjacency: Map<NodeId, Arc[]>;
+  /**
+   * 信号（traffic_signals）のノード集合。信号回避ルーティングと信号数カウントに使う。
+   */
+  signalNodes: Set<NodeId>;
 }
 
 /**
@@ -34,7 +38,7 @@ export const undirectedEdgeKey = (a: NodeId, b: NodeId): string => {
 };
 
 export const createGraph = (): StreetGraph => {
-  return { nodes: new Map(), adjacency: new Map() };
+  return { nodes: new Map(), adjacency: new Map(), signalNodes: new Set() };
 };
 
 export const addNode = (graph: StreetGraph, id: NodeId, pos: LatLng): void => {

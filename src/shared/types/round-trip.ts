@@ -19,6 +19,8 @@ export const roundTripRequestSchema = z.object({
   // 取得半径は 15km にキャップ済みなので Overpass 負荷は 25km 時と同じ、計算は全体締切で打ち切る。
   targetMeters: z.number().min(200).max(42_195),
   profile: profileSchema.default("walk"),
+  // true のとき、信号（traffic_signals）を避ける経路を生成し、信号・曲がりの少なさで並べ替える。
+  avoidSignals: z.boolean().default(false),
 });
 export type RoundTripRequest = z.infer<typeof roundTripRequestSchema>;
 
@@ -65,6 +67,14 @@ export interface RoundTripCandidate {
    * パレートフロント上の解か。
    */
   onParetoFront: boolean;
+  /**
+   * 経路中の曲がり（一定角度以上の方位変化）の回数。少ないほど走りやすい。
+   */
+  turnCount: number;
+  /**
+   * 経路が通る信号（traffic_signals）の数。信号データを取得しなかった場合は null。
+   */
+  signalCount: number | null;
   /**
    * この候補を生み出した手法。
    */

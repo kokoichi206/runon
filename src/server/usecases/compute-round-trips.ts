@@ -14,7 +14,7 @@ import {
   routePolygon,
   snapStart,
 } from "@/server/lib/routing/round-trip";
-import type { WalkMetrics } from "@/server/lib/routing/walk";
+import { countSignals, countTurns, type WalkMetrics } from "@/server/lib/routing/walk";
 import {
   overpassRepository,
   type OverpassFetchResult,
@@ -76,6 +76,9 @@ export const computeRoundTrips = async (
   const deadline = computeStart + 40_000;
   // 長距離は探索が距離²で膨らむため、粗いグラフ + 探索量削減で間に合わせる。
   const isLong = req.targetMeters >= 10_000;
+  // 信号回避: 信号ノードへ入る弧へ加えるコスト(m)。曲がり/信号の少なさで並べ替えもする。
+  const avoidSignals = req.avoidSignals;
+  const signalPenaltyM = avoidSignals ? 120 : 0;
   const center: LatLng = { lat: req.lat, lng: req.lng };
   const radius = fetchRadiusMeters(req.targetMeters);
 
@@ -86,6 +89,7 @@ export const computeRoundTrips = async (
         userAgent: deps.userAgent,
         signal: deps.signal,
         coarse: isLong,
+        withSignals: avoidSignals,
       });
   if (!fetched.ok) return err(fetched.error);
 
@@ -98,7 +102,7 @@ export const computeRoundTrips = async (
     );
   }
 
-  const graph = buildGraphFromOverpass(ways, req.profile);
+  const graph = buildGraphFromOverpass(ways, req.profile, fetched.value.signalNodes);
   let startNode = snapStart(graph, center, 400);
   if (startNode === null) {
     return err(
@@ -193,7 +197,8 @@ export const computeRoundTrips = async (
       reachable,
       5,
       isLong ? 1 : 2, // 長距離は精緻化反復を減らす
-      0.06
+      0.06,
+      signalPenaltyM
     );
     if (routed) {
       stage1.push({
@@ -265,8 +270,15 @@ export const computeRoundTrips = async (
   const recommendedSig = frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;
   const limited = combined.slice(0, 8);
 
-  let recommendedId = "";
-  const candidates: RoundTripCandidate[] = limited.map((entry, idx) => {
+  // 候補を組み立て、曲がり/信号を算出する（id は順序確定後に振る）。
+  interface Built {
+    entry: Entry;
+    waypoints: LngLat[];
+    source: RoundTripCandidate["source"];
+    turnCount: number;
+    signalCount: number | null;
+  }
+  const built: Built[] = limited.map((entry) => {
     const sig = sigOf(entry.sol.metrics);
     const wpNodes = stage1Signatures.get(sig);
     const source: RoundTripCandidate["source"] = wpNodes
@@ -278,19 +290,52 @@ export const computeRoundTrips = async (
           .filter((p): p is LatLng => p !== undefined)
           .map((p) => [p.lng, p.lat])
       : [[startPos.lng, startPos.lat]];
+    return {
+      entry,
+      waypoints,
+      source,
+      turnCount: countTurns(graph, entry.sol.walk),
+      // 信号は avoidSignals 時のみ取得・計測している（それ以外は未計測=null）。
+      signalCount: avoidSignals ? countSignals(graph, entry.sol.walk) : null,
+    };
+  });
+
+  // 信号回避モードでは「信号 → 曲がり → 距離スコア」の少ない順に並べ替える。
+  if (avoidSignals) {
+    built.sort((a, b) => {
+      const sa = a.signalCount ?? 0;
+      const sb = b.signalCount ?? 0;
+      if (sa !== sb) return sa - sb;
+      if (a.turnCount !== b.turnCount) return a.turnCount - b.turnCount;
+      return (
+        score(a.entry.sol.metrics, req.targetMeters) - score(b.entry.sol.metrics, req.targetMeters)
+      );
+    });
+  }
+
+  let recommendedId = "";
+  const candidates: RoundTripCandidate[] = built.map((b, idx) => {
     const id = `cand-${idx}`;
-    if (recommendedId === "" && entry.onFront && sig === recommendedSig) {
+    // 通常モードはパレート最良を推奨に。信号回避モードは並べ替え後の先頭を推奨にする。
+    if (
+      recommendedId === "" &&
+      !avoidSignals &&
+      b.entry.onFront &&
+      sigOf(b.entry.sol.metrics) === recommendedSig
+    ) {
       recommendedId = id;
     }
     return {
       id,
-      path: walkToLngLat(graph, entry.sol.walk),
-      waypoints,
-      lengthMeters: Math.round(entry.sol.metrics.lengthMeters),
-      lengthError: Math.round(entry.sol.metrics.lengthError),
-      overlapPercent: Math.round(entry.sol.metrics.overlapPercent * 10) / 10,
-      onParetoFront: entry.onFront,
-      source,
+      path: walkToLngLat(graph, b.entry.sol.walk),
+      waypoints: b.waypoints,
+      lengthMeters: Math.round(b.entry.sol.metrics.lengthMeters),
+      lengthError: Math.round(b.entry.sol.metrics.lengthError),
+      overlapPercent: Math.round(b.entry.sol.metrics.overlapPercent * 10) / 10,
+      onParetoFront: b.entry.onFront,
+      turnCount: b.turnCount,
+      signalCount: b.signalCount,
+      source: b.source,
     };
   });
 
