@@ -7,7 +7,7 @@ import { Logo } from "@/client/components/Logo";
 import { ThemeToggle } from "@/client/components/ThemeToggle";
 
 const LINKS = [
-  { href: "/", label: "周回路" },
+  { href: "/", label: "コース" },
   { href: "/training", label: "トレーニング" },
 ];
 
