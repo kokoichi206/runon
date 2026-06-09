@@ -28,6 +28,11 @@ export interface StreetGraph {
    * 信号（traffic_signals）のノード集合。信号回避ルーティングと信号数カウントに使う。
    */
   signalNodes: Set<NodeId>;
+  /**
+   * 「細い道」とみなす無向エッジ（edgeKey）の集合。細道回避ルーティングと細道区間カウントに使う。
+   * highway 種別ベースで build 時に判定する（@/server/lib/osm/build-graph）。
+   */
+  narrowEdges: Set<string>;
 }
 
 /**
@@ -38,7 +43,12 @@ export const undirectedEdgeKey = (a: NodeId, b: NodeId): string => {
 };
 
 export const createGraph = (): StreetGraph => {
-  return { nodes: new Map(), adjacency: new Map(), signalNodes: new Set() };
+  return {
+    nodes: new Map(),
+    adjacency: new Map(),
+    signalNodes: new Set(),
+    narrowEdges: new Set(),
+  };
 };
 
 export const addNode = (graph: StreetGraph, id: NodeId, pos: LatLng): void => {

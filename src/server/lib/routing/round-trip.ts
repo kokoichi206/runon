@@ -154,7 +154,8 @@ export const routePolygon = (
   targetMeters: number,
   reachable: Reachable,
   penaltyFactor: number,
-  signalPenaltyM = 0
+  signalPenaltyM = 0,
+  narrowPenaltyFactor = 1
 ): RoutedCandidate | null => {
   // 頂点をノードへスナップ（vertices[0]=start は startNode 固定）。
   const snapped: NodeId[] = [startNode];
@@ -185,6 +186,7 @@ export const routePolygon = (
       penalizedEdgeKeys: usedEdgeKeys,
       penaltyFactor,
       signalPenaltyM,
+      narrowPenaltyFactor,
     });
     if (!leg || leg.path.length < 2) return null;
     for (let j = 1; j < leg.path.length; j++) {
@@ -240,7 +242,8 @@ export const refineRoute = (
   penaltyFactor: number,
   maxIters = 2,
   tolerance = 0.06,
-  signalPenaltyM = 0
+  signalPenaltyM = 0,
+  narrowPenaltyFactor = 1
 ): RoutedCandidate | null => {
   let best = routePolygon(
     graph,
@@ -249,7 +252,8 @@ export const refineRoute = (
     targetMeters,
     reachable,
     penaltyFactor,
-    signalPenaltyM
+    signalPenaltyM,
+    narrowPenaltyFactor
   );
   for (let i = 0; i < maxIters && best; i++) {
     const len = best.metrics.lengthMeters;
@@ -266,7 +270,8 @@ export const refineRoute = (
       targetMeters,
       reachable,
       penaltyFactor,
-      signalPenaltyM
+      signalPenaltyM,
+      narrowPenaltyFactor
     );
     if (!routed) break;
     // 改善した場合のみ採用。

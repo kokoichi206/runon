@@ -8,10 +8,16 @@ import {
   haversineMeters,
   type LatLng,
 } from "@/server/lib/routing/geo";
+import { undirectedEdgeKey } from "@/server/lib/routing/graph";
 import { computeReachable } from "@/server/lib/routing/isochrone";
 import { generateNeighbors } from "@/server/lib/routing/pareto-local-search";
 import { generatePolygons, routePolygon, snapStart } from "@/server/lib/routing/round-trip";
-import { dominates, evaluateWalk, removeOutAndBack } from "@/server/lib/routing/walk";
+import {
+  countNarrowSegments,
+  dominates,
+  evaluateWalk,
+  removeOutAndBack,
+} from "@/server/lib/routing/walk";
 import { computeRoundTrips } from "@/server/usecases/compute-round-trips";
 import type { OverpassWay } from "@/shared/types/round-trip";
 
@@ -153,6 +159,68 @@ describe("walk metrics", () => {
   });
 });
 
+describe("細道回避（narrow road avoidance）", () => {
+  // メートルオフセットを度に変換するヘルパー（ORIGIN 基準）。
+  const mLat = (m: number) => m / 111_320;
+  const mLng = (m: number) => m / (111_320 * Math.cos((ORIGIN.lat * Math.PI) / 180));
+  // A(1) と B(2) を結ぶ2経路:
+  // - 細い service（路地）で直進 100m（A->B）
+  // - 広い residential で迂回 ~160m（A->M->N->B）
+  const A = 1,
+    B = 2,
+    M = 3,
+    N = 4;
+  const node = (eastM: number, northM: number) => ({
+    lat: ORIGIN.lat + mLat(northM),
+    lon: ORIGIN.lng + mLng(eastM),
+  });
+  const coords = new Map<number, { lat: number; lon: number }>([
+    [A, node(0, 0)],
+    [B, node(100, 0)],
+    [M, node(0, 30)],
+    [N, node(100, 30)],
+  ]);
+  const wayOf = (id: number, ids: number[], highway: string): OverpassWay => ({
+    type: "way",
+    id,
+    nodes: ids,
+    geometry: ids.map((n) => coords.get(n)!),
+    tags: { highway },
+  });
+  const ways: OverpassWay[] = [
+    wayOf(10, [A, B], "service"), // 細道（直進）
+    wayOf(11, [A, M, N, B], "residential"), // 広い道（迂回）
+  ];
+  const graph = buildGraphFromOverpass(ways, "walk");
+
+  it("service のエッジが narrowEdges に登録される", () => {
+    expect(graph.narrowEdges.has(undirectedEdgeKey(A, B))).toBe(true);
+    // residential の迂回辺は細道ではない。
+    expect(graph.narrowEdges.has(undirectedEdgeKey(A, M))).toBe(false);
+  });
+
+  it("footway は細道扱いしない（幹線沿い歩道などを誤爆しない）", () => {
+    const fw = buildGraphFromOverpass([wayOf(20, [A, B], "footway")], "walk");
+    expect(fw.narrowEdges.has(undirectedEdgeKey(A, B))).toBe(false);
+  });
+
+  it("ペナルティ無しなら細道で直進する", () => {
+    const sp = shortestPath(graph, A, B);
+    expect(sp).not.toBeNull();
+    expect(sp!.path).toEqual([A, B]);
+    expect(countNarrowSegments(graph, sp!.path)).toBe(1);
+  });
+
+  it("ペナルティ係数を与えると広い道へ迂回する", () => {
+    const sp = shortestPath(graph, A, B, { narrowPenaltyFactor: 3 });
+    expect(sp).not.toBeNull();
+    expect(sp!.path).toEqual([A, M, N, B]);
+    // 返す distanceM は実距離（ペナルティ抜き）。
+    expect(sp!.distanceM).toBeCloseTo(160, -1);
+    expect(countNarrowSegments(graph, sp!.path)).toBe(0);
+  });
+});
+
 describe("polygon + routePolygon", () => {
   const ways = gridWays(31, 31, 50, ORIGIN); // 1.5km 四方
   const graph = buildGraphFromOverpass(ways, "walk");
@@ -240,6 +308,7 @@ describe("computeRoundTrips (E2E, Overpass モック注入)", () => {
         targetMeters: 1200,
         profile: "walk",
         avoidSignals: false,
+        avoidNarrowRoads: false,
       },
       {
         enableLocalSearch: true,
