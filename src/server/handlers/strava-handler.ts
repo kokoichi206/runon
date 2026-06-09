@@ -9,10 +9,29 @@ import { err, type Result } from "@/shared/result";
 export const STRAVA_REFRESH_COOKIE = "strava_rt";
 
 /**
- * 認可画面 URL を返す。
+ * 認可開始時に発行する CSRF 用 state を保存する Cookie 名。
  */
-export const authorizeUrlHandler = (redirectUri: string): Result<string, AppError> => {
-  return stravaUsecase.authorizeUrl(redirectUri);
+export const STRAVA_STATE_COOKIE = "strava_oauth_state";
+
+/**
+ * 認可画面 URL を返す。state は CSRF 照合用に呼び出し側が cookie 保存する。
+ */
+export const authorizeUrlHandler = (
+  redirectUri: string,
+  state: string
+): Result<string, AppError> => {
+  return stravaUsecase.authorizeUrl(redirectUri, state);
+};
+
+/**
+ * コールバックの state が、認可開始時に発行した cookie の state と一致するか。
+ * どちらか欠落（cookie 期限切れ・直リンクなど）も不正フローとして扱う。
+ */
+export const isCallbackStateValid = (
+  cookieState: string | undefined,
+  queryState: string | null
+): boolean => {
+  return Boolean(cookieState) && cookieState === queryState;
 };
 
 /**
