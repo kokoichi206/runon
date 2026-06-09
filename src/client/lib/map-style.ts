@@ -11,10 +11,19 @@ import type { ResolvedTheme } from "@/client/lib/theme";
 const CARTO_ATTRIBUTION =
   '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
 
+// Esri World Imagery（キー不要の衛星/航空写真ラスター）。帰属表記が必須。
+const ESRI_IMAGERY_ATTRIBUTION =
+  'Imagery © <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics';
+
 const cartoTiles = (variant: "light_all" | "dark_all"): string[] =>
   ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}.png`);
 
-export const mapStyle = (theme: ResolvedTheme): StyleSpecification => {
+/**
+ * ベースマップの種類。map=テーマ連動の地図、satellite=衛星写真。
+ */
+export type Basemap = "map" | "satellite";
+
+const cartoStyle = (theme: ResolvedTheme): StyleSpecification => {
   const variant = theme === "dark" ? "dark_all" : "light_all";
   return {
     version: 8,
@@ -29,6 +38,25 @@ export const mapStyle = (theme: ResolvedTheme): StyleSpecification => {
     layers: [{ id: "carto", type: "raster", source: "carto" }],
   };
 };
+
+const satelliteStyle = (): StyleSpecification => ({
+  version: 8,
+  sources: {
+    "esri-imagery": {
+      type: "raster",
+      // Esri は y/x の順（{z}/{y}/{x}）。
+      tiles: [
+        "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      ],
+      tileSize: 256,
+      attribution: ESRI_IMAGERY_ATTRIBUTION,
+    },
+  },
+  layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }],
+});
+
+export const mapStyle = (theme: ResolvedTheme, basemap: Basemap = "map"): StyleSpecification =>
+  basemap === "satellite" ? satelliteStyle() : cartoStyle(theme);
 
 /**
  * ルート/マーカーの描画色。MapLibre の paint は CSS 変数を読めないため JS 側で持つ。
