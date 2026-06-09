@@ -11,31 +11,35 @@ export interface Solution {
   metrics: WalkMetrics;
 }
 
-/** ダミー頂点 u'i の識別子（OSM ノード ID は正なので負値で衝突しない）。 */
+/**
+ * ダミー頂点 u'i の識別子（OSM ノード ID は正なので負値で衝突しない）。
+ */
 const DUMMY: NodeId = -1;
 
 const directedKey = (from: NodeId, to: NodeId): string => `${from}->${to}`;
 
-/** 歩行 S の有向弧集合（残余グラフで除去する弧）。 */
-function arcsOf(walk: NodeId[]): Set<string> {
+/**
+ * 歩行 S の有向弧集合（残余グラフで除去する弧）。
+ */
+const arcsOf = (walk: NodeId[]): Set<string> => {
   const s = new Set<string>();
   for (let i = 0; i + 1 < walk.length; i++) {
     s.add(directedKey(walk[i]!, walk[i + 1]!));
   }
   return s;
-}
+};
 
 /**
  * 論文 Algorithm 4 の近傍木。
  * ui を根に、S の弧を除いた残余グラフ上で BFS。ui へ戻る入弧はダミー DUMMY に張り替える。
  * 返す parent から、ui→(任意ノード) および ui→DUMMY の最少弧経路を復元できる。
  */
-function bfsResidualTree(
+const bfsResidualTree = (
   graph: StreetGraph,
   ui: NodeId,
   removedArcs: Set<string>,
-  maxVisits: number,
-): Map<NodeId, NodeId> {
+  maxVisits: number
+): Map<NodeId, NodeId> => {
   const parent = new Map<NodeId, NodeId>();
   const visited = new Set<NodeId>([ui]);
   const queue: NodeId[] = [ui];
@@ -55,13 +59,9 @@ function bfsResidualTree(
     }
   }
   return parent;
-}
+};
 
-function pathTo(
-  parent: Map<NodeId, NodeId>,
-  ui: NodeId,
-  target: NodeId,
-): NodeId[] | null {
+const pathTo = (parent: Map<NodeId, NodeId>, ui: NodeId, target: NodeId): NodeId[] | null => {
   if (target === ui) return [ui];
   const path: NodeId[] = [target];
   let cur = target;
@@ -76,16 +76,24 @@ function pathTo(
   }
   path.reverse();
   return path;
-}
+};
 
 export interface NeighborOptions {
-  /** 1 解あたりに走査するカット頂点 ui の最大数（等間隔サンプル）。 */
+  /**
+   * 1 解あたりに走査するカット頂点 ui の最大数（等間隔サンプル）。
+   */
   maxCutVertices?: number;
-  /** カット頂点ごとに採用する区間終点 uj の最大数。 */
+  /**
+   * カット頂点ごとに採用する区間終点 uj の最大数。
+   */
   maxSegmentTargets?: number;
-  /** bfsResidualTree が訪問するノード上限（巨大グラフでの暴走防止）。 */
+  /**
+   * bfsResidualTree が訪問するノード上限（巨大グラフでの暴走防止）。
+   */
   maxVisits?: number;
-  /** 絶対時刻(ms)。これを過ぎたら近傍生成を打ち切る（1反復の長すぎ防止）。 */
+  /**
+   * 絶対時刻(ms)。これを過ぎたら近傍生成を打ち切る（1反復の長すぎ防止）。
+   */
   deadline?: number;
 }
 
@@ -96,13 +104,13 @@ export interface NeighborOptions {
  *  (b) サブサイクル付加: ui..u'i の閉路を ui に挿入、
  * を生成する。
  */
-export function generateNeighbors(
+export const generateNeighbors = (
   graph: StreetGraph,
   walk: NodeId[],
   startNode: NodeId,
   targetMeters: number,
-  opts: NeighborOptions = {},
-): Solution[] {
+  opts: NeighborOptions = {}
+): Solution[] => {
   const maxCuts = opts.maxCutVertices ?? 24;
   const maxTargets = opts.maxSegmentTargets ?? 6;
   const maxVisits = opts.maxVisits ?? Number.POSITIVE_INFINITY;
@@ -149,33 +157,32 @@ export function generateNeighbors(
   }
 
   return out;
-}
+};
 
-function finalize(
+const finalize = (
   graph: StreetGraph,
   walk: NodeId[],
   startNode: NodeId,
-  targetMeters: number,
-): Solution | null {
+  targetMeters: number
+): Solution | null => {
   if (walk.length < 3) return null;
   if (walk[0] !== startNode || walk[walk.length - 1] !== startNode) return null;
   const trimmed = removeOutAndBack(walk, startNode);
   if (trimmed.length < 3) return null;
   const metrics = evaluateWalk(graph, trimmed, targetMeters);
-  if (
-    metrics.lengthMeters < targetMeters * 0.3 ||
-    metrics.lengthMeters > targetMeters * 3
-  ) {
+  if (metrics.lengthMeters < targetMeters * 0.3 || metrics.lengthMeters > targetMeters * 3) {
     return null;
   }
   return { walk: trimmed, metrics };
-}
+};
 
 const signatureOf = (m: WalkMetrics): string =>
   `${Math.round(m.lengthMeters)}:${Math.round(m.overlapPercent * 10)}`;
 
-/** 解 cand をアーカイブに挿入（パレート支配を維持）。挿入したら true。 */
-function tryInsert(archive: Solution[], cand: Solution): boolean {
+/**
+ * 解 cand をアーカイブに挿入（パレート支配を維持）。挿入したら true。
+ */
+const tryInsert = (archive: Solution[], cand: Solution): boolean => {
   for (const a of archive) {
     if (dominates(a.metrics, cand.metrics)) return false;
     if (
@@ -191,7 +198,7 @@ function tryInsert(archive: Solution[], cand: Solution): boolean {
   }
   archive.push(cand);
   return true;
-}
+};
 
 export interface ParetoLocalSearchOptions extends NeighborOptions {
   maxIterations?: number;
@@ -203,13 +210,13 @@ export interface ParetoLocalSearchOptions extends NeighborOptions {
  * 論文 Algorithm 3: 多目的パレート局所探索。
  * 初期解集合から近傍を生成し、非支配解のアーカイブを反復的に拡張・改善する。
  */
-export function paretoLocalSearch(
+export const paretoLocalSearch = (
   graph: StreetGraph,
   startNode: NodeId,
   targetMeters: number,
   initial: Solution[],
-  opts: ParetoLocalSearchOptions = {},
-): Solution[] {
+  opts: ParetoLocalSearchOptions = {}
+): Solution[] => {
   const maxIterations = opts.maxIterations ?? 300;
   const maxArchive = opts.maxArchive ?? 40;
   const timeBudgetMs = opts.timeBudgetMs ?? 4000;
@@ -234,13 +241,10 @@ export function paretoLocalSearch(
     if (visited.has(sig)) continue;
     visited.add(sig);
 
-    const neighborsList = generateNeighbors(
-      graph,
-      current.walk,
-      startNode,
-      targetMeters,
-      { ...opts, deadline },
-    );
+    const neighborsList = generateNeighbors(graph, current.walk, startNode, targetMeters, {
+      ...opts,
+      deadline,
+    });
     for (const nb of neighborsList) {
       if (visited.has(signatureOf(nb.metrics))) continue;
       if (tryInsert(archive, nb)) {
@@ -260,4 +264,4 @@ export function paretoLocalSearch(
   }
 
   return archive;
-}
+};

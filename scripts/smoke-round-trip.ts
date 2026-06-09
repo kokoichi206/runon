@@ -24,18 +24,16 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   console.log(`OK (${Date.now() - started}ms, HTTP ${res.status})`);
+  console.log(`start=${JSON.stringify(json.start)} 目標=${targetMeters}m profile=${profile}`);
   console.log(
-    `start=${JSON.stringify(json.start)} 目標=${targetMeters}m profile=${profile}`,
-  );
-  console.log(
-    `graph: nodes=${json.stats.graphNodes} edges=${json.stats.graphEdges} reachable=${json.stats.reachableNodes} computeMs=${json.stats.computeMs} overpassMs=${json.stats.overpassMs}`,
+    `graph: nodes=${json.stats.graphNodes} edges=${json.stats.graphEdges} reachable=${json.stats.reachableNodes} computeMs=${json.stats.computeMs} overpassMs=${json.stats.overpassMs}`
   );
   console.log(`候補 ${json.candidates.length} 件:`);
   for (const c of json.candidates.slice(0, 8)) {
     console.log(
       `  ${c.id}${c.id === json.recommendedId ? " (推奨)" : ""}: ` +
         `len=${(c.lengthMeters / 1000).toFixed(2)}km 誤差=${c.lengthError}m ` +
-        `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`,
+        `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`
     );
   }
 }

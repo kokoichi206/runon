@@ -8,7 +8,9 @@ import { MAP_COLORS, mapStyle } from "@/client/lib/map-style";
 import type { ResolvedTheme } from "@/client/lib/theme";
 import type { LngLat, RoundTripCandidate } from "@/shared/types/round-trip";
 
-/** 候補の見せ方。compare=全候補を色分け / focus=選択ルートを強調し他はゴースト。 */
+/**
+ * 候補の見せ方。compare=全候補を色分け / focus=選択ルートを強調し他はゴースト。
+ */
 export type RouteView = "compare" | "focus";
 
 export interface MapViewProps {
@@ -16,11 +18,17 @@ export interface MapViewProps {
   candidates: RoundTripCandidate[];
   selectedId: string | null;
   view: RouteView;
-  /** 現在のテーマ。CARTO の light/dark タイルとルート色を切り替える。 */
+  /**
+   * 現在のテーマ。CARTO の light/dark タイルとルート色を切り替える。
+   */
   theme: ResolvedTheme;
-  /** 地図クリックで始点を選ぶ。 */
+  /**
+   * 地図クリックで始点を選ぶ。
+   */
   onPick: (lng: number, lat: number) => void;
-  /** ルート（ループ）クリックでその候補を選ぶ。 */
+  /**
+   * ルート（ループ）クリックでその候補を選ぶ。
+   */
   onSelectRoute: (id: string) => void;
 }
 

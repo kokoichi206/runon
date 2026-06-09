@@ -10,7 +10,7 @@
 
 ### 出典論文
 
-- Rhyd Lewis & Padraig Corcoran, *Fast Algorithms for Computing Fixed-Length Round Trips in Real-World Street Networks*, SN Computer Science **5:868** (2024).
+- Rhyd Lewis & Padraig Corcoran, _Fast Algorithms for Computing Fixed-Length Round Trips in Real-World Street Networks_, SN Computer Science **5:868** (2024).
 - DOI: [10.1007/s42979-024-03223-3](https://doi.org/10.1007/s42979-024-03223-3)（オープンアクセス）
 
 ### 採用手法
@@ -55,12 +55,12 @@
 
 `roundTripRequestSchema`（Zod）:
 
-| フィールド | 型 / 制約 | 既定値 | 単位 / 備考 |
-|---|---|---|---|
-| `lat` | `number`, `-90 ≤ lat ≤ 90` | なし（必須） | 緯度 |
-| `lng` | `number`, `-180 ≤ lng ≤ 180` | なし（必須） | 経度 |
-| `targetMeters` | `number`, `200 ≤ v ≤ 25_000` | なし（必須） | 目標周回距離 `k`（m）。200m 未満は道路網として意味が薄く、25km 超は公開 Overpass への負荷が大きいため制限 |
-| `profile` | `"walk" | "bike"`（`profileSchema`） | `"walk"` | 移動プロファイル |
+| フィールド     | 型 / 制約                    | 既定値                     | 単位 / 備考                                                                                               |
+| -------------- | ---------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------- |
+| `lat`          | `number`, `-90 ≤ lat ≤ 90`   | なし（必須）               | 緯度                                                                                                      |
+| `lng`          | `number`, `-180 ≤ lng ≤ 180` | なし（必須）               | 経度                                                                                                      |
+| `targetMeters` | `number`, `200 ≤ v ≤ 25_000` | なし（必須）               | 目標周回距離 `k`（m）。200m 未満は道路網として意味が薄く、25km 超は公開 Overpass への負荷が大きいため制限 |
+| `profile`      | `"walk"                      | "bike"`（`profileSchema`） | `"walk"`                                                                                                  | 移動プロファイル |
 
 ### 4.2 レスポンス型（`RoundTripResult`）
 
@@ -72,16 +72,16 @@
 
 `RoundTripCandidate`:
 
-| フィールド | 型 | 意味 |
-|---|---|---|
-| `id` | `string` | `cand-<idx>` 形式 |
-| `path` | `LngLat[]` | 周回経路の全ポリライン（始点=終点）。座標順 `[lng, lat]`（GeoJSON 順） |
-| `waypoints` | `LngLat[]` | 多角形ウェイポイント（可視化・デバッグ用）。PLS 由来解では `[start]` のみ |
-| `lengthMeters` | `number` | 実距離 `L(S)`（m、四捨五入） |
-| `lengthError` | `number` | `f1 = |k − L(S)|`（m、四捨五入） |
-| `overlapPercent` | `number` | `f2`（%、小数第1位に丸め） |
-| `onParetoFront` | `boolean` | パレートフロント上の解なら `true`、多様性候補なら `false` |
-| `source` | `"isochrone-polygon" | "pareto-local-search"` | 候補を生み出した手法 |
+| フィールド       | 型                   | 意味                                                                      |
+| ---------------- | -------------------- | ------------------------------------------------------------------------- | -------------------- | ---------------- |
+| `id`             | `string`             | `cand-<idx>` 形式                                                         |
+| `path`           | `LngLat[]`           | 周回経路の全ポリライン（始点=終点）。座標順 `[lng, lat]`（GeoJSON 順）    |
+| `waypoints`      | `LngLat[]`           | 多角形ウェイポイント（可視化・デバッグ用）。PLS 由来解では `[start]` のみ |
+| `lengthMeters`   | `number`             | 実距離 `L(S)`（m、四捨五入）                                              |
+| `lengthError`    | `number`             | `f1 =                                                                     | k − L(S)             | `（m、四捨五入） |
+| `overlapPercent` | `number`             | `f2`（%、小数第1位に丸め）                                                |
+| `onParetoFront`  | `boolean`            | パレートフロント上の解なら `true`、多様性候補なら `false`                 |
+| `source`         | `"isochrone-polygon" | "pareto-local-search"`                                                    | 候補を生み出した手法 |
 
 ### 4.3 単位・座標順
 
@@ -95,12 +95,12 @@
 
 ### 5.0 前処理
 
-| ステップ | 処理 | ソース |
-|---|---|---|
-| 道路網取得 | `fetchRadiusMeters(targetMeters)` の半径で Overpass にクエリ | `compute-round-trips.ts` / `overpass.ts: fetchStreetNetwork, buildOverpassQuery` |
-| 有向グラフ構築 | way 群を頂点・弧へ変換。`profile=walk` は全弧双方向、`bike` は `oneway` を解釈 | `build-graph.ts: buildGraphFromOverpass, travelDirection` |
-| 始点スナップ | `snapStart(graph, center, 400)`。最近傍ノードが 400m を超えると `null`（呼び出し側でエラー化）。関数の既定上限は 500m だが呼び出しでは 400 を明示 | `round-trip.ts: snapStart` |
-| 到達圏算出 | `computeReachable(graph, startNode, targetMeters * 0.6)`。距離上限 `0.6k` 内のノード集合と最遠ノード方位 `baseBearingDeg` を得る（論文 `k/2` 等時線に相当、少し余裕を持たせる） | `isochrone.ts: computeReachable` / `dijkstra.ts` |
+| ステップ       | 処理                                                                                                                                                                            | ソース                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| 道路網取得     | `fetchRadiusMeters(targetMeters)` の半径で Overpass にクエリ                                                                                                                    | `compute-round-trips.ts` / `overpass.ts: fetchStreetNetwork, buildOverpassQuery` |
+| 有向グラフ構築 | way 群を頂点・弧へ変換。`profile=walk` は全弧双方向、`bike` は `oneway` を解釈                                                                                                  | `build-graph.ts: buildGraphFromOverpass, travelDirection`                        |
+| 始点スナップ   | `snapStart(graph, center, 400)`。最近傍ノードが 400m を超えると `null`（呼び出し側でエラー化）。関数の既定上限は 500m だが呼び出しでは 400 を明示                               | `round-trip.ts: snapStart`                                                       |
+| 到達圏算出     | `computeReachable(graph, startNode, targetMeters * 0.6)`。距離上限 `0.6k` 内のノード集合と最遠ノード方位 `baseBearingDeg` を得る（論文 `k/2` 等時線に相当、少し余裕を持たせる） | `isochrone.ts: computeReachable` / `dijkstra.ts`                                 |
 
 `buildGraphFromOverpass` の一方通行解釈（`travelDirection`、bike のみ適用）:
 
@@ -113,18 +113,18 @@
 
 ### 5.1 Stage 1: 等時線多角形法（`src/server/routing/round-trip.ts`）
 
-| ステップ | 処理 | 関数 |
-|---|---|---|
-| 多角形生成 | 始点を頂点0に固定した楕円多角形を、複数方位・複数アスペクト・複数頂点数で生成。`baseBearingDeg` を起点に `bearingCount` 本の方位をスイープ | `generatePolygons` → `buildPolygon` |
-| 楕円配置 | ローカル平面（forward=β方向 `u`, perp=直交 `v`）の楕円上に `n` 頂点を配置（`φ0 = π` で頂点0が後端=始点）。仮半径 `baseR=1000` で周長を計算し、実周長が `targetMeters` になるよう一様スケール | `buildPolygon` |
-| 地表投影 | 各ローカルオフセットを `destinationPoint`（大圏航法）で緯度経度へ変換 | `geo.ts: destinationPoint, bearingDeg, haversineMeters` |
-| ノードスナップ | 各頂点を `nearestNode` で最近傍ノードへ。頂点0は `startNode` 固定。到達圏（`reachable.dist`）に無いノードは棄却（`null`） | `routePolygon` |
-| 連続重複除去 | スナップ結果 `[...snapped, startNode]` から連続重複を畳み込み。3 ノード未満なら棄却 | `routePolygon` |
-| レッグ経路化 | 隣接ウェイポイント間を `shortestPath`（Dijkstra）で接続。既使用エッジ集合 `usedEdgeKeys` を `penalizedEdgeKeys` として渡し、再使用に `penaltyFactor` 倍のコストを課して重複を抑制。各レッグ確定後に通過エッジを `usedEdgeKeys` に追加 | `routePolygon` / `dijkstra.ts: shortestPath, dijkstra` |
-| 閉路検証 | 末尾が `startNode` でなければ棄却 | `routePolygon` |
-| out-and-back 除去 | `removeOutAndBack` で U ターンの行き止まり（`[..,A,B,A,..] → [..,A,..]`）を反復畳み込み。3 ノード未満なら棄却 | `walk.ts: removeOutAndBack` |
-| 評価 | `evaluateWalk` で `(f1, f2)` を算出 | `walk.ts: evaluateWalk` |
-| 退化解棄却 | `L(S) < k×0.3` または `L(S) > k×3` の解を棄却 | `routePolygon` |
+| ステップ          | 処理                                                                                                                                                                                                                                  | 関数                                                    |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| 多角形生成        | 始点を頂点0に固定した楕円多角形を、複数方位・複数アスペクト・複数頂点数で生成。`baseBearingDeg` を起点に `bearingCount` 本の方位をスイープ                                                                                            | `generatePolygons` → `buildPolygon`                     |
+| 楕円配置          | ローカル平面（forward=β方向 `u`, perp=直交 `v`）の楕円上に `n` 頂点を配置（`φ0 = π` で頂点0が後端=始点）。仮半径 `baseR=1000` で周長を計算し、実周長が `targetMeters` になるよう一様スケール                                          | `buildPolygon`                                          |
+| 地表投影          | 各ローカルオフセットを `destinationPoint`（大圏航法）で緯度経度へ変換                                                                                                                                                                 | `geo.ts: destinationPoint, bearingDeg, haversineMeters` |
+| ノードスナップ    | 各頂点を `nearestNode` で最近傍ノードへ。頂点0は `startNode` 固定。到達圏（`reachable.dist`）に無いノードは棄却（`null`）                                                                                                             | `routePolygon`                                          |
+| 連続重複除去      | スナップ結果 `[...snapped, startNode]` から連続重複を畳み込み。3 ノード未満なら棄却                                                                                                                                                   | `routePolygon`                                          |
+| レッグ経路化      | 隣接ウェイポイント間を `shortestPath`（Dijkstra）で接続。既使用エッジ集合 `usedEdgeKeys` を `penalizedEdgeKeys` として渡し、再使用に `penaltyFactor` 倍のコストを課して重複を抑制。各レッグ確定後に通過エッジを `usedEdgeKeys` に追加 | `routePolygon` / `dijkstra.ts: shortestPath, dijkstra`  |
+| 閉路検証          | 末尾が `startNode` でなければ棄却                                                                                                                                                                                                     | `routePolygon`                                          |
+| out-and-back 除去 | `removeOutAndBack` で U ターンの行き止まり（`[..,A,B,A,..] → [..,A,..]`）を反復畳み込み。3 ノード未満なら棄却                                                                                                                         | `walk.ts: removeOutAndBack`                             |
+| 評価              | `evaluateWalk` で `(f1, f2)` を算出                                                                                                                                                                                                   | `walk.ts: evaluateWalk`                                 |
+| 退化解棄却        | `L(S) < k×0.3` または `L(S) > k×3` の解を棄却                                                                                                                                                                                         | `routePolygon`                                          |
 
 Stage1 で 1 件も候補が生成できなければエラー（`RoundTripError`）。
 
@@ -175,28 +175,29 @@ Stage1 で 1 件も候補が生成できなければエラー（`RoundTripError`
 
 ## 6. パラメータと既定値（実コードの値）
 
-| パラメータ | 値 | 定義箇所 |
-|---|---|---|
-| 多角形頂点数 `vertexCounts` | `[4]` | `round-trip.ts: DEFAULTS` |
-| 方位スイープ本数 `bearingCount` | `8`（= 45° 刻み） | `round-trip.ts: DEFAULTS` |
-| 楕円アスペクト `aspects`（[along, across]） | `[[1, 1], [1.5, 0.7], [0.7, 1.3]]` | `round-trip.ts: DEFAULTS` |
-| 再使用ペナルティ係数 `penaltyFactor` | `5` | `round-trip.ts: DEFAULTS` / `dijkstra.ts`（`?? 5`） / 呼び出し `routePolygon(..., 5)` |
-| 多角形仮半径 `baseR` | `1000` | `round-trip.ts: buildPolygon` |
-| 取得半径 | `Math.min(15_000, Math.round(targetMeters * 0.6 + 200))` | `compute-round-trips.ts: fetchRadiusMeters` |
-| 到達圏距離上限 | `targetMeters * 0.6` | `compute-round-trips.ts` → `computeReachable` |
-| 始点スナップ上限 | 呼び出し `400`m（関数既定 `500`m） | `compute-round-trips.ts` / `round-trip.ts: snapStart` |
-| 到達圏ノード下限 | `reachable.dist.size < 5` でエラー | `compute-round-trips.ts` |
-| 退化解棄却しきい値 | `L(S) < k×0.3` または `L(S) > k×3` | `round-trip.ts: routePolygon` / `pareto-local-search.ts: finalize` |
-| PLS `maxIterations` | `250`（呼び出し）/ `300`（既定） | `compute-round-trips.ts` / `pareto-local-search.ts` |
-| PLS `maxArchive` | `40` | 両方 |
-| PLS `timeBudgetMs` | `5000`（呼び出し）/ `4000`（既定） | `compute-round-trips.ts` / `pareto-local-search.ts` |
-| 近傍 `maxCutVertices` | `24` | `pareto-local-search.ts: generateNeighbors` |
-| 近傍 `maxSegmentTargets` | `6` | `pareto-local-search.ts: generateNeighbors` |
-| 多様性バケット | 方位 45° 刻み | `compute-round-trips.ts` |
-| 返却候補上限 | `8` 件 | `compute-round-trips.ts` |
-| 地球半径 `EARTH_RADIUS_M` | `6_371_008.8` | `geo.ts`（WGS84 平均半径） |
+| パラメータ                                  | 値                                                       | 定義箇所                                                                              |
+| ------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| 多角形頂点数 `vertexCounts`                 | `[4]`                                                    | `round-trip.ts: DEFAULTS`                                                             |
+| 方位スイープ本数 `bearingCount`             | `8`（= 45° 刻み）                                        | `round-trip.ts: DEFAULTS`                                                             |
+| 楕円アスペクト `aspects`（[along, across]） | `[[1, 1], [1.5, 0.7], [0.7, 1.3]]`                       | `round-trip.ts: DEFAULTS`                                                             |
+| 再使用ペナルティ係数 `penaltyFactor`        | `5`                                                      | `round-trip.ts: DEFAULTS` / `dijkstra.ts`（`?? 5`） / 呼び出し `routePolygon(..., 5)` |
+| 多角形仮半径 `baseR`                        | `1000`                                                   | `round-trip.ts: buildPolygon`                                                         |
+| 取得半径                                    | `Math.min(15_000, Math.round(targetMeters * 0.6 + 200))` | `compute-round-trips.ts: fetchRadiusMeters`                                           |
+| 到達圏距離上限                              | `targetMeters * 0.6`                                     | `compute-round-trips.ts` → `computeReachable`                                         |
+| 始点スナップ上限                            | 呼び出し `400`m（関数既定 `500`m）                       | `compute-round-trips.ts` / `round-trip.ts: snapStart`                                 |
+| 到達圏ノード下限                            | `reachable.dist.size < 5` でエラー                       | `compute-round-trips.ts`                                                              |
+| 退化解棄却しきい値                          | `L(S) < k×0.3` または `L(S) > k×3`                       | `round-trip.ts: routePolygon` / `pareto-local-search.ts: finalize`                    |
+| PLS `maxIterations`                         | `250`（呼び出し）/ `300`（既定）                         | `compute-round-trips.ts` / `pareto-local-search.ts`                                   |
+| PLS `maxArchive`                            | `40`                                                     | 両方                                                                                  |
+| PLS `timeBudgetMs`                          | `5000`（呼び出し）/ `4000`（既定）                       | `compute-round-trips.ts` / `pareto-local-search.ts`                                   |
+| 近傍 `maxCutVertices`                       | `24`                                                     | `pareto-local-search.ts: generateNeighbors`                                           |
+| 近傍 `maxSegmentTargets`                    | `6`                                                      | `pareto-local-search.ts: generateNeighbors`                                           |
+| 多様性バケット                              | 方位 45° 刻み                                            | `compute-round-trips.ts`                                                              |
+| 返却候補上限                                | `8` 件                                                   | `compute-round-trips.ts`                                                              |
+| 地球半径 `EARTH_RADIUS_M`                   | `6_371_008.8`                                            | `geo.ts`（WGS84 平均半径）                                                            |
 
 その他の定数:
+
 - Overpass クエリ: `[out:json][timeout:60];`、`out geom;`。
 - 除外 highway: `motorway|motorway_link|trunk|trunk_link|construction|proposed|abandoned|raceway|bus_guideway|escape|corridor|platform`、加えて `area=yes` と `access=private|no` を除外。
 - `walk`: `["foot"!~"no"]` を追加。`bike`: `["bicycle"!~"no"]["highway"!~"steps|footway|pedestrian"]` を追加。
@@ -231,8 +232,16 @@ Stage1 で 1 件も候補が生成できなければエラー（`RoundTripError`
   "candidates": [
     {
       "id": "cand-0",
-      "path": [[135.7581, 34.9849], [135.7592, 34.9853], [135.7581, 34.9849]],
-      "waypoints": [[135.7581, 34.9849], [135.7610, 34.9880], [135.7560, 34.9870]],
+      "path": [
+        [135.7581, 34.9849],
+        [135.7592, 34.9853],
+        [135.7581, 34.9849]
+      ],
+      "waypoints": [
+        [135.7581, 34.9849],
+        [135.761, 34.988],
+        [135.756, 34.987]
+      ],
       "lengthMeters": 4980,
       "lengthError": 20,
       "overlapPercent": 3.2,
@@ -255,14 +264,15 @@ Stage1 で 1 件も候補が生成できなければエラー（`RoundTripError`
 
 ### エラーレスポンス
 
-| HTTP | 契機 | ボディ |
-|---|---|---|
-| `400` | JSON ボディが解析不能 | `{ "error": "JSON ボディが不正です。" }` |
+| HTTP  | 契機                                                             | ボディ                                             |
+| ----- | ---------------------------------------------------------------- | -------------------------------------------------- |
+| `400` | JSON ボディが解析不能                                            | `{ "error": "JSON ボディが不正です。" }`           |
 | `400` | Zod バリデーション失敗（範囲外の `lat`/`lng`/`targetMeters` 等） | `{ "error": "入力が不正です。", "issues": [...] }` |
-| `422` | `RoundTripError`（業務的に経路が作れない） | `{ "error": "<理由メッセージ>" }` |
-| `502` | その他の例外（Overpass 通信失敗・混雑等） | `{ "error": "計算に失敗しました: <message>" }` |
+| `422` | `RoundTripError`（業務的に経路が作れない）                       | `{ "error": "<理由メッセージ>" }`                  |
+| `502` | その他の例外（Overpass 通信失敗・混雑等）                        | `{ "error": "計算に失敗しました: <message>" }`     |
 
 `422`（`RoundTripError`）が返る具体ケース（`compute-round-trips.ts`）:
+
 - 対象道路が 0 件（`ways.length === 0`）。
 - 始点スナップ失敗（最近傍が 400m 超）。
 - 到達圏ノードが 5 未満（道路網が疎すぎ）。

@@ -41,6 +41,12 @@ jobs:
       - name: Type check
         run: pnpm run type-check
 
+      - name: Lint check
+        run: pnpm run lint
+
+      - name: Format check
+        run: pnpm run format:check
+
       # Storybook browser テスト実行に必要な Playwright ブラウザをインストール
       - name: Install Playwright browsers
         run: pnpm exec playwright install chromium

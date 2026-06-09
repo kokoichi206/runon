@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 
-/** PWA マニフェスト（/manifest.webmanifest）。ホーム追加・スタンドアロン起動に対応。 */
+/**
+ * PWA マニフェスト（/manifest.webmanifest）。ホーム追加・スタンドアロン起動に対応。
+ */
 export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "runon — 走るための周回路とトレーニング計画",

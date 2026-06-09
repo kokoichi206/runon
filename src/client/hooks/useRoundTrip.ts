@@ -15,7 +15,7 @@ export interface UseRoundTrip {
   run: (req: RoundTripRequest) => Promise<void>;
 }
 
-export function useRoundTrip(): UseRoundTrip {
+export const useRoundTrip = (): UseRoundTrip => {
   const [state, setState] = useState<State>({ status: "idle" });
 
   const run = useCallback(async (req: RoundTripRequest) => {
@@ -44,4 +44,4 @@ export function useRoundTrip(): UseRoundTrip {
   }, []);
 
   return { state, run };
-}
+};

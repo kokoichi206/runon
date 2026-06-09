@@ -7,17 +7,14 @@ import {
   type StreetGraph,
 } from "@/server/lib/routing/graph";
 import { computeReachable } from "@/server/lib/routing/isochrone";
-import {
-  paretoLocalSearch,
-  type Solution,
-} from "@/server/lib/routing/pareto-local-search";
+import { paretoLocalSearch, type Solution } from "@/server/lib/routing/pareto-local-search";
 import {
   generatePolygons,
   refineRoute,
   routePolygon,
   snapStart,
 } from "@/server/lib/routing/round-trip";
-import type { WalkMetrics } from "@/server/lib/routing/walk";
+import { countSignals, countTurns, type WalkMetrics } from "@/server/lib/routing/walk";
 import {
   overpassRepository,
   type OverpassFetchResult,
@@ -34,46 +31,54 @@ import type {
 const ATTRIBUTION = "© OpenStreetMap contributors (ODbL)";
 
 export interface ComputeDeps {
-  /** テスト/スモーク用に Overpass 取得を差し替え可能にする。 */
+  /**
+   * テスト/スモーク用に Overpass 取得を差し替え可能にする。
+   */
   fetchNetwork?: (
     center: LatLng,
     radiusM: number,
-    profile: RoundTripRequest["profile"],
+    profile: RoundTripRequest["profile"]
   ) => Promise<OverpassFetchResult>;
   overpassEndpoint?: string;
   userAgent?: string;
   signal?: AbortSignal;
-  /** Stage2(局所探索) を実行するか。デフォルト true。 */
+  /**
+   * Stage2(局所探索) を実行するか。デフォルト true。
+   */
   enableLocalSearch?: boolean;
 }
 
-function walkToLngLat(graph: StreetGraph, walk: NodeId[]): LngLat[] {
+const walkToLngLat = (graph: StreetGraph, walk: NodeId[]): LngLat[] => {
   const out: LngLat[] = [];
   for (const id of walk) {
     const p = graph.nodes.get(id);
     if (p) out.push([p.lng, p.lat]);
   }
   return out;
-}
+};
 
-/** 取得半径。目標距離の片道分 ~k/2 に余裕を持たせ、公開 Overpass 保護のため上限を設ける。 */
-function fetchRadiusMeters(targetMeters: number): number {
+/**
+ * 取得半径。目標距離の片道分 ~k/2 に余裕を持たせ、公開 Overpass 保護のため上限を設ける。
+ */
+const fetchRadiusMeters = (targetMeters: number): number => {
   return Math.min(15_000, Math.round(targetMeters * 0.6 + 200));
-}
+};
 
-const score = (m: WalkMetrics, k: number): number =>
-  m.lengthError / k + m.overlapPercent / 100;
+const score = (m: WalkMetrics, k: number): number => m.lengthError / k + m.overlapPercent / 100;
 
-export async function computeRoundTrips(
+export const computeRoundTrips = async (
   req: RoundTripRequest,
-  deps: ComputeDeps = {},
-): Promise<Result<RoundTripResult, AppError>> {
+  deps: ComputeDeps = {}
+): Promise<Result<RoundTripResult, AppError>> => {
   const computeStart = Date.now();
   // 全体のウォールクロック上限。超過したら以降の探索を打ち切り、その時点のベスト候補を返す
   // （本番の関数 60s 制限を超えないための保険）。
   const deadline = computeStart + 40_000;
   // 長距離は探索が距離²で膨らむため、粗いグラフ + 探索量削減で間に合わせる。
   const isLong = req.targetMeters >= 10_000;
+  // 信号回避: 信号ノードへ入る弧へ加えるコスト(m)。曲がり/信号の少なさで並べ替えもする。
+  const avoidSignals = req.avoidSignals;
+  const signalPenaltyM = avoidSignals ? 120 : 0;
   const center: LatLng = { lat: req.lat, lng: req.lng };
   const radius = fetchRadiusMeters(req.targetMeters);
 
@@ -84,6 +89,7 @@ export async function computeRoundTrips(
         userAgent: deps.userAgent,
         signal: deps.signal,
         coarse: isLong,
+        withSignals: avoidSignals,
       });
   if (!fetched.ok) return err(fetched.error);
 
@@ -91,18 +97,18 @@ export async function computeRoundTrips(
   if (ways.length === 0) {
     return err(
       appError.validation(
-        "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。",
-      ),
+        "この地点の周辺に対象の道路が見つかりませんでした。場所やプロファイルを変えてください。"
+      )
     );
   }
 
-  const graph = buildGraphFromOverpass(ways, req.profile);
+  const graph = buildGraphFromOverpass(ways, req.profile, fetched.value.signalNodes);
   let startNode = snapStart(graph, center, 400);
   if (startNode === null) {
     return err(
       appError.validation(
-        "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。",
-      ),
+        "指定地点の近くに道路ノードがありません。道路に近い地点を選んでください。"
+      )
     );
   }
   let startPos = graph.nodes.get(startNode)!;
@@ -130,8 +136,8 @@ export async function computeRoundTrips(
   if (reachable.dist.size < 5) {
     return err(
       appError.validation(
-        "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。",
-      ),
+        "周辺の道路網が疎すぎて周回経路を作れません。距離を伸ばすか別の地点を試してください。"
+      )
     );
   }
 
@@ -164,7 +170,15 @@ export async function computeRoundTrips(
     req.targetMeters / detour,
     reachable.baseBearingDeg,
     // 長距離は候補(多角形)を 24→12 に削減して Stage1 を軽くする。
-    isLong ? { bearingCount: 6, aspects: [[1, 1], [1.4, 0.7]] } : undefined,
+    isLong
+      ? {
+          bearingCount: 6,
+          aspects: [
+            [1, 1],
+            [1.4, 0.7],
+          ],
+        }
+      : undefined
   );
 
   const stage1: {
@@ -184,6 +198,7 @@ export async function computeRoundTrips(
       5,
       isLong ? 1 : 2, // 長距離は精緻化反復を減らす
       0.06,
+      signalPenaltyM
     );
     if (routed) {
       stage1.push({
@@ -197,8 +212,8 @@ export async function computeRoundTrips(
   if (stage1.length === 0) {
     return err(
       appError.validation(
-        "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。",
-      ),
+        "周回経路の候補を生成できませんでした。距離やプロファイルを変えて再試行してください。"
+      )
     );
   }
 
@@ -252,12 +267,18 @@ export async function computeRoundTrips(
     combined.push({ sol: e.sol, onFront: false });
   }
 
-  const recommendedSig =
-    frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;
+  const recommendedSig = frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;
   const limited = combined.slice(0, 8);
 
-  let recommendedId = "";
-  const candidates: RoundTripCandidate[] = limited.map((entry, idx) => {
+  // 候補を組み立て、曲がり/信号を算出する（id は順序確定後に振る）。
+  interface Built {
+    entry: Entry;
+    waypoints: LngLat[];
+    source: RoundTripCandidate["source"];
+    turnCount: number;
+    signalCount: number | null;
+  }
+  const built: Built[] = limited.map((entry) => {
     const sig = sigOf(entry.sol.metrics);
     const wpNodes = stage1Signatures.get(sig);
     const source: RoundTripCandidate["source"] = wpNodes
@@ -269,19 +290,52 @@ export async function computeRoundTrips(
           .filter((p): p is LatLng => p !== undefined)
           .map((p) => [p.lng, p.lat])
       : [[startPos.lng, startPos.lat]];
+    return {
+      entry,
+      waypoints,
+      source,
+      turnCount: countTurns(graph, entry.sol.walk),
+      // 信号は avoidSignals 時のみ取得・計測している（それ以外は未計測=null）。
+      signalCount: avoidSignals ? countSignals(graph, entry.sol.walk) : null,
+    };
+  });
+
+  // 信号回避モードでは「信号 → 曲がり → 距離スコア」の少ない順に並べ替える。
+  if (avoidSignals) {
+    built.sort((a, b) => {
+      const sa = a.signalCount ?? 0;
+      const sb = b.signalCount ?? 0;
+      if (sa !== sb) return sa - sb;
+      if (a.turnCount !== b.turnCount) return a.turnCount - b.turnCount;
+      return (
+        score(a.entry.sol.metrics, req.targetMeters) - score(b.entry.sol.metrics, req.targetMeters)
+      );
+    });
+  }
+
+  let recommendedId = "";
+  const candidates: RoundTripCandidate[] = built.map((b, idx) => {
     const id = `cand-${idx}`;
-    if (recommendedId === "" && entry.onFront && sig === recommendedSig) {
+    // 通常モードはパレート最良を推奨に。信号回避モードは並べ替え後の先頭を推奨にする。
+    if (
+      recommendedId === "" &&
+      !avoidSignals &&
+      b.entry.onFront &&
+      sigOf(b.entry.sol.metrics) === recommendedSig
+    ) {
       recommendedId = id;
     }
     return {
       id,
-      path: walkToLngLat(graph, entry.sol.walk),
-      waypoints,
-      lengthMeters: Math.round(entry.sol.metrics.lengthMeters),
-      lengthError: Math.round(entry.sol.metrics.lengthError),
-      overlapPercent: Math.round(entry.sol.metrics.overlapPercent * 10) / 10,
-      onParetoFront: entry.onFront,
-      source,
+      path: walkToLngLat(graph, b.entry.sol.walk),
+      waypoints: b.waypoints,
+      lengthMeters: Math.round(b.entry.sol.metrics.lengthMeters),
+      lengthError: Math.round(b.entry.sol.metrics.lengthError),
+      overlapPercent: Math.round(b.entry.sol.metrics.overlapPercent * 10) / 10,
+      onParetoFront: b.entry.onFront,
+      turnCount: b.turnCount,
+      signalCount: b.signalCount,
+      source: b.source,
     };
   });
 
@@ -300,4 +354,4 @@ export async function computeRoundTrips(
     },
     attribution: ATTRIBUTION,
   });
-}
+};

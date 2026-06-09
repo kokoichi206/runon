@@ -15,12 +15,16 @@ const KEY = "flrt:training:v1";
 
 export interface TrainingState {
   activities: Activity[];
-  /** Strava のアスリート情報・長期集計（CSV 取り込みでは null）。 */
+  /**
+   * Strava のアスリート情報・長期集計（CSV 取り込みでは null）。
+   */
   athleteProfile: AthleteProfile | null;
   races: Race[];
   selectedRaceId: string | null;
   availability: WeeklyAvailability;
-  /** 週あたりの練習回数（可能日の中から選ぶ）。 */
+  /**
+   * 週あたりの練習回数（可能日の中から選ぶ）。
+   */
   runsPerWeek: number;
   skippedDates: string[];
   doneDates: string[];
@@ -51,7 +55,7 @@ export interface TrainingStore extends TrainingState {
   skipWeek: (dates: string[]) => void;
 }
 
-export function useTrainingStore(): TrainingStore {
+export const useTrainingStore = (): TrainingStore => {
   const [state, setState] = useState<TrainingState>(initialState);
   const loadedRef = useRef(false);
   const [loaded, setLoaded] = useState(false);
@@ -102,8 +106,7 @@ export function useTrainingStore(): TrainingStore {
       return {
         ...s,
         races,
-        selectedRaceId:
-          s.selectedRaceId === id ? (races[0]?.id ?? null) : s.selectedRaceId,
+        selectedRaceId: s.selectedRaceId === id ? (races[0]?.id ?? null) : s.selectedRaceId,
       };
     });
   }, []);
@@ -112,17 +115,12 @@ export function useTrainingStore(): TrainingStore {
     setState((s) => ({ ...s, selectedRaceId: id }));
   }, []);
 
-  const setAvailabilityDay = useCallback(
-    (wd: number, patch: Partial<DayAvailability>) => {
-      setState((s) => {
-        const availability = s.availability.map((d, i) =>
-          i === wd ? { ...d, ...patch } : d,
-        );
-        return { ...s, availability };
-      });
-    },
-    [],
-  );
+  const setAvailabilityDay = useCallback((wd: number, patch: Partial<DayAvailability>) => {
+    setState((s) => {
+      const availability = s.availability.map((d, i) => (i === wd ? { ...d, ...patch } : d));
+      return { ...s, availability };
+    });
+  }, []);
 
   const setRunsPerWeek = useCallback((n: number) => {
     setState((s) => ({ ...s, runsPerWeek: Math.max(1, Math.min(7, Math.round(n))) }));
@@ -133,9 +131,7 @@ export function useTrainingStore(): TrainingStore {
       const has = s.skippedDates.includes(date);
       return {
         ...s,
-        skippedDates: has
-          ? s.skippedDates.filter((d) => d !== date)
-          : [...s.skippedDates, date],
+        skippedDates: has ? s.skippedDates.filter((d) => d !== date) : [...s.skippedDates, date],
       };
     });
   }, []);
@@ -145,9 +141,7 @@ export function useTrainingStore(): TrainingStore {
       const has = s.doneDates.includes(date);
       return {
         ...s,
-        doneDates: has
-          ? s.doneDates.filter((d) => d !== date)
-          : [...s.doneDates, date],
+        doneDates: has ? s.doneDates.filter((d) => d !== date) : [...s.doneDates, date],
       };
     });
   }, []);
@@ -173,4 +167,4 @@ export function useTrainingStore(): TrainingStore {
     toggleDone,
     skipWeek,
   };
-}
+};

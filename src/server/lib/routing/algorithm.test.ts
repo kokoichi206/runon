@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-import type { OverpassWay } from "@/shared/types/round-trip";
 import { buildGraphFromOverpass } from "@/server/lib/osm/build-graph";
-import { dijkstra, shortestPath } from "@/server/lib/routing/dijkstra";
+import { shortestPath } from "@/server/lib/routing/dijkstra";
 import {
   bearingDeg,
   destinationPoint,
@@ -11,25 +10,13 @@ import {
 } from "@/server/lib/routing/geo";
 import { computeReachable } from "@/server/lib/routing/isochrone";
 import { generateNeighbors } from "@/server/lib/routing/pareto-local-search";
-import {
-  generatePolygons,
-  routePolygon,
-  snapStart,
-} from "@/server/lib/routing/round-trip";
-import {
-  dominates,
-  evaluateWalk,
-  removeOutAndBack,
-} from "@/server/lib/routing/walk";
+import { generatePolygons, routePolygon, snapStart } from "@/server/lib/routing/round-trip";
+import { dominates, evaluateWalk, removeOutAndBack } from "@/server/lib/routing/walk";
 import { computeRoundTrips } from "@/server/usecases/compute-round-trips";
+import type { OverpassWay } from "@/shared/types/round-trip";
 
 // 50m 間隔の格子状ストリートを Overpass way 群として合成する。
-function gridWays(
-  rows: number,
-  cols: number,
-  spacingM: number,
-  origin: LatLng,
-): OverpassWay[] {
+const gridWays = (rows: number, cols: number, spacingM: number, origin: LatLng): OverpassWay[] => {
   const dLat = spacingM / 111_320;
   const dLng = spacingM / (111_320 * Math.cos((origin.lat * Math.PI) / 180));
   const nodeId = (r: number, c: number) => 1000 + r * cols + c;
@@ -47,7 +34,13 @@ function gridWays(
       ids.push(nodeId(r, c));
       geometry.push(coord(r, c));
     }
-    ways.push({ type: "way", id: 1_000_000 + r, nodes: ids, geometry, tags: { highway: "residential" } });
+    ways.push({
+      type: "way",
+      id: 1_000_000 + r,
+      nodes: ids,
+      geometry,
+      tags: { highway: "residential" },
+    });
   }
   // 縦方向の道
   for (let c = 0; c < cols; c++) {
@@ -57,10 +50,16 @@ function gridWays(
       ids.push(nodeId(r, c));
       geometry.push(coord(r, c));
     }
-    ways.push({ type: "way", id: 2_000_000 + c, nodes: ids, geometry, tags: { highway: "residential" } });
+    ways.push({
+      type: "way",
+      id: 2_000_000 + c,
+      nodes: ids,
+      geometry,
+      tags: { highway: "residential" },
+    });
   }
   return ways;
-}
+};
 
 const ORIGIN: LatLng = { lat: 35.0, lng: 139.0 };
 
@@ -142,14 +141,14 @@ describe("walk metrics", () => {
     expect(
       dominates(
         { lengthMeters: 0, lengthError: 10, overlapPercent: 5 },
-        { lengthMeters: 0, lengthError: 20, overlapPercent: 5 },
-      ),
+        { lengthMeters: 0, lengthError: 20, overlapPercent: 5 }
+      )
     ).toBe(true);
     expect(
       dominates(
         { lengthMeters: 0, lengthError: 10, overlapPercent: 5 },
-        { lengthMeters: 0, lengthError: 10, overlapPercent: 5 },
-      ),
+        { lengthMeters: 0, lengthError: 10, overlapPercent: 5 }
+      )
     ).toBe(false);
   });
 });
@@ -157,7 +156,10 @@ describe("walk metrics", () => {
 describe("polygon + routePolygon", () => {
   const ways = gridWays(31, 31, 50, ORIGIN); // 1.5km 四方
   const graph = buildGraphFromOverpass(ways, "walk");
-  const center = { lat: ORIGIN.lat + 15 * (50 / 111320), lng: ORIGIN.lng + 15 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))) };
+  const center = {
+    lat: ORIGIN.lat + 15 * (50 / 111320),
+    lng: ORIGIN.lng + 15 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))),
+  };
 
   it("生成多角形の頂点0は始点に一致", () => {
     const polys = generatePolygons(center, 800, 0);
@@ -193,7 +195,10 @@ describe("polygon + routePolygon", () => {
 describe("generateNeighbors", () => {
   const ways = gridWays(31, 31, 50, ORIGIN);
   const graph = buildGraphFromOverpass(ways, "walk");
-  const center = { lat: ORIGIN.lat + 15 * (50 / 111320), lng: ORIGIN.lng + 15 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))) };
+  const center = {
+    lat: ORIGIN.lat + 15 * (50 / 111320),
+    lng: ORIGIN.lng + 15 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))),
+  };
 
   it("近傍は始点に戻る妥当な歩行のみ", () => {
     const startNode = snapStart(graph, center, 100)!;
@@ -229,11 +234,17 @@ describe("computeRoundTrips (E2E, Overpass モック注入)", () => {
       lng: ORIGIN.lng + 20 * (50 / (111320 * Math.cos((ORIGIN.lat * Math.PI) / 180))),
     };
     const computed = await computeRoundTrips(
-      { lat: center.lat, lng: center.lng, targetMeters: 1200, profile: "walk" },
+      {
+        lat: center.lat,
+        lng: center.lng,
+        targetMeters: 1200,
+        profile: "walk",
+        avoidSignals: false,
+      },
       {
         enableLocalSearch: true,
-        fetchNetwork: async () => ({ ways, fetchMs: 0 }),
-      },
+        fetchNetwork: async () => ({ ways, fetchMs: 0, signalNodes: new Set<number>() }),
+      }
     );
     expect(computed.ok).toBe(true);
     if (!computed.ok) throw new Error(computed.error.message);

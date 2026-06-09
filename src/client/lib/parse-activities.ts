@@ -1,7 +1,9 @@
 import type { Activity } from "@/shared/types/training";
 
-/** クォート・カンマを考慮した最小 CSV パーサ。1 セル内の改行は非対応（Garmin 出力では不要）。 */
-function parseCsvLine(line: string): string[] {
+/**
+ * クォート・カンマを考慮した最小 CSV パーサ。1 セル内の改行は非対応（Garmin 出力では不要）。
+ */
+const parseCsvLine = (line: string): string[] => {
   const out: string[] = [];
   let cur = "";
   let inQuotes = false;
@@ -29,7 +31,7 @@ function parseCsvLine(line: string): string[] {
   }
   out.push(cur);
   return out;
-}
+};
 
 const num = (s: string | undefined): number | null => {
   if (s === undefined) return null;
@@ -37,10 +39,15 @@ const num = (s: string | undefined): number | null => {
   return Number.isFinite(v) ? v : null;
 };
 
-/** "HH:MM:SS" / "MM:SS" / "M:SS.s" -> 秒。 */
+/**
+ * "HH:MM:SS" / "MM:SS" / "M:SS.s" -> 秒。
+ */
 const toSeconds = (s: string | undefined): number | null => {
   if (!s) return null;
-  const parts = s.trim().split(":").map((p) => Number(p));
+  const parts = s
+    .trim()
+    .split(":")
+    .map((p) => Number(p));
   if (parts.some((p) => !Number.isFinite(p))) return null;
   if (parts.length === 3) return parts[0]! * 3600 + parts[1]! * 60 + parts[2]!;
   if (parts.length === 2) return parts[0]! * 60 + parts[1]!;
@@ -74,7 +81,7 @@ const HEADER_MAP: Record<string, string> = {
  * CSV テキストを Activity[] に変換する。
  * 距離・タイムが取れない行は除外する（暗黙に 0 埋めしない）。
  */
-export function parseActivities(text: string): Activity[] {
+export const parseActivities = (text: string): Activity[] => {
   const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (lines.length < 2) return [];
 
@@ -93,8 +100,7 @@ export function parseActivities(text: string): Activity[] {
   const activities: Activity[] = [];
   for (let r = 1; r < lines.length; r++) {
     const f = parseCsvLine(lines[r]!);
-    const get = (key: string) =>
-      colIndex[key] !== undefined ? f[colIndex[key]!] : undefined;
+    const get = (key: string) => (colIndex[key] !== undefined ? f[colIndex[key]!] : undefined);
 
     const distanceKm = num(get("distance"));
     const durationSec = toSeconds(get("time"));
@@ -118,4 +124,4 @@ export function parseActivities(text: string): Activity[] {
   // 新しい順。
   activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   return activities;
-}
+};

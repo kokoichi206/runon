@@ -15,12 +15,14 @@
 ## 機能
 
 ### 周回路 / 距離計算（`/`）
+
 - 始点（地図クリック / 緯度経度入力 / プリセット / 現在地 GPS→失敗時 IP 概算 / 自宅登録）と
   目標距離を指定し、目標に近く往復の少ないループを複数生成
 - 多目的最適化（距離誤差 / 区間重複%）でパレートフロント + 方位の異なる代替ループを地図描画
 - エクスポート: GPX をスマホへ共有 / 保存（Web Share）、Google マップ近似リンク
 
 ### トレーニング計画（`/training`）
+
 - 取込: Garmin の `Activities.csv` / Strava 連携（OAuth・任意）
 - 走力推定（週間距離・最長走・イージーペース・VDOT・最大 HR）→ 期分けで漸進する練習メニュー
 - 各日: 距離・推定時間・ペース・HR ゾーン・週1のポイント練習。目標タイムから VDOT 逆算と実現可能性
@@ -102,12 +104,12 @@ LAT=34.985 LNG=135.758 KM=5 PROFILE=bike pnpm rt:smoke
 
 ### 任意の環境変数
 
-| 変数 | 用途 |
-|---|---|
-| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` | Strava 連携を有効化（未設定なら未連携表示） |
-| `OVERPASS_ENDPOINT` | 公開 Overpass を避けて自前インスタンスを使う場合 |
-| `OVERPASS_USER_AGENT` | OSM 利用エチケット用の User-Agent |
-| `SITE_URL` | OG 画像等の絶対 URL 解決（未設定なら localhost） |
+| 変数                                        | 用途                                             |
+| ------------------------------------------- | ------------------------------------------------ |
+| `STRAVA_CLIENT_ID` / `STRAVA_CLIENT_SECRET` | Strava 連携を有効化（未設定なら未連携表示）      |
+| `OVERPASS_ENDPOINT`                         | 公開 Overpass を避けて自前インスタンスを使う場合 |
+| `OVERPASS_USER_AGENT`                       | OSM 利用エチケット用の User-Agent                |
+| `SITE_URL`                                  | OG 画像等の絶対 URL 解決（未設定なら localhost） |
 
 詳細仕様は `docs/`（`overview.md` が全体像の入口）。
 

@@ -6,7 +6,7 @@ import {
   predictTimeSec,
   trainingPaces,
   vdotFromPerformance,
-} from "@/server/lib/training/paces";
+} from "@/shared/training/paces";
 import type { Activity } from "@/shared/types/training";
 
 describe("VDOT モデル", () => {
@@ -43,9 +43,7 @@ describe("VDOT モデル", () => {
   });
 
   it("速い目標ほど VDOT が高い（単調）", () => {
-    expect(vdotFromPerformance(10, 40 * 60)).toBeGreaterThan(
-      vdotFromPerformance(10, 50 * 60),
-    );
+    expect(vdotFromPerformance(10, 40 * 60)).toBeGreaterThan(vdotFromPerformance(10, 50 * 60));
   });
 });
 
@@ -90,7 +88,7 @@ describe("estimateCurrentVdot（実測優先）", () => {
   it("best_efforts(5k) があれば全体平均より高い VDOT を採る", () => {
     const withBE = estimateCurrentVdot(
       [slowRun({ bestEfforts: [{ name: "5k", distanceM: 5000, timeSec: 20 * 60 }] })],
-      now,
+      now
     );
     const without = estimateCurrentVdot([slowRun()], now);
     expect(withBE).not.toBeNull();
@@ -102,7 +100,7 @@ describe("estimateCurrentVdot（実測優先）", () => {
   it("短距離(<3km)の best_effort は過大評価防止のため無視", () => {
     const short = estimateCurrentVdot(
       [slowRun({ bestEfforts: [{ name: "1k", distanceM: 1000, timeSec: 3 * 60 }] })],
-      now,
+      now
     );
     const without = estimateCurrentVdot([slowRun()], now);
     expect(short).toBe(without);

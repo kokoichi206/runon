@@ -1,3 +1,4 @@
+import { bearingDeg } from "@/server/lib/routing/geo";
 import {
   arcWeight,
   undirectedEdgeKey,
@@ -5,6 +6,36 @@ import {
   type NodeId,
   type StreetGraph,
 } from "@/server/lib/routing/graph";
+
+// これ以上の方位変化を「曲がり」として数える閾値（度）。
+const TURN_THRESHOLD_DEG = 35;
+
+/**
+ * 経路中の曲がり回数。連続ノード間の方位変化が閾値以上の交点を数える。
+ * ホットパス(評価)とは分離し、最終候補にのみ適用する想定。
+ */
+export const countTurns = (graph: StreetGraph, walk: NodeId[]): number => {
+  let turns = 0;
+  for (let i = 1; i + 1 < walk.length; i++) {
+    const a = graph.nodes.get(walk[i - 1]!);
+    const b = graph.nodes.get(walk[i]!);
+    const c = graph.nodes.get(walk[i + 1]!);
+    if (!a || !b || !c) continue;
+    let diff = Math.abs(bearingDeg(b, c) - bearingDeg(a, b)) % 360;
+    if (diff > 180) diff = 360 - diff;
+    if (diff >= TURN_THRESHOLD_DEG) turns++;
+  }
+  return turns;
+};
+
+// 経路が通る信号（traffic_signals）の数（重複ノードは1回として数える）。
+export const countSignals = (graph: StreetGraph, walk: NodeId[]): number => {
+  const seen = new Set<NodeId>();
+  for (const id of walk) {
+    if (graph.signalNodes.has(id)) seen.add(id);
+  }
+  return seen.size;
+};
 
 /**
  * 閉じた歩行 S の評価値。論文 Definition 6 の 2 目的。
@@ -17,11 +48,11 @@ export interface WalkMetrics {
   overlapPercent: number;
 }
 
-export function evaluateWalk(
+export const evaluateWalk = (
   graph: StreetGraph,
   walk: NodeId[],
-  targetMeters: number,
-): WalkMetrics {
+  targetMeters: number
+): WalkMetrics => {
   const lengthMeters = walkLengthMeters(graph, walk);
   const lengthError = Math.abs(targetMeters - lengthMeters);
 
@@ -44,7 +75,7 @@ export function evaluateWalk(
   const overlapPercent = lengthMeters > 0 ? (100 * repeated) / lengthMeters : 0;
 
   return { lengthMeters, lengthError, overlapPercent };
-}
+};
 
 /**
  * out-and-back（U ターンの行き止まり）除去。
@@ -53,8 +84,8 @@ export function evaluateWalk(
  *   [.., A, B, A, ..] で A==両隣 なら B への往復を取り除き [.., A, ..] にする。
  * ネストした行き止まり (A,B,C,B,A) も反復で除去できる。閉路性を保つ。
  */
-export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
-  let current = walk.slice();
+export const removeOutAndBack = (walk: NodeId[], start: NodeId): NodeId[] => {
+  const current = walk.slice();
   for (;;) {
     let removedAt = -1;
     for (let i = 1; i + 1 < current.length; i++) {
@@ -71,12 +102,13 @@ export function removeOutAndBack(walk: NodeId[], start: NodeId): NodeId[] {
     current.splice(removedAt, 2);
   }
   return current;
-}
+};
 
-/** a が b をパレート支配するか（(f1,f2) で全て以下かつどこかで真に小さい）。 */
-export function dominates(a: WalkMetrics, b: WalkMetrics): boolean {
+/**
+ * a が b をパレート支配するか（(f1,f2) で全て以下かつどこかで真に小さい）。
+ */
+export const dominates = (a: WalkMetrics, b: WalkMetrics): boolean => {
   const le = a.lengthError <= b.lengthError && a.overlapPercent <= b.overlapPercent;
-  const strict =
-    a.lengthError < b.lengthError || a.overlapPercent < b.overlapPercent;
+  const strict = a.lengthError < b.lengthError || a.overlapPercent < b.overlapPercent;
   return le && strict;
-}
+};

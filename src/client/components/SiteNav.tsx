@@ -11,8 +11,10 @@ const LINKS = [
   { href: "/training", label: "トレーニング" },
 ];
 
-/** 全ページ共通のヘッダーナビ。現在ページをハイライトし、テーマ切替を備える。 */
-export function SiteNav(): React.JSX.Element {
+/**
+ * 全ページ共通のヘッダーナビ。現在ページをハイライトし、テーマ切替を備える。
+ */
+export const SiteNav = (): React.JSX.Element => {
   const pathname = usePathname();
   return (
     <nav
@@ -51,4 +53,4 @@ export function SiteNav(): React.JSX.Element {
       </div>
     </nav>
   );
-}
+};
