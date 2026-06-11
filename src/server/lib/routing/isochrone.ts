@@ -10,7 +10,10 @@ export interface Reachable {
   /**
    * 最遠到達ノード（初期方位 β の決定に使う）。
    */
-  farthest: { node: NodeId; distanceM: number } | null;
+  farthest: {
+    node: NodeId;
+    distanceM: number;
+  } | null;
   /**
    * source -> 最遠ノードの方位（度）。
    */
@@ -28,7 +31,10 @@ export const computeReachable = (
 ): Reachable => {
   const { dist } = dijkstra(graph, source, { maxDistanceM });
 
-  let farthest: { node: NodeId; distanceM: number } | null = null;
+  let farthest: {
+    node: NodeId;
+    distanceM: number;
+  } | null = null;
   for (const [node, d] of dist) {
     if (node === source) continue;
     if (!farthest || d > farthest.distanceM) farthest = { node, distanceM: d };

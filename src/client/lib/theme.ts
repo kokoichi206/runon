@@ -33,7 +33,7 @@ const THEME_BG: Record<ResolvedTheme, string> = {
  * 実行時に専用 meta を head 末尾へ挿入して上書きする（最後に適用される meta が勝つ）。
  */
 const syncThemeColorMeta = (resolved: ResolvedTheme): void => {
-  let meta = document.head.querySelector<HTMLMetaElement>('meta[name="theme-color"][data-runon]');
+  let meta = document.head.querySelector<HTMLMetaElement>("meta[name=\"theme-color\"][data-runon]");
   if (!meta) {
     meta = document.createElement("meta");
     meta.setAttribute("name", "theme-color");

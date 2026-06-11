@@ -35,7 +35,10 @@ const gridWays = (rows: number, cols: number, spacingM: number, origin: LatLng):
   // 横方向の道
   for (let r = 0; r < rows; r++) {
     const ids: number[] = [];
-    const geometry: { lat: number; lon: number }[] = [];
+    const geometry: {
+      lat: number;
+      lon: number;
+    }[] = [];
     for (let c = 0; c < cols; c++) {
       ids.push(nodeId(r, c));
       geometry.push(coord(r, c));
@@ -51,7 +54,10 @@ const gridWays = (rows: number, cols: number, spacingM: number, origin: LatLng):
   // 縦方向の道
   for (let c = 0; c < cols; c++) {
     const ids: number[] = [];
-    const geometry: { lat: number; lon: number }[] = [];
+    const geometry: {
+      lat: number;
+      lon: number;
+    }[] = [];
     for (let r = 0; r < rows; r++) {
       ids.push(nodeId(r, c));
       geometry.push(coord(r, c));
@@ -174,7 +180,10 @@ describe("細道回避（narrow road avoidance）", () => {
     lat: ORIGIN.lat + mLat(northM),
     lon: ORIGIN.lng + mLng(eastM),
   });
-  const coords = new Map<number, { lat: number; lon: number }>([
+  const coords = new Map<number, {
+    lat: number;
+    lon: number;
+  }>([
     [A, node(0, 0)],
     [B, node(100, 0)],
     [M, node(0, 30)],

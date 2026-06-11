@@ -121,7 +121,7 @@ const googleMapsDirUrl = (start: LngLat, path: LngLat[], maxWaypoints = 9): stri
 const escapeXml = (s: string): string =>
   s.replace(
     /[<>&'"]/g,
-    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!
+    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;" })[c]!
   );
 
 /**
@@ -210,7 +210,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const [closedOffset, setClosedOffset] = useState(0);
   // ドラッグ中の translateY（px）。null のときは snap に従う。
   const [dragY, setDragY] = useState<number | null>(null);
-  const dragStart = useRef<{ y: number; base: number } | null>(null);
+  const dragStart = useRef<{
+    y: number;
+    base: number;
+  } | null>(null);
   const didDrag = useRef(false);
 
   useEffect(() => {
@@ -231,8 +234,7 @@ export const RoundTripPlanner = (): React.JSX.Element => {
     s === "full" ? 0 : s === "peek" ? closedOffset : Math.round(closedOffset * MID_RATIO);
   const nearestSnap = (offset: number): SheetSnap =>
     (["full", "mid", "peek"] as SheetSnap[]).reduce((best, s) =>
-      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best
-    );
+      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best);
 
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     if (isDesktop) return;
@@ -778,24 +780,26 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                     >
                       GPX をスマホに送る / 保存
                     </button>
-                    {focused ? (
-                      <a
-                        href={googleMapsDirUrl(result.start, focused.path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-                      >
-                        Google マップで開く（近似・参考）
-                      </a>
-                    ) : (
-                      <span
-                        aria-disabled="true"
-                        title={pickHint}
-                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
-                      >
-                        Google マップで開く（近似・参考）
-                      </span>
-                    )}
+                    {focused
+                      ? (
+                          <a
+                            href={googleMapsDirUrl(result.start, focused.path)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                          >
+                            Google マップで開く（近似・参考）
+                          </a>
+                        )
+                      : (
+                          <span
+                            aria-disabled="true"
+                            title={pickHint}
+                            className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
+                          >
+                            Google マップで開く（近似・参考）
+                          </span>
+                        )}
                     {/* 文言は選択状態によらず固定（チラつき防止）。 */}
                     <p className="text-[10px] text-faint">
                       GPX をスマホの共有シートから <b>OsmAnd / Komoot / Garmin Connect</b>{" "}

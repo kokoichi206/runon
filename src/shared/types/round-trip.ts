@@ -39,7 +39,10 @@ export interface OverpassWay {
   type: "way";
   id: number;
   nodes: number[];
-  geometry: { lat: number; lon: number }[];
+  geometry: {
+    lat: number;
+    lon: number;
+  }[];
   tags?: Record<string, string>;
 }
 

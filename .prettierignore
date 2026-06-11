@@ -9,3 +9,11 @@ pnpm-lock.yaml
 # 生成物・ベンダーディレクトリ
 public/
 design/
+
+# JS/TS の整形は ESLint(@stylistic) が担当する
+*.ts
+*.tsx
+*.js
+*.jsx
+*.mjs
+*.cjs

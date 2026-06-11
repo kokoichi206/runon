@@ -173,8 +173,7 @@ const postToken = async (body: Record<string, string>): Promise<Result<StravaTok
         client_secret: serverEnv.STRAVA_CLIENT_SECRET ?? "",
         ...body,
       }).toString(),
-    })
-  );
+    }));
   if (!fetched.ok) {
     return err(appError.upstream("Strava への接続に失敗しました。", fetched.error));
   }
@@ -204,8 +203,7 @@ const getJson = async <T>(
   what: string
 ): Promise<Result<T, AppError>> => {
   const fetched = await safeTry(() =>
-    fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
-  );
+    fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }));
   if (!fetched.ok) {
     return err(appError.upstream("Strava への接続に失敗しました。", fetched.error));
   }

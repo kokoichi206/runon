@@ -18,7 +18,10 @@ export interface PolygonSpec {
   /**
    * 楕円の縦横比メタ（デバッグ用）。
    */
-  aspect: { along: number; across: number };
+  aspect: {
+    along: number;
+    across: number;
+  };
 }
 
 export interface GenerateOptions {
@@ -66,7 +69,10 @@ export const buildPolygon = (
   const [alongRaw, acrossRaw] = aspect;
   // φ_0 = π としたとき頂点0が楕円の「後端」= start に来る。
   const phi0 = Math.PI;
-  const localOffsets: { east: number; north: number }[] = [];
+  const localOffsets: {
+    east: number;
+    north: number;
+  }[] = [];
   const br = (bearing * Math.PI) / 180;
   // 単位ベクトル u(forward, β方向) と v(perp)
   const uEast = Math.sin(br);

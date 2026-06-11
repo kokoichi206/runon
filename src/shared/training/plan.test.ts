@@ -148,8 +148,7 @@ describe("generatePlan", () => {
   it("確保時間でキャップされる", () => {
     // 火曜(2)を練習日・10分だけにする → 火曜の練習は約10分に制限。
     const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
-      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d
-    );
+      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d);
     const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
     const tue = plan.find((p) => weekday(p.date) === 2 && p.type !== "rest")!;
     expect(tue.estMinutes).toBe(10);
@@ -394,7 +393,9 @@ describe("generatePlan（ACWR 増量補正）", () => {
       availability: defaultAvailability(),
     });
     const legacy: Fitness = { ...baseFitness };
-    delete (legacy as { recentLoad?: unknown }).recentLoad;
+    delete (legacy as {
+      recentLoad?: unknown;
+    }).recentLoad;
     const b = generatePlan({
       startDate: START,
       race: RACE,

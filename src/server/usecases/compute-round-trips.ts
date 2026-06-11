@@ -266,7 +266,10 @@ export const computeRoundTrips = async (
     }
   }
 
-  type Entry = { sol: Solution; onFront: boolean };
+  type Entry = {
+    sol: Solution;
+    onFront: boolean;
+  };
   const combined: Entry[] = frontSorted.map((sol) => ({ sol, onFront: true }));
   const seen = new Set(frontSigs);
   for (const e of [...diverse.values()].sort((a, b) => byScore(a.sol, b.sol))) {

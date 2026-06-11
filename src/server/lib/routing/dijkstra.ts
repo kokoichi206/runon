@@ -9,7 +9,10 @@ import {
  * 距離キーの最小ヒープ。Dijkstra の優先度付きキュー。
  */
 class MinHeap {
-  private heap: { node: NodeId; key: number }[] = [];
+  private heap: {
+    node: NodeId;
+    key: number;
+  }[] = [];
 
   get size(): number {
     return this.heap.length;
@@ -27,7 +30,10 @@ class MinHeap {
     }
   }
 
-  pop(): { node: NodeId; key: number } | undefined {
+  pop(): {
+    node: NodeId;
+    key: number;
+  } | undefined {
     const h = this.heap;
     if (h.length === 0) return undefined;
     const top = h[0]!;

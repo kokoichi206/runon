@@ -5,10 +5,20 @@ import { useCallback, useState } from "react";
 import type { RoundTripRequest, RoundTripResult } from "@/shared/types/round-trip";
 
 type State =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success"; result: RoundTripResult }
-  | { status: "error"; message: string };
+  | {
+    status: "idle";
+  }
+  | {
+    status: "loading";
+  }
+  | {
+    status: "success";
+    result: RoundTripResult;
+  }
+  | {
+    status: "error";
+    message: string;
+  };
 
 export interface UseRoundTrip {
   state: State;

@@ -32,8 +32,8 @@ async function main(): Promise<void> {
   for (const c of json.candidates.slice(0, 8)) {
     console.log(
       `  ${c.id}${c.id === json.recommendedId ? " (推奨)" : ""}: ` +
-        `len=${(c.lengthMeters / 1000).toFixed(2)}km 誤差=${c.lengthError}m ` +
-        `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`
+      `len=${(c.lengthMeters / 1000).toFixed(2)}km 誤差=${c.lengthError}m ` +
+      `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`
     );
   }
 }

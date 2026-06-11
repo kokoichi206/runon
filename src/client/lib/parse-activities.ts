@@ -10,9 +10,9 @@ const parseCsvLine = (line: string): string[] => {
   for (let i = 0; i < line.length; i++) {
     const ch = line[i]!;
     if (inQuotes) {
-      if (ch === '"') {
-        if (line[i + 1] === '"') {
-          cur += '"';
+      if (ch === "\"") {
+        if (line[i + 1] === "\"") {
+          cur += "\"";
           i++;
         } else {
           inQuotes = false;
@@ -20,7 +20,7 @@ const parseCsvLine = (line: string): string[] => {
       } else {
         cur += ch;
       }
-    } else if (ch === '"') {
+    } else if (ch === "\"") {
       inQuotes = true;
     } else if (ch === ",") {
       out.push(cur);
