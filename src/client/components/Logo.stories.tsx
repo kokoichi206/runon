@@ -5,11 +5,22 @@ import { Logo, LogoMark } from "@/client/components/Logo";
 const meta = {
   title: "components/Logo",
   component: Logo,
-  parameters: { layout: "centered" },
-  argTypes: {
-    size: { control: { type: "range", min: 16, max: 96, step: 2 } },
+  parameters: {
+    layout: "centered",
   },
-  args: { size: 28 },
+  argTypes: {
+    size: {
+      control: {
+        type: "range",
+        min: 16,
+        max: 96,
+        step: 2,
+      },
+    },
+  },
+  args: {
+    size: 28,
+  },
 } satisfies Meta<typeof Logo>;
 
 export default meta;
@@ -22,7 +33,9 @@ type Story = StoryObj<typeof meta>;
 export const Default: Story = {};
 
 export const Large: Story = {
-  args: { size: 64 },
+  args: {
+    size: 64,
+  },
 };
 
 /**
@@ -30,5 +43,7 @@ export const Large: Story = {
  */
 export const MarkOnly: StoryObj<typeof LogoMark> = {
   render: (args) => <LogoMark {...args} />,
-  args: { size: 48 },
+  args: {
+    size: 48,
+  },
 };

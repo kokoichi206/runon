@@ -61,7 +61,12 @@ export interface TrainingPaces {
 }
 
 // ゾーンごとの %VO2max（VDOT に対する割合）。I は vVDOT(=100%)。
-const ZONE_PCT = { easy: 0.7, marathon: 0.84, threshold: 0.88, interval: 1.0 };
+const ZONE_PCT = {
+  easy: 0.7,
+  marathon: 0.84,
+  threshold: 0.88,
+  interval: 1.0,
+};
 
 const paceFromVo2 = (vo2: number): number => 60000 / velocityFromVo2(vo2);
 
@@ -97,7 +102,10 @@ const hrFilteredPerformances = (pool: Activity[], maxHr: number | null): Perform
     const hard = pool.filter((a) => a.avgHr !== null && a.avgHr >= 0.8 * maxHr);
     if (hard.length > 0) p = hard;
   }
-  return p.map((a) => ({ distanceKm: a.distanceKm, timeSec: a.durationSec }));
+  return p.map((a) => ({
+    distanceKm: a.distanceKm,
+    timeSec: a.durationSec,
+  }));
 };
 
 /**
@@ -121,11 +129,17 @@ export const estimateCurrentVdot = (
   for (const a of pool) {
     for (const b of a.bestEfforts ?? []) {
       if (b.distanceM >= MIN_EFFORT_M && b.timeSec > 0) {
-        measured.push({ distanceKm: b.distanceM / 1000, timeSec: b.timeSec });
+        measured.push({
+          distanceKm: b.distanceM / 1000,
+          timeSec: b.timeSec,
+        });
       }
     }
     if (a.workoutKind === "race") {
-      measured.push({ distanceKm: a.distanceKm, timeSec: a.durationSec });
+      measured.push({
+        distanceKm: a.distanceKm,
+        timeSec: a.durationSec,
+      });
     }
   }
 

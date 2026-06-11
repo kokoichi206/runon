@@ -35,7 +35,11 @@ const cartoStyle = (theme: ResolvedTheme): StyleSpecification => {
         attribution: CARTO_ATTRIBUTION,
       },
     },
-    layers: [{ id: "carto", type: "raster", source: "carto" }],
+    layers: [{
+      id: "carto",
+      type: "raster",
+      source: "carto",
+    }],
   };
 };
 
@@ -52,7 +56,11 @@ const satelliteStyle = (): StyleSpecification => ({
       attribution: ESRI_IMAGERY_ATTRIBUTION,
     },
   },
-  layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }],
+  layers: [{
+    id: "esri-imagery",
+    type: "raster",
+    source: "esri-imagery",
+  }],
 });
 
 export const mapStyle = (theme: ResolvedTheme, basemap: Basemap = "map"): StyleSpecification =>

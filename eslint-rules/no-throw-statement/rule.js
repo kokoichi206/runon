@@ -26,7 +26,10 @@ export default {
   create(context) {
     return {
       ThrowStatement(node) {
-        context.report({ node, messageId: "noThrowStatement" });
+        context.report({
+          node,
+          messageId: "noThrowStatement",
+        });
       },
     };
   },

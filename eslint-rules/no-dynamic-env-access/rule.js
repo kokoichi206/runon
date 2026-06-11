@@ -34,7 +34,10 @@ export default {
           node.object.property.type === "Identifier" &&
           node.object.property.name === "env"
         ) {
-          context.report({ node, messageId: "noDynamicEnvAccess" });
+          context.report({
+            node,
+            messageId: "noDynamicEnvAccess",
+          });
         }
       },
     };

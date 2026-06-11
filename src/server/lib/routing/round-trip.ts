@@ -92,7 +92,10 @@ export const buildPolygon = (
     const p = B * Math.sin(phi); // perp 成分
     const east = f * uEast + p * vEast;
     const north = f * uNorth + p * vNorth;
-    localOffsets.push({ east, north });
+    localOffsets.push({
+      east,
+      north,
+    });
   }
 
   // 仮スケールでの周長を算出して目標 k にスケール。
@@ -108,12 +111,21 @@ export const buildPolygon = (
     const e = east * scale;
     const ndir = north * scale;
     const dist = Math.hypot(e, ndir);
-    if (dist < 1e-6) return { ...start };
+    if (dist < 1e-6) return {
+      ...start,
+    };
     const b = (Math.atan2(e, ndir) * 180) / Math.PI;
     return destinationPoint(start, dist, (b + 360) % 360);
   });
 
-  return { vertices, bearingDeg: bearing, aspect: { along: alongRaw, across: acrossRaw } };
+  return {
+    vertices,
+    bearingDeg: bearing,
+    aspect: {
+      along: alongRaw,
+      across: acrossRaw,
+    },
+  };
 };
 
 /**
@@ -125,7 +137,10 @@ export const generatePolygons = (
   baseBearingDeg: number,
   options: GenerateOptions = {}
 ): PolygonSpec[] => {
-  const opts = { ...DEFAULTS, ...options };
+  const opts = {
+    ...DEFAULTS,
+    ...options,
+  };
   const polygons: PolygonSpec[] = [];
   const step = 360 / opts.bearingCount;
   for (let b = 0; b < opts.bearingCount; b++) {

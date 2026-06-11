@@ -3,7 +3,10 @@ import { RuleTester } from "eslint";
 import rule from "./rule.js";
 
 const ruleTester = new RuleTester({
-  languageOptions: { ecmaVersion: 2022, sourceType: "module" },
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+  },
 });
 
 ruleTester.run("no-relative-imports-across-layers", rule, {
@@ -29,13 +32,17 @@ ruleTester.run("no-relative-imports-across-layers", rule, {
     {
       code: `import { compute } from "../../server/usecases/compute";`,
       filename: "/project/src/app/api/round-trip/route.ts",
-      errors: [{ messageId: "noRelativeImportAcrossLayers" }],
+      errors: [{
+        messageId: "noRelativeImportAcrossLayers",
+      }],
     },
     // client → app の相互参照。
     {
       code: `import { x } from "../../app/foo";`,
       filename: "/project/src/client/components/Foo.tsx",
-      errors: [{ messageId: "noRelativeImportAcrossLayers" }],
+      errors: [{
+        messageId: "noRelativeImportAcrossLayers",
+      }],
     },
   ],
 });

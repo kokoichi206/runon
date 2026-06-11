@@ -77,7 +77,10 @@ export const buildGraphFromOverpass = (
     for (let i = 0; i < ids.length; i++) {
       const id = ids[i]!;
       const g = geom[i]!;
-      addNode(graph, id, { lat: g.lat, lng: g.lon });
+      addNode(graph, id, {
+        lat: g.lat,
+        lng: g.lon,
+      });
     }
 
     for (let i = 0; i + 1 < ids.length; i++) {
@@ -87,7 +90,13 @@ export const buildGraphFromOverpass = (
       const ga = geom[i]!;
       const gb = geom[i + 1]!;
       // 重みは隣接ジオメトリ間の haversine。両方向で同じ値。
-      const weightM = haversineMeters({ lat: ga.lat, lng: ga.lon }, { lat: gb.lat, lng: gb.lon });
+      const weightM = haversineMeters({
+        lat: ga.lat,
+        lng: ga.lon,
+      }, {
+        lat: gb.lat,
+        lng: gb.lon,
+      });
       if (dir === "both" || dir === "forward") addArc(graph, a, b, weightM);
       if (dir === "both" || dir === "reverse") addArc(graph, b, a, weightM);
       if (narrow) graph.narrowEdges.add(undirectedEdgeKey(a, b));

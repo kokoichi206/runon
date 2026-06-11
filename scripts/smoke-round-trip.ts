@@ -15,8 +15,15 @@ async function main(): Promise<void> {
   const started = Date.now();
   const res = await fetch(`${base}/api/round-trip`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lat, lng, targetMeters, profile }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      lat,
+      lng,
+      targetMeters,
+      profile,
+    }),
   });
   const json = await res.json();
   if (!res.ok) {

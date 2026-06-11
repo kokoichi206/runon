@@ -27,8 +27,14 @@ const preview: Preview = {
         title: "Theme",
         icon: "circlehollow",
         items: [
-          { value: "dark", title: "Dark" },
-          { value: "light", title: "Light" },
+          {
+            value: "dark",
+            title: "Dark",
+          },
+          {
+            value: "light",
+            title: "Light",
+          },
         ],
         dynamicTitle: true,
       },

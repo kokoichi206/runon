@@ -26,21 +26,30 @@ export const metadata: Metadata = {
     "running",
     "route planner",
   ],
-  authors: [{ name: "kokoichi206" }],
+  authors: [{
+    name: "kokoichi206",
+  }],
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     title: "runon",
     statusBarStyle: "black-translucent",
   },
-  formatDetection: { telephone: false },
+  formatDetection: {
+    telephone: false,
+  },
   openGraph: {
     type: "website",
     siteName: "runon",
     title: "runon — 走るための周回路とトレーニング計画",
     description:
       "目標距離のループコースを地図生成し、レースまでの計画を立てる。OpenStreetMap ベースでキー不要。",
-    images: [{ url: "/og.png", width: 1200, height: 630, alt: "runon" }],
+    images: [{
+      url: "/og.png",
+      width: 1200,
+      height: 630,
+      alt: "runon",
+    }],
   },
   twitter: {
     card: "summary_large_image",
@@ -55,8 +64,14 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0b0e11" },
-    { media: "(prefers-color-scheme: light)", color: "#fbfaf8" },
+    {
+      media: "(prefers-color-scheme: dark)",
+      color: "#0b0e11",
+    },
+    {
+      media: "(prefers-color-scheme: light)",
+      color: "#fbfaf8",
+    },
   ],
 };
 
@@ -69,7 +84,10 @@ export default function RootLayout({
     <html lang="ja" suppressHydrationWarning>
       <head>
         {/* 初回描画前にテーマを確定し、ダーク/ライトのチラつきを防ぐ。 */}
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{
+          __html: THEME_INIT_SCRIPT,
+        }}
+        />
       </head>
       <body>
         <SiteNav />

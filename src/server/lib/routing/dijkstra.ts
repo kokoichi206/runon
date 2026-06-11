@@ -20,7 +20,10 @@ class MinHeap {
 
   push(node: NodeId, key: number): void {
     const h = this.heap;
-    h.push({ node, key });
+    h.push({
+      node,
+      key,
+    });
     let i = h.length - 1;
     while (i > 0) {
       const parent = (i - 1) >> 1;
@@ -154,7 +157,10 @@ export const dijkstra = (
     }
   }
 
-  return { dist, prev };
+  return {
+    dist,
+    prev,
+  };
 };
 
 /**
@@ -197,8 +203,14 @@ export const shortestPath = (
   target: NodeId,
   opts: Omit<DijkstraOptions, "target" | "maxDistanceM"> = {}
 ): ShortestPath | null => {
-  const { prev } = dijkstra(graph, source, { ...opts, target });
+  const { prev } = dijkstra(graph, source, {
+    ...opts,
+    target,
+  });
   const path = reconstructPath(prev, source, target);
   if (!path) return null;
-  return { path, distanceM: walkLengthMeters(graph, path) };
+  return {
+    path,
+    distanceM: walkLengthMeters(graph, path),
+  };
 };

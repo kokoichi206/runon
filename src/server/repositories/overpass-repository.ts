@@ -112,7 +112,9 @@ export const overpassRepository = {
           "User-Agent": userAgent,
           Accept: "application/json",
         },
-        body: new URLSearchParams({ data: query }).toString(),
+        body: new URLSearchParams({
+          data: query,
+        }).toString(),
         signal: options.signal,
       }));
     const fetchMs = Date.now() - startedAt;
@@ -143,6 +145,10 @@ export const overpassRepository = {
     for (const e of elements) {
       if (e.type === "node" && typeof e.id === "number") signalNodes.add(e.id);
     }
-    return ok({ ways, fetchMs, signalNodes });
+    return ok({
+      ways,
+      fetchMs,
+      signalNodes,
+    });
   },
 };

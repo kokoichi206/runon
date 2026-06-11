@@ -48,7 +48,9 @@ const gridWays = (rows: number, cols: number, spacingM: number, origin: LatLng):
       id: 1_000_000 + r,
       nodes: ids,
       geometry,
-      tags: { highway: "residential" },
+      tags: {
+        highway: "residential",
+      },
     });
   }
   // 縦方向の道
@@ -67,23 +69,34 @@ const gridWays = (rows: number, cols: number, spacingM: number, origin: LatLng):
       id: 2_000_000 + c,
       nodes: ids,
       geometry,
-      tags: { highway: "residential" },
+      tags: {
+        highway: "residential",
+      },
     });
   }
   return ways;
 };
 
-const ORIGIN: LatLng = { lat: 35.0, lng: 139.0 };
+const ORIGIN: LatLng = {
+  lat: 35.0,
+  lng: 139.0,
+};
 
 describe("geo", () => {
   it("haversine は概ね正しい距離を返す", () => {
-    const a: LatLng = { lat: 35, lng: 139 };
+    const a: LatLng = {
+      lat: 35,
+      lng: 139,
+    };
     const b = destinationPoint(a, 1000, 90);
     expect(haversineMeters(a, b)).toBeCloseTo(1000, 0);
   });
 
   it("bearing は東向きで ~90度", () => {
-    const a: LatLng = { lat: 35, lng: 139 };
+    const a: LatLng = {
+      lat: 35,
+      lng: 139,
+    };
     const b = destinationPoint(a, 500, 90);
     expect(bearingDeg(a, b)).toBeGreaterThan(89);
     expect(bearingDeg(a, b)).toBeLessThan(91);
@@ -152,14 +165,30 @@ describe("walk metrics", () => {
   it("dominates は (f1,f2) のパレート支配", () => {
     expect(
       dominates(
-        { lengthMeters: 0, lengthError: 10, overlapPercent: 5 },
-        { lengthMeters: 0, lengthError: 20, overlapPercent: 5 }
+        {
+          lengthMeters: 0,
+          lengthError: 10,
+          overlapPercent: 5,
+        },
+        {
+          lengthMeters: 0,
+          lengthError: 20,
+          overlapPercent: 5,
+        }
       )
     ).toBe(true);
     expect(
       dominates(
-        { lengthMeters: 0, lengthError: 10, overlapPercent: 5 },
-        { lengthMeters: 0, lengthError: 10, overlapPercent: 5 }
+        {
+          lengthMeters: 0,
+          lengthError: 10,
+          overlapPercent: 5,
+        },
+        {
+          lengthMeters: 0,
+          lengthError: 10,
+          overlapPercent: 5,
+        }
       )
     ).toBe(false);
   });
@@ -194,7 +223,9 @@ describe("細道回避（narrow road avoidance）", () => {
     id,
     nodes: ids,
     geometry: ids.map((n) => coords.get(n)!),
-    tags: { highway },
+    tags: {
+      highway,
+    },
   });
   const ways: OverpassWay[] = [
     wayOf(10, [A, B], "service"), // 細道（直進）
@@ -221,7 +252,9 @@ describe("細道回避（narrow road avoidance）", () => {
   });
 
   it("ペナルティ係数を与えると広い道へ迂回する", () => {
-    const sp = shortestPath(graph, A, B, { narrowPenaltyFactor: 3 });
+    const sp = shortestPath(graph, A, B, {
+      narrowPenaltyFactor: 3,
+    });
     expect(sp).not.toBeNull();
     expect(sp!.path).toEqual([A, M, N, B]);
     // 返す distanceM は実距離（ペナルティ抜き）。
@@ -321,7 +354,11 @@ describe("computeRoundTrips (E2E, Overpass モック注入)", () => {
       },
       {
         enableLocalSearch: true,
-        fetchNetwork: async () => ({ ways, fetchMs: 0, signalNodes: new Set<number>() }),
+        fetchNetwork: async () => ({
+          ways,
+          fetchMs: 0,
+          signalNodes: new Set<number>(),
+        }),
       }
     );
     expect(computed.ok).toBe(true);

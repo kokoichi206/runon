@@ -10,8 +10,14 @@ export type Result<T, E> = {
   error: E;
 };
 
-export const ok = <T>(value: T): Result<T, never> => ({ ok: true, value });
-export const err = <E>(error: E): Result<never, E> => ({ ok: false, error });
+export const ok = <T>(value: T): Result<T, never> => ({
+  ok: true,
+  value,
+});
+export const err = <E>(error: E): Result<never, E> => ({
+  ok: false,
+  error,
+});
 
 /**
  * 例外を投げうる処理（fetch / JSON parse 等）を Result に統一する。

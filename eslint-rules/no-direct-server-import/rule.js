@@ -37,7 +37,9 @@ export default {
         context.report({
           node: node.source,
           messageId: "noDirectServerImport",
-          data: { importPath },
+          data: {
+            importPath,
+          },
         });
       },
     };

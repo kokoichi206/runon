@@ -137,7 +137,10 @@ const mapActivity = (a: StravaActivity): MappedActivity | null => {
   const wk = workoutKindOf(a.workout_type);
   if (wk) activity.workoutKind = wk;
   if (a.suffer_score != null) activity.relativeEffort = a.suffer_score;
-  return { id: a.id, activity };
+  return {
+    id: a.id,
+    activity,
+  };
 };
 
 /**
@@ -160,14 +163,20 @@ const selectDetailCandidates = (mapped: MappedActivity[], nowMs: number): Mapped
 
 const toRunTotals = (t: StravaRunTotals | undefined): AthleteRunTotals | undefined => {
   if (!t) return undefined;
-  return { distanceKm: t.distance / 1000, durationSec: t.moving_time, count: t.count };
+  return {
+    distanceKm: t.distance / 1000,
+    durationSec: t.moving_time,
+    count: t.count,
+  };
 };
 
 const postToken = async (body: Record<string, string>): Promise<Result<StravaTokens, AppError>> => {
   const fetched = await safeTry(() =>
     fetch(TOKEN_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
       body: new URLSearchParams({
         client_id: serverEnv.STRAVA_CLIENT_ID ?? "",
         client_secret: serverEnv.STRAVA_CLIENT_SECRET ?? "",
@@ -203,7 +212,11 @@ const getJson = async <T>(
   what: string
 ): Promise<Result<T, AppError>> => {
   const fetched = await safeTry(() =>
-    fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } }));
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }));
   if (!fetched.ok) {
     return err(appError.upstream("Strava への接続に失敗しました。", fetched.error));
   }
@@ -311,14 +324,20 @@ export const stravaRepository = {
    * 認可コードをトークンに交換。
    */
   exchangeCode(code: string): Promise<Result<StravaTokens, AppError>> {
-    return postToken({ code, grant_type: "authorization_code" });
+    return postToken({
+      code,
+      grant_type: "authorization_code",
+    });
   },
 
   /**
    * リフレッシュトークンでアクセストークンを更新（refresh_token はローテートし得る）。
    */
   refreshTokens(refreshToken: string): Promise<Result<StravaTokens, AppError>> {
-    return postToken({ refresh_token: refreshToken, grant_type: "refresh_token" });
+    return postToken({
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    });
   },
 
   /**

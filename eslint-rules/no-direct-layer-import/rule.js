@@ -45,14 +45,18 @@ export default {
           context.report({
             node: node.source,
             messageId: "noDirectLayerImport",
-            data: { importPath },
+            data: {
+              importPath,
+            },
           });
         }
         if (isInRepositories && UPWARD.some((p) => p.test(importPath))) {
           context.report({
             node: node.source,
             messageId: "noReverseLayerImport",
-            data: { importPath },
+            data: {
+              importPath,
+            },
           });
         }
       },

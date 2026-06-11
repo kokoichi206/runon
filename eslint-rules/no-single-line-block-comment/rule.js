@@ -82,8 +82,12 @@ export default {
           if (inner === "") continue;
 
           // 同一行にコードがあるインラインコメントは展開すると構文が壊れるため対象外。
-          const before = sourceCode.getTokenBefore(comment, { includeComments: true });
-          const after = sourceCode.getTokenAfter(comment, { includeComments: true });
+          const before = sourceCode.getTokenBefore(comment, {
+            includeComments: true,
+          });
+          const after = sourceCode.getTokenAfter(comment, {
+            includeComments: true,
+          });
           const hasCodeBefore = before && before.loc.end.line === comment.loc.start.line;
           const hasCodeAfter = after && after.loc.start.line === comment.loc.end.line;
           if (hasCodeBefore || hasCodeAfter) continue;

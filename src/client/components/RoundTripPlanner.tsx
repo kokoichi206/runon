@@ -34,10 +34,26 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { label: "東京駅", lat: 35.681, lng: 139.767 },
-  { label: "京都駅", lat: 34.985, lng: 135.758 },
-  { label: "セントラルパーク(NY)", lat: 40.7829, lng: -73.9654 },
-  { label: "カーディフ(英)", lat: 51.4816, lng: -3.1791 },
+  {
+    label: "東京駅",
+    lat: 35.681,
+    lng: 139.767,
+  },
+  {
+    label: "京都駅",
+    lat: 34.985,
+    lng: 135.758,
+  },
+  {
+    label: "セントラルパーク(NY)",
+    lat: 40.7829,
+    lng: -73.9654,
+  },
+  {
+    label: "カーディフ(英)",
+    lat: 51.4816,
+    lng: -3.1791,
+  },
 ];
 
 const HOME_KEY = "flrt:home";
@@ -121,7 +137,13 @@ const googleMapsDirUrl = (start: LngLat, path: LngLat[], maxWaypoints = 9): stri
 const escapeXml = (s: string): string =>
   s.replace(
     /[<>&'"]/g,
-    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", "\"": "&quot;" })[c]!
+    (c) => ({
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      "'": "&apos;",
+      "\"": "&quot;",
+    })[c]!
   );
 
 /**
@@ -142,7 +164,9 @@ const toGpx = (path: LngLat[], name: string): string => {
  * GPX をダウンロードさせる。
  */
 const downloadGpx = (path: LngLat[], name: string): void => {
-  const blob = new Blob([toGpx(path, name)], { type: "application/gpx+xml" });
+  const blob = new Blob([toGpx(path, name)], {
+    type: "application/gpx+xml",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -159,9 +183,15 @@ const shareGpx = async (path: LngLat[], name: string): Promise<void> => {
   const file = new File([toGpx(path, name)], `${name}.gpx`, {
     type: "application/gpx+xml",
   });
-  if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+  if (typeof navigator.canShare === "function" && navigator.canShare({
+    files: [file],
+  })) {
     try {
-      await navigator.share({ files: [file], title: name, text: "ランニングコース(GPX)" });
+      await navigator.share({
+        files: [file],
+        title: name,
+        text: "ランニングコース(GPX)",
+      });
       return;
     } catch (err) {
       // ユーザーがキャンセルした場合は何もしない。それ以外は保存にフォールバック。
@@ -239,7 +269,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     if (isDesktop) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragStart.current = { y: e.clientY, base: snapOffset(snap) };
+    dragStart.current = {
+      y: e.clientY,
+      base: snapOffset(snap),
+    };
     didDrag.current = false;
   };
   const onHandlePointerMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
@@ -300,7 +333,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   }, []);
 
   const saveHome = () => {
-    const h: HomeLocation = { lat, lng };
+    const h: HomeLocation = {
+      lat,
+      lng,
+    };
     try {
       localStorage.setItem(HOME_KEY, JSON.stringify(h));
       setHome(h);
@@ -723,7 +759,9 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                             <span
                               aria-hidden="true"
                               className="inline-block size-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: routeColor(theme, i) }}
+                              style={{
+                                backgroundColor: routeColor(theme, i),
+                              }}
                             />
                             #{i + 1}
                             {c.id === result.recommendedId && (

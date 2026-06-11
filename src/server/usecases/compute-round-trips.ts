@@ -87,7 +87,10 @@ export const computeRoundTrips = async (
   // 細道回避: 細い道(narrowEdges)の探索コストに掛ける係数。細道の少なさで並べ替えもする。
   const avoidNarrowRoads = req.avoidNarrowRoads;
   const narrowPenaltyFactor = avoidNarrowRoads ? 3 : 1;
-  const center: LatLng = { lat: req.lat, lng: req.lng };
+  const center: LatLng = {
+    lat: req.lat,
+    lng: req.lng,
+  };
   const radius = fetchRadiusMeters(req.targetMeters);
 
   const fetched: Result<OverpassFetchResult, AppError> = deps.fetchNetwork
@@ -211,7 +214,10 @@ export const computeRoundTrips = async (
     );
     if (routed) {
       stage1.push({
-        sol: { walk: routed.walk, metrics: routed.metrics },
+        sol: {
+          walk: routed.walk,
+          metrics: routed.metrics,
+        },
         waypointNodes: routed.waypointNodes,
         bearingDeg: routed.polygon.bearingDeg,
       });
@@ -270,13 +276,19 @@ export const computeRoundTrips = async (
     sol: Solution;
     onFront: boolean;
   };
-  const combined: Entry[] = frontSorted.map((sol) => ({ sol, onFront: true }));
+  const combined: Entry[] = frontSorted.map((sol) => ({
+    sol,
+    onFront: true,
+  }));
   const seen = new Set(frontSigs);
   for (const e of [...diverse.values()].sort((a, b) => byScore(a.sol, b.sol))) {
     const sig = sigOf(e.sol.metrics);
     if (seen.has(sig)) continue;
     seen.add(sig);
-    combined.push({ sol: e.sol, onFront: false });
+    combined.push({
+      sol: e.sol,
+      onFront: false,
+    });
   }
 
   const recommendedSig = frontSorted.length > 0 ? sigOf(frontSorted[0]!.metrics) : null;

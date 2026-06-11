@@ -23,7 +23,11 @@ export default {
       {
         type: "object",
         properties: {
-          maxLines: { type: "integer", minimum: 1, default: 80 },
+          maxLines: {
+            type: "integer",
+            minimum: 1,
+            default: 80,
+          },
         },
         additionalProperties: false,
       },
@@ -58,8 +62,14 @@ export default {
           context.report({
             node,
             messageId: "tooManyLines",
-            data: { count, max: maxLines },
-            loc: { line: 1, column: 0 },
+            data: {
+              count,
+              max: maxLines,
+            },
+            loc: {
+              line: 1,
+              column: 0,
+            },
           });
         }
       },

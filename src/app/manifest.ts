@@ -17,8 +17,16 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#0b0e11",
     categories: ["sports", "health", "navigation"],
     icons: [
-      { src: "/icon.svg", type: "image/svg+xml", sizes: "any" },
-      { src: "/icons/icon-192.png", type: "image/png", sizes: "192x192" },
+      {
+        src: "/icon.svg",
+        type: "image/svg+xml",
+        sizes: "any",
+      },
+      {
+        src: "/icons/icon-192.png",
+        type: "image/png",
+        sizes: "192x192",
+      },
       {
         src: "/icons/icon-512.png",
         type: "image/png",

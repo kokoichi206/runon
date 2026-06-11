@@ -29,7 +29,9 @@ export const computeReachable = (
   source: NodeId,
   maxDistanceM: number
 ): Reachable => {
-  const { dist } = dijkstra(graph, source, { maxDistanceM });
+  const { dist } = dijkstra(graph, source, {
+    maxDistanceM,
+  });
 
   let farthest: {
     node: NodeId;
@@ -37,7 +39,10 @@ export const computeReachable = (
   } | null = null;
   for (const [node, d] of dist) {
     if (node === source) continue;
-    if (!farthest || d > farthest.distanceM) farthest = { node, distanceM: d };
+    if (!farthest || d > farthest.distanceM) farthest = {
+      node,
+      distanceM: d,
+    };
   }
 
   let baseBearingDeg = 0;
@@ -47,5 +52,9 @@ export const computeReachable = (
     baseBearingDeg = bearingDeg(s, f);
   }
 
-  return { dist, farthest, baseBearingDeg };
+  return {
+    dist,
+    farthest,
+    baseBearingDeg,
+  };
 };

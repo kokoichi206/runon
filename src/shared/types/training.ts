@@ -251,7 +251,10 @@ export const defaultAvailability = (): WeeklyAvailability =>
   [0, 1, 2, 3, 4, 5, 6].map((wd) => {
     const isPracticeDay = wd === 2 || wd === 4 || wd === 6;
     const maxMinutes = wd === 6 ? 120 : isPracticeDay ? 60 : 0;
-    return { isPracticeDay, maxMinutes };
+    return {
+      isPracticeDay,
+      maxMinutes,
+    };
   });
 
 /**

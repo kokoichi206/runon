@@ -78,7 +78,11 @@ export const addArc = (graph: StreetGraph, from: NodeId, to: NodeId, weightM: nu
     if (weightM < existing.weightM) existing.weightM = weightM;
     return;
   }
-  list.push({ to, weightM, edgeKey: undirectedEdgeKey(from, to) });
+  list.push({
+    to,
+    weightM,
+    edgeKey: undirectedEdgeKey(from, to),
+  });
 };
 
 export const neighbors = (graph: StreetGraph, id: NodeId): Arc[] => {

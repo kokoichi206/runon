@@ -77,7 +77,12 @@ describe("estimateFitness", () => {
   });
 });
 
-const RACE: Race = { id: "r1", name: "テストレース", date: "2026-08-24", distanceKm: 21.1 };
+const RACE: Race = {
+  id: "r1",
+  name: "テストレース",
+  date: "2026-08-24",
+  distanceKm: 21.1,
+};
 const START = "2026-06-01"; // 月曜
 const fitness = {
   weeklyKm: 20,
@@ -126,7 +131,12 @@ describe("generatePlan", () => {
 
   it("非練習日は休養", () => {
     const av = defaultAvailability(); // 月は非練習日
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: av,
+    });
     const mondays = plan.filter((p) => weekday(p.date) === 1 && p.date !== RACE.date);
     for (const m of mondays) expect(m.type).toBe("rest");
   });
@@ -148,8 +158,18 @@ describe("generatePlan", () => {
   it("確保時間でキャップされる", () => {
     // 火曜(2)を練習日・10分だけにする → 火曜の練習は約10分に制限。
     const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
-      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d);
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
+      wd === 2
+        ? {
+            isPracticeDay: true,
+            maxMinutes: 10,
+          }
+        : d);
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: av,
+    });
     const tue = plan.find((p) => weekday(p.date) === 2 && p.type !== "rest")!;
     expect(tue.estMinutes).toBe(10);
     expect(tue.cappedByTime).toBe(true);
@@ -212,7 +232,10 @@ describe("generatePlan", () => {
   });
 
   it("目標タイム設定時は VDOT ゾーンでペースが付く", () => {
-    const raceWithGoal: Race = { ...RACE, goalTimeSec: 110 * 60 }; // ハーフ 1:50
+    const raceWithGoal: Race = {
+      ...RACE,
+      goalTimeSec: 110 * 60,
+    }; // ハーフ 1:50
     const plan = generatePlan({
       startDate: START,
       race: raceWithGoal,
@@ -298,7 +321,10 @@ describe("estimateFitness（負荷・Strava集計）", () => {
     // 10本中 relativeEffort 持ちは 2本 = 20% < 60%。
     const acts: Activity[] = [];
     for (let i = 0; i < 8; i++) acts.push(re(`2026-05-${10 + i}`, 50));
-    const withoutRE = acts.map((a) => ({ ...a, relativeEffort: undefined }));
+    const withoutRE = acts.map((a) => ({
+      ...a,
+      relativeEffort: undefined,
+    }));
     const mixed = [...withoutRE, re("2026-05-28", 50), re("2026-05-29", 50)];
     expect(estimateFitness(mixed, now).recentLoad).toBeNull();
   });
@@ -348,7 +374,11 @@ describe("estimateFitness（負荷・Strava集計）", () => {
       },
     ];
     const profile: AthleteProfile = {
-      recentRunTotals: { distanceKm: 80, durationSec: 24000, count: 16 }, // 80/4=20km/週
+      recentRunTotals: {
+        distanceKm: 80,
+        durationSec: 24000,
+        count: 16,
+      }, // 80/4=20km/週
     };
     const withoutProfile = estimateFitness(acts, now).weeklyKm; // 16/4=4km/週
     const withProfile = estimateFitness(acts, now, profile).weeklyKm;
@@ -380,7 +410,11 @@ describe("generatePlan（ACWR 増量補正）", () => {
     const normal = firstLongKm(baseFitness);
     const spiking = firstLongKm({
       ...baseFitness,
-      recentLoad: { acute: 350, chronic: 200, ratio: 1.75 },
+      recentLoad: {
+        acute: 350,
+        chronic: 200,
+        ratio: 1.75,
+      },
     });
     expect(spiking).toBeLessThan(normal);
   });
@@ -392,7 +426,9 @@ describe("generatePlan（ACWR 増量補正）", () => {
       fitness: baseFitness,
       availability: defaultAvailability(),
     });
-    const legacy: Fitness = { ...baseFitness };
+    const legacy: Fitness = {
+      ...baseFitness,
+    };
     delete (legacy as {
       recentLoad?: unknown;
     }).recentLoad;

@@ -17,8 +17,12 @@ export const GET = async (): Promise<NextResponse> => {
   const result = await listActivitiesHandler(cookieStore.get(STRAVA_REFRESH_COOKIE)?.value);
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error.message },
-      { status: httpStatusFor(result.error) }
+      {
+        error: result.error.message,
+      },
+      {
+        status: httpStatusFor(result.error),
+      }
     );
   }
 
@@ -43,7 +47,13 @@ export const GET = async (): Promise<NextResponse> => {
  * 連携解除（Cookie 削除）。
  */
 export const DELETE = async (): Promise<NextResponse> => {
-  const res = NextResponse.json({ ok: true });
-  res.cookies.set(STRAVA_REFRESH_COOKIE, "", { httpOnly: true, path: "/", maxAge: 0 });
+  const res = NextResponse.json({
+    ok: true,
+  });
+  res.cookies.set(STRAVA_REFRESH_COOKIE, "", {
+    httpOnly: true,
+    path: "/",
+    maxAge: 0,
+  });
   return res;
 };

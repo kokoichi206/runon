@@ -74,7 +74,10 @@ export default {
           context.report({
             node: node.source,
             messageId: "noRelativeImportAcrossLayers",
-            data: { fromLayer, toLayer },
+            data: {
+              fromLayer,
+              toLayer,
+            },
           });
         }
       },
