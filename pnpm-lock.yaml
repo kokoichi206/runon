@@ -90,9 +90,6 @@ importers:
       postcss:
         specifier: ^8.5.0
         version: 8.5.15
-      prettier:
-        specifier: ^3.4.2
-        version: 3.8.3
       storybook:
         specifier: ^10.1.11
         version: 10.4.2(@testing-library/dom@10.4.1)(@types/react@19.2.15)(prettier@3.8.3)(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
@@ -6141,7 +6138,8 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier@3.8.3: {}
+  prettier@3.8.3:
+    optional: true
 
   pretty-format@27.5.1:
     dependencies:
