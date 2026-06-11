@@ -9,7 +9,9 @@ import { ThemeToggle } from "@/client/components/ThemeToggle";
 const meta = {
   title: "components/ThemeToggle",
   component: ThemeToggle,
-  parameters: { layout: "centered" },
+  parameters: {
+    layout: "centered",
+  },
 } satisfies Meta<typeof ThemeToggle>;
 
 export default meta;

@@ -65,5 +65,8 @@ export const statusHandler = (
   configured: boolean;
   connected: boolean;
 } => {
-  return { configured: stravaUsecase.isConfigured(), connected: hasRefreshCookie };
+  return {
+    configured: stravaUsecase.isConfigured(),
+    connected: hasRefreshCookie,
+  };
 };

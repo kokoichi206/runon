@@ -5,10 +5,20 @@ import { useCallback, useState } from "react";
 import type { RoundTripRequest, RoundTripResult } from "@/shared/types/round-trip";
 
 type State =
-  | { status: "idle" }
-  | { status: "loading" }
-  | { status: "success"; result: RoundTripResult }
-  | { status: "error"; message: string };
+  | {
+    status: "idle";
+  }
+  | {
+    status: "loading";
+  }
+  | {
+    status: "success";
+    result: RoundTripResult;
+  }
+  | {
+    status: "error";
+    message: string;
+  };
 
 export interface UseRoundTrip {
   state: State;
@@ -16,14 +26,20 @@ export interface UseRoundTrip {
 }
 
 export const useRoundTrip = (): UseRoundTrip => {
-  const [state, setState] = useState<State>({ status: "idle" });
+  const [state, setState] = useState<State>({
+    status: "idle",
+  });
 
   const run = useCallback(async (req: RoundTripRequest) => {
-    setState({ status: "loading" });
+    setState({
+      status: "loading",
+    });
     try {
       const res = await fetch("/api/round-trip", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(req),
       });
       const json = await res.json();
@@ -34,7 +50,10 @@ export const useRoundTrip = (): UseRoundTrip => {
         });
         return;
       }
-      setState({ status: "success", result: json as RoundTripResult });
+      setState({
+        status: "success",
+        result: json as RoundTripResult,
+      });
     } catch (err) {
       setState({
         status: "error",
@@ -43,5 +62,8 @@ export const useRoundTrip = (): UseRoundTrip => {
     }
   }, []);
 
-  return { state, run };
+  return {
+    state,
+    run,
+  };
 };

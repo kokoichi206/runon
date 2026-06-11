@@ -173,7 +173,10 @@ const finalize = (
   if (metrics.lengthMeters < targetMeters * 0.3 || metrics.lengthMeters > targetMeters * 3) {
     return null;
   }
-  return { walk: trimmed, metrics };
+  return {
+    walk: trimmed,
+    metrics,
+  };
 };
 
 const signatureOf = (m: WalkMetrics): string =>

@@ -376,6 +376,9 @@ export const summarizeByWeek = (plan: PlannedWorkout[]): WeekSummary[] => {
     if (w.type !== "rest") s.runDays += 1;
   }
   return [...map.values()]
-    .map((s) => ({ ...s, totalKm: round1(s.totalKm) }))
+    .map((s) => ({
+      ...s,
+      totalKm: round1(s.totalKm),
+    }))
     .sort((a, b) => a.weekIndex - b.weekIndex);
 };

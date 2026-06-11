@@ -41,7 +41,10 @@ export default {
           (isMessageAccess(left) && isStringLiteral(right)) ||
           (isStringLiteral(left) && isMessageAccess(right))
         ) {
-          context.report({ node, messageId: "noMessageComparison" });
+          context.report({
+            node,
+            messageId: "noMessageComparison",
+          });
         }
       },
     };

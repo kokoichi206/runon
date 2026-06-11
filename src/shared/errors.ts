@@ -28,15 +28,31 @@ export const appError = {
     message,
     cause,
   }),
-  config: (message: string, cause?: unknown): AppError => ({ type: "config", message, cause }),
+  config: (message: string, cause?: unknown): AppError => ({
+    type: "config",
+    message,
+    cause,
+  }),
   unauthorized: (message: string, cause?: unknown): AppError => ({
     type: "unauthorized",
     message,
     cause,
   }),
-  notFound: (message: string, cause?: unknown): AppError => ({ type: "not_found", message, cause }),
-  upstream: (message: string, cause?: unknown): AppError => ({ type: "upstream", message, cause }),
-  internal: (message: string, cause?: unknown): AppError => ({ type: "internal", message, cause }),
+  notFound: (message: string, cause?: unknown): AppError => ({
+    type: "not_found",
+    message,
+    cause,
+  }),
+  upstream: (message: string, cause?: unknown): AppError => ({
+    type: "upstream",
+    message,
+    cause,
+  }),
+  internal: (message: string, cause?: unknown): AppError => ({
+    type: "internal",
+    message,
+    cause,
+  }),
 };
 
 const STATUS: Record<ErrorType, number> = {

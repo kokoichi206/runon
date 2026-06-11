@@ -9,11 +9,11 @@ import type { ResolvedTheme } from "@/client/lib/theme";
  * 別タイル（独自/商用/Google）へ替えたい場合はこのファイルだけ差し替えればよい設計。
  */
 const CARTO_ATTRIBUTION =
-  '© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors © <a href="https://carto.com/attributions" target="_blank" rel="noopener">CARTO</a>';
+  "© <a href=\"https://www.openstreetmap.org/copyright\" target=\"_blank\" rel=\"noopener\">OpenStreetMap</a> contributors © <a href=\"https://carto.com/attributions\" target=\"_blank\" rel=\"noopener\">CARTO</a>";
 
 // Esri World Imagery（キー不要の衛星/航空写真ラスター）。帰属表記が必須。
 const ESRI_IMAGERY_ATTRIBUTION =
-  'Imagery © <a href="https://www.esri.com" target="_blank" rel="noopener">Esri</a>, Maxar, Earthstar Geographics';
+  "Imagery © <a href=\"https://www.esri.com\" target=\"_blank\" rel=\"noopener\">Esri</a>, Maxar, Earthstar Geographics";
 
 const cartoTiles = (variant: "light_all" | "dark_all"): string[] =>
   ["a", "b", "c", "d"].map((s) => `https://${s}.basemaps.cartocdn.com/${variant}/{z}/{x}/{y}.png`);
@@ -35,7 +35,11 @@ const cartoStyle = (theme: ResolvedTheme): StyleSpecification => {
         attribution: CARTO_ATTRIBUTION,
       },
     },
-    layers: [{ id: "carto", type: "raster", source: "carto" }],
+    layers: [{
+      id: "carto",
+      type: "raster",
+      source: "carto",
+    }],
   };
 };
 
@@ -52,7 +56,11 @@ const satelliteStyle = (): StyleSpecification => ({
       attribution: ESRI_IMAGERY_ATTRIBUTION,
     },
   },
-  layers: [{ id: "esri-imagery", type: "raster", source: "esri-imagery" }],
+  layers: [{
+    id: "esri-imagery",
+    type: "raster",
+    source: "esri-imagery",
+  }],
 });
 
 export const mapStyle = (theme: ResolvedTheme, basemap: Basemap = "map"): StyleSpecification =>
@@ -66,7 +74,11 @@ export const mapStyle = (theme: ResolvedTheme, basemap: Basemap = "map"): StyleS
  */
 export const MAP_COLORS: Record<
   ResolvedTheme,
-  { marker: string; ghost: string; palette: string[] }
+  {
+    marker: string;
+    ghost: string;
+    palette: string[];
+  }
 > = {
   dark: {
     marker: "#ff5a1f",

@@ -49,7 +49,9 @@ export default {
           context.report({
             node: node.callee,
             messageId: "noBrowserNotification",
-            data: { name },
+            data: {
+              name,
+            },
           });
         }
       },

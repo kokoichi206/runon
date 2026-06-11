@@ -1,5 +1,6 @@
 import js from "@eslint/js";
 import nextPlugin from "@next/eslint-plugin-next";
+import stylistic from "@stylistic/eslint-plugin";
 import importX from "eslint-plugin-import-x";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
@@ -24,8 +25,6 @@ const config = [
       "next-env.d.ts",
       "public/",
       "design/",
-      // カスタムルール本体（プレーンな Node スクリプト）は対象外。
-      "eslint-rules/",
     ],
   },
   js.configs.recommended,
@@ -41,7 +40,8 @@ const config = [
   },
   {
     files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs"],
-    ignores: ["scripts/**"],
+    // カスタムルール本体（プレーンな Node スクリプト）は意味論ルールの対象外。整形のみ当てる。
+    ignores: ["scripts/**", "eslint-rules/**"],
     plugins: {
       "import-x": importX,
       "react-hooks": reactHooks,
@@ -67,9 +67,13 @@ const config = [
       // no-non-null-assertion は有効化しない。tsconfig の noUncheckedIndexedAccess により
       // 配列アクセスが T | undefined になるため、周回路アルゴリズム等のタイトなループでは
       // arr[i]! が意図的なイディオムになっている。
-      "no-console": ["error", { allow: ["warn", "error"] }],
+      "no-console": ["error", {
+        allow: ["warn", "error"],
+      }],
       // null/undefined を同時に判定する == null / != null は許容し、それ以外は厳格比較。
-      eqeqeq: ["error", "always", { null: "ignore" }],
+      eqeqeq: ["error", "always", {
+        null: "ignore",
+      }],
 
       // 関数宣言ではなく const + アロー関数を強制する。
       "func-style": ["error", "expression"],
@@ -82,7 +86,10 @@ const config = [
         {
           groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
           "newlines-between": "always",
-          alphabetize: { order: "asc", caseInsensitive: true },
+          alphabetize: {
+            order: "asc",
+            caseInsensitive: true,
+          },
         },
       ],
 
@@ -111,7 +118,9 @@ const config = [
   {
     files: ["src/server/**/*.ts"],
     ignores: ["src/server/**/*.test.ts"],
-    plugins: { custom: customRules },
+    plugins: {
+      custom: customRules,
+    },
     rules: {
       "custom/no-throw-statement": "error",
     },
@@ -119,9 +128,13 @@ const config = [
   // API route は薄く保つ。
   {
     files: ["src/app/api/**/route.ts"],
-    plugins: { custom: customRules },
+    plugins: {
+      custom: customRules,
+    },
     rules: {
-      "custom/max-api-route-handler-lines": ["error", { maxLines: 80 }],
+      "custom/max-api-route-handler-lines": ["error", {
+        maxLines: 80,
+      }],
     },
   },
   // env 定義モジュールと設定ファイルでは process.env の直接参照を許可する。
@@ -138,6 +151,87 @@ const config = [
       "no-console": "off",
       "no-process-env": "off",
       "security/detect-non-literal-fs-filename": "off",
+    },
+  },
+  // --- 整形（JS/TS は Prettier ではなく @stylistic が担当する） ---
+  // Prettier は printWidth に収まる型リテラルを必ず 1 行に潰し、これを止める設定が無いため撤去した。
+  // customize のオプションと下記 override は旧 .prettierrc.json のスタイルに合わせている。
+  {
+    files: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.mjs"],
+    plugins: {
+      "@stylistic": stylistic,
+    },
+    rules: {
+      ...stylistic.configs.customize({
+        arrowParens: true,
+        braceStyle: "1tbs",
+        indent: 2,
+        jsx: true,
+        quoteProps: "as-needed",
+        quotes: "double",
+        semi: true,
+      }).rules,
+
+      // エスケープ回避のための逆クォート（例: 内側に " を含む文字列のシングルクォート）は
+      // 旧 Prettier 同様に許容する（customize は avoidEscape: false 固定のため上書き）。
+      "@stylistic/quotes": ["error", "double", {
+        allowTemplateLiterals: "always",
+        avoidEscape: true,
+      }],
+
+      // 旧 trailingComma: "es5" 相当（関数引数・generics には付けない）。
+      "@stylistic/comma-dangle": [
+        "error",
+        {
+          arrays: "always-multiline",
+          objects: "always-multiline",
+          imports: "always-multiline",
+          exports: "always-multiline",
+          functions: "never",
+          enums: "always-multiline",
+          generics: "never",
+          tuples: "always-multiline",
+        },
+      ],
+
+      // Prettier と同じ折り返し位置（&& や = は行末、三項演算子と union/intersection は行頭）。
+      "@stylistic/operator-linebreak": [
+        "error",
+        "after",
+        {
+          overrides: {
+            "?": "before",
+            ":": "before",
+            "|": "before",
+            "&": "before",
+          },
+        },
+      ],
+
+      // 日本語の文章に <b> 等のインライン要素が混在するため、children の行分離は強制しない
+      // （どの allow オプションでも文章ごと式単位に分解されてしまう）。改行は作者が管理する。
+      "@stylistic/jsx-one-expression-per-line": "off",
+
+      // 括弧内の改行は「最初の要素を改行したか」を基準に全要素へ揃える（幅基準は持たない）。
+      // 型リテラルと値オブジェクトはメンバー数に関わらず常に複数行へ展開する。
+      // 配列は 1 行で意味が完結するリスト（["a", "b", "c"] 等）が多いため preserve のまま。
+      "@stylistic/exp-list-style": [
+        "error",
+        {
+          overrides: {
+            TSTypeLiteral: {
+              singleLine: {
+                maxItems: 0,
+              },
+            },
+            ObjectExpression: {
+              singleLine: {
+                maxItems: 0,
+              },
+            },
+          },
+        },
+      ],
     },
   },
   ...storybook.configs["flat/recommended"],

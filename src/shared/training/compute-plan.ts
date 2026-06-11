@@ -37,5 +37,9 @@ export const computeTrainingPlan = (req: TrainingPlanRequest): TrainingPlanResul
           weeks.length
         )
       : null;
-  return { plan, weeks, progression };
+  return {
+    plan,
+    weeks,
+    progression,
+  };
 };

@@ -15,8 +15,15 @@ async function main(): Promise<void> {
   const started = Date.now();
   const res = await fetch(`${base}/api/round-trip`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lat, lng, targetMeters, profile }),
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      lat,
+      lng,
+      targetMeters,
+      profile,
+    }),
   });
   const json = await res.json();
   if (!res.ok) {
@@ -32,8 +39,8 @@ async function main(): Promise<void> {
   for (const c of json.candidates.slice(0, 8)) {
     console.log(
       `  ${c.id}${c.id === json.recommendedId ? " (推奨)" : ""}: ` +
-        `len=${(c.lengthMeters / 1000).toFixed(2)}km 誤差=${c.lengthError}m ` +
-        `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`
+      `len=${(c.lengthMeters / 1000).toFixed(2)}km 誤差=${c.lengthError}m ` +
+      `重複=${c.overlapPercent}% src=${c.source} pts=${c.path.length}`
     );
   }
 }

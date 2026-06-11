@@ -34,10 +34,26 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { label: "東京駅", lat: 35.681, lng: 139.767 },
-  { label: "京都駅", lat: 34.985, lng: 135.758 },
-  { label: "セントラルパーク(NY)", lat: 40.7829, lng: -73.9654 },
-  { label: "カーディフ(英)", lat: 51.4816, lng: -3.1791 },
+  {
+    label: "東京駅",
+    lat: 35.681,
+    lng: 139.767,
+  },
+  {
+    label: "京都駅",
+    lat: 34.985,
+    lng: 135.758,
+  },
+  {
+    label: "セントラルパーク(NY)",
+    lat: 40.7829,
+    lng: -73.9654,
+  },
+  {
+    label: "カーディフ(英)",
+    lat: 51.4816,
+    lng: -3.1791,
+  },
 ];
 
 const HOME_KEY = "flrt:home";
@@ -121,7 +137,13 @@ const googleMapsDirUrl = (start: LngLat, path: LngLat[], maxWaypoints = 9): stri
 const escapeXml = (s: string): string =>
   s.replace(
     /[<>&'"]/g,
-    (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "'": "&apos;", '"': "&quot;" })[c]!
+    (c) => ({
+      "<": "&lt;",
+      ">": "&gt;",
+      "&": "&amp;",
+      "'": "&apos;",
+      "\"": "&quot;",
+    })[c]!
   );
 
 /**
@@ -142,7 +164,9 @@ const toGpx = (path: LngLat[], name: string): string => {
  * GPX をダウンロードさせる。
  */
 const downloadGpx = (path: LngLat[], name: string): void => {
-  const blob = new Blob([toGpx(path, name)], { type: "application/gpx+xml" });
+  const blob = new Blob([toGpx(path, name)], {
+    type: "application/gpx+xml",
+  });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
@@ -159,9 +183,15 @@ const shareGpx = async (path: LngLat[], name: string): Promise<void> => {
   const file = new File([toGpx(path, name)], `${name}.gpx`, {
     type: "application/gpx+xml",
   });
-  if (typeof navigator.canShare === "function" && navigator.canShare({ files: [file] })) {
+  if (typeof navigator.canShare === "function" && navigator.canShare({
+    files: [file],
+  })) {
     try {
-      await navigator.share({ files: [file], title: name, text: "ランニングコース(GPX)" });
+      await navigator.share({
+        files: [file],
+        title: name,
+        text: "ランニングコース(GPX)",
+      });
       return;
     } catch (err) {
       // ユーザーがキャンセルした場合は何もしない。それ以外は保存にフォールバック。
@@ -210,7 +240,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   const [closedOffset, setClosedOffset] = useState(0);
   // ドラッグ中の translateY（px）。null のときは snap に従う。
   const [dragY, setDragY] = useState<number | null>(null);
-  const dragStart = useRef<{ y: number; base: number } | null>(null);
+  const dragStart = useRef<{
+    y: number;
+    base: number;
+  } | null>(null);
   const didDrag = useRef(false);
 
   useEffect(() => {
@@ -231,13 +264,15 @@ export const RoundTripPlanner = (): React.JSX.Element => {
     s === "full" ? 0 : s === "peek" ? closedOffset : Math.round(closedOffset * MID_RATIO);
   const nearestSnap = (offset: number): SheetSnap =>
     (["full", "mid", "peek"] as SheetSnap[]).reduce((best, s) =>
-      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best
-    );
+      Math.abs(snapOffset(s) - offset) < Math.abs(snapOffset(best) - offset) ? s : best);
 
   const onHandlePointerDown = (e: React.PointerEvent<HTMLButtonElement>): void => {
     if (isDesktop) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    dragStart.current = { y: e.clientY, base: snapOffset(snap) };
+    dragStart.current = {
+      y: e.clientY,
+      base: snapOffset(snap),
+    };
     didDrag.current = false;
   };
   const onHandlePointerMove = (e: React.PointerEvent<HTMLButtonElement>): void => {
@@ -298,7 +333,10 @@ export const RoundTripPlanner = (): React.JSX.Element => {
   }, []);
 
   const saveHome = () => {
-    const h: HomeLocation = { lat, lng };
+    const h: HomeLocation = {
+      lat,
+      lng,
+    };
     try {
       localStorage.setItem(HOME_KEY, JSON.stringify(h));
       setHome(h);
@@ -721,7 +759,9 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                             <span
                               aria-hidden="true"
                               className="inline-block size-2.5 shrink-0 rounded-full"
-                              style={{ backgroundColor: routeColor(theme, i) }}
+                              style={{
+                                backgroundColor: routeColor(theme, i),
+                              }}
                             />
                             #{i + 1}
                             {c.id === result.recommendedId && (
@@ -778,24 +818,26 @@ export const RoundTripPlanner = (): React.JSX.Element => {
                     >
                       GPX をスマホに送る / 保存
                     </button>
-                    {focused ? (
-                      <a
-                        href={googleMapsDirUrl(result.start, focused.path)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
-                      >
-                        Google マップで開く（近似・参考）
-                      </a>
-                    ) : (
-                      <span
-                        aria-disabled="true"
-                        title={pickHint}
-                        className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
-                      >
-                        Google マップで開く（近似・参考）
-                      </span>
-                    )}
+                    {focused
+                      ? (
+                          <a
+                            href={googleMapsDirUrl(result.start, focused.path)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+                          >
+                            Google マップで開く（近似・参考）
+                          </a>
+                        )
+                      : (
+                          <span
+                            aria-disabled="true"
+                            title={pickHint}
+                            className="rounded-lg border border-border px-3 py-1.5 text-center text-xs text-faint opacity-60"
+                          >
+                            Google マップで開く（近似・参考）
+                          </span>
+                        )}
                     {/* 文言は選択状態によらず固定（チラつき防止）。 */}
                     <p className="text-[10px] text-faint">
                       GPX をスマホの共有シートから <b>OsmAnd / Komoot / Garmin Connect</b>{" "}

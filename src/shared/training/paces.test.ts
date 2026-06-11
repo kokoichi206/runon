@@ -87,7 +87,13 @@ describe("estimateCurrentVdot（実測優先）", () => {
 
   it("best_efforts(5k) があれば全体平均より高い VDOT を採る", () => {
     const withBE = estimateCurrentVdot(
-      [slowRun({ bestEfforts: [{ name: "5k", distanceM: 5000, timeSec: 20 * 60 }] })],
+      [slowRun({
+        bestEfforts: [{
+          name: "5k",
+          distanceM: 5000,
+          timeSec: 20 * 60,
+        }],
+      })],
       now
     );
     const without = estimateCurrentVdot([slowRun()], now);
@@ -99,7 +105,13 @@ describe("estimateCurrentVdot（実測優先）", () => {
 
   it("短距離(<3km)の best_effort は過大評価防止のため無視", () => {
     const short = estimateCurrentVdot(
-      [slowRun({ bestEfforts: [{ name: "1k", distanceM: 1000, timeSec: 3 * 60 }] })],
+      [slowRun({
+        bestEfforts: [{
+          name: "1k",
+          distanceM: 1000,
+          timeSec: 3 * 60,
+        }],
+      })],
       now
     );
     const without = estimateCurrentVdot([slowRun()], now);

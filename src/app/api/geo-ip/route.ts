@@ -7,13 +7,19 @@ export const runtime = "nodejs";
 export const GET = async (): Promise<NextResponse> => {
   try {
     const res = await fetch("https://get.geojs.io/v1/ip/geo.json", {
-      headers: { Accept: "application/json" },
+      headers: {
+        Accept: "application/json",
+      },
       signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) {
       return NextResponse.json(
-        { error: `IP 位置情報の取得に失敗しました (HTTP ${res.status})。` },
-        { status: 502 }
+        {
+          error: `IP 位置情報の取得に失敗しました (HTTP ${res.status})。`,
+        },
+        {
+          status: 502,
+        }
       );
     }
     const j = (await res.json()) as {
@@ -25,7 +31,11 @@ export const GET = async (): Promise<NextResponse> => {
     const lat = Number(j.latitude);
     const lng = Number(j.longitude);
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-      return NextResponse.json({ error: "IP から位置を特定できませんでした。" }, { status: 502 });
+      return NextResponse.json({
+        error: "IP から位置を特定できませんでした。",
+      }, {
+        status: 502,
+      });
     }
     return NextResponse.json({
       lat,
@@ -37,8 +47,12 @@ export const GET = async (): Promise<NextResponse> => {
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown";
     return NextResponse.json(
-      { error: `IP 位置情報の取得に失敗しました: ${message}` },
-      { status: 502 }
+      {
+        error: `IP 位置情報の取得に失敗しました: ${message}`,
+      },
+      {
+        status: 502,
+      }
     );
   }
 };

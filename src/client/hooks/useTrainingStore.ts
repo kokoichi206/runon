@@ -65,7 +65,10 @@ export const useTrainingStore = (): TrainingStore => {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<TrainingState>;
-        setState({ ...initialState(), ...parsed });
+        setState({
+          ...initialState(),
+          ...parsed,
+        });
       }
     } catch {
       // localStorage 不可。メモリ上の既定値で継続。
@@ -85,11 +88,17 @@ export const useTrainingStore = (): TrainingStore => {
   }, [state]);
 
   const setActivities = useCallback((activities: Activity[]) => {
-    setState((s) => ({ ...s, activities }));
+    setState((s) => ({
+      ...s,
+      activities,
+    }));
   }, []);
 
   const setAthleteProfile = useCallback((profile: AthleteProfile | null) => {
-    setState((s) => ({ ...s, athleteProfile: profile }));
+    setState((s) => ({
+      ...s,
+      athleteProfile: profile,
+    }));
   }, []);
 
   const addRace = useCallback((race: Race) => {
@@ -112,18 +121,32 @@ export const useTrainingStore = (): TrainingStore => {
   }, []);
 
   const selectRace = useCallback((id: string | null) => {
-    setState((s) => ({ ...s, selectedRaceId: id }));
+    setState((s) => ({
+      ...s,
+      selectedRaceId: id,
+    }));
   }, []);
 
   const setAvailabilityDay = useCallback((wd: number, patch: Partial<DayAvailability>) => {
     setState((s) => {
-      const availability = s.availability.map((d, i) => (i === wd ? { ...d, ...patch } : d));
-      return { ...s, availability };
+      const availability = s.availability.map((d, i) => (i === wd
+        ? {
+            ...d,
+            ...patch,
+          }
+        : d));
+      return {
+        ...s,
+        availability,
+      };
     });
   }, []);
 
   const setRunsPerWeek = useCallback((n: number) => {
-    setState((s) => ({ ...s, runsPerWeek: Math.max(1, Math.min(7, Math.round(n))) }));
+    setState((s) => ({
+      ...s,
+      runsPerWeek: Math.max(1, Math.min(7, Math.round(n))),
+    }));
   }, []);
 
   const toggleSkip = useCallback((date: string) => {
@@ -149,7 +172,10 @@ export const useTrainingStore = (): TrainingStore => {
   const skipWeek = useCallback((dates: string[]) => {
     setState((s) => {
       const set = new Set([...s.skippedDates, ...dates]);
-      return { ...s, skippedDates: [...set] };
+      return {
+        ...s,
+        skippedDates: [...set],
+      };
     });
   }, []);
 

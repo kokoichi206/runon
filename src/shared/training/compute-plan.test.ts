@@ -26,7 +26,12 @@ const ymdPlus = (base: string, daysAhead: number): string => {
 
 const baseReq = (overrides: Partial<TrainingPlanRequest> = {}): TrainingPlanRequest => ({
   today: "2026-01-01",
-  race: { id: "r1", name: "テスト 10K", date: ymdPlus("2026-01-01", 70), distanceKm: 10 },
+  race: {
+    id: "r1",
+    name: "テスト 10K",
+    date: ymdPlus("2026-01-01", 70),
+    distanceKm: 10,
+  },
   fitness,
   availability: defaultAvailability(),
   runsPerWeek: 3,
@@ -69,7 +74,13 @@ describe("computeTrainingPlan", () => {
   it("過去のレースなら計画は空（progression も null）", () => {
     const result = computeTrainingPlan(
       baseReq({
-        race: { id: "r3", name: "過去", date: "2025-01-01", distanceKm: 10, goalTimeSec: 50 * 60 },
+        race: {
+          id: "r3",
+          name: "過去",
+          date: "2025-01-01",
+          distanceKm: 10,
+          goalTimeSec: 50 * 60,
+        },
       })
     );
     expect(result.plan).toEqual([]);

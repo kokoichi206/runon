@@ -14,8 +14,7 @@ export const useResolvedTheme = (): ResolvedTheme => {
   const [theme, setTheme] = useState<ResolvedTheme>(() =>
     typeof document !== "undefined" && document.documentElement.dataset.theme === "light"
       ? "light"
-      : "dark"
-  );
+      : "dark");
 
   useEffect(() => {
     const el = document.documentElement;
@@ -23,7 +22,10 @@ export const useResolvedTheme = (): ResolvedTheme => {
     setTheme(read());
 
     const observer = new MutationObserver(() => setTheme(read()));
-    observer.observe(el, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(el, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, []);
 

@@ -9,7 +9,10 @@ import {
  * 距離キーの最小ヒープ。Dijkstra の優先度付きキュー。
  */
 class MinHeap {
-  private heap: { node: NodeId; key: number }[] = [];
+  private heap: {
+    node: NodeId;
+    key: number;
+  }[] = [];
 
   get size(): number {
     return this.heap.length;
@@ -17,7 +20,10 @@ class MinHeap {
 
   push(node: NodeId, key: number): void {
     const h = this.heap;
-    h.push({ node, key });
+    h.push({
+      node,
+      key,
+    });
     let i = h.length - 1;
     while (i > 0) {
       const parent = (i - 1) >> 1;
@@ -27,7 +33,10 @@ class MinHeap {
     }
   }
 
-  pop(): { node: NodeId; key: number } | undefined {
+  pop(): {
+    node: NodeId;
+    key: number;
+  } | undefined {
     const h = this.heap;
     if (h.length === 0) return undefined;
     const top = h[0]!;
@@ -148,7 +157,10 @@ export const dijkstra = (
     }
   }
 
-  return { dist, prev };
+  return {
+    dist,
+    prev,
+  };
 };
 
 /**
@@ -191,8 +203,14 @@ export const shortestPath = (
   target: NodeId,
   opts: Omit<DijkstraOptions, "target" | "maxDistanceM"> = {}
 ): ShortestPath | null => {
-  const { prev } = dijkstra(graph, source, { ...opts, target });
+  const { prev } = dijkstra(graph, source, {
+    ...opts,
+    target,
+  });
   const path = reconstructPath(prev, source, target);
   if (!path) return null;
-  return { path, distanceM: walkLengthMeters(graph, path) };
+  return {
+    path,
+    distanceM: walkLengthMeters(graph, path),
+  };
 };

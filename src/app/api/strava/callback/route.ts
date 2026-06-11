@@ -17,7 +17,11 @@ const baseUrl = (request: Request): string =>
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 365; // 1年
 
 // 使い捨て state cookie を破棄するための失効指定。
-const CLEAR_STATE = { httpOnly: true, path: "/", maxAge: 0 } as const;
+const CLEAR_STATE = {
+  httpOnly: true,
+  path: "/",
+  maxAge: 0,
+} as const;
 
 /**
  * Strava からのコールバック。state を照合してから認可コードをトークンに交換し

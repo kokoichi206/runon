@@ -65,7 +65,9 @@ export const estimateFitness = (
   profile?: AthleteProfile
 ): Fitness => {
   const runs = activities.filter((a) => a.distanceKm > 0 && a.durationSec > 0);
-  if (runs.length === 0) return { ...FALLBACK };
+  if (runs.length === 0) return {
+    ...FALLBACK,
+  };
 
   const within = (days: number) =>
     runs.filter((a) => nowMs - parseYmd(isoToYmdLocal(a.date)) <= days * 86_400_000);
