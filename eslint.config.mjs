@@ -1,12 +1,17 @@
 import js from "@eslint/js";
 import nextPlugin from "@next/eslint-plugin-next";
 import stylistic from "@stylistic/eslint-plugin";
+import format from "eslint-plugin-format";
 import importX from "eslint-plugin-import-x";
+import jsoncPlugin from "eslint-plugin-jsonc";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
 import security from "eslint-plugin-security";
 import storybook from "eslint-plugin-storybook";
+import ymlPlugin from "eslint-plugin-yml";
+import * as jsoncParser from "jsonc-eslint-parser";
 import tseslint from "typescript-eslint";
+import * as yamlParser from "yaml-eslint-parser";
 
 import customRules from "./eslint-rules/index.js";
 
@@ -25,6 +30,8 @@ const config = [
       "next-env.d.ts",
       "public/",
       "design/",
+      // 機械生成の YAML は整形対象外。
+      "pnpm-lock.yaml",
     ],
   },
   js.configs.recommended,
@@ -230,6 +237,127 @@ const config = [
               },
             },
           },
+        },
+      ],
+    },
+  },
+  // --- JSON / JSONC / JSON5（package.json, tsconfig.json, renovate.json5 等） ---
+  {
+    files: ["**/*.json", "**/*.jsonc", "**/*.json5"],
+    languageOptions: {
+      parser: jsoncParser,
+    },
+    plugins: {
+      jsonc: jsoncPlugin,
+    },
+    rules: {
+      "jsonc/no-bigint-literals": "error",
+      "jsonc/no-binary-expression": "error",
+      "jsonc/no-binary-numeric-literals": "error",
+      "jsonc/no-dupe-keys": "error",
+      "jsonc/no-escape-sequence-in-identifier": "error",
+      "jsonc/no-floating-decimal": "error",
+      "jsonc/no-hexadecimal-numeric-literals": "error",
+      "jsonc/no-infinity": "error",
+      "jsonc/no-multi-str": "error",
+      "jsonc/no-nan": "error",
+      "jsonc/no-number-props": "error",
+      "jsonc/no-numeric-separators": "error",
+      "jsonc/no-octal": "error",
+      "jsonc/no-octal-escape": "error",
+      "jsonc/no-octal-numeric-literals": "error",
+      "jsonc/no-parenthesized": "error",
+      "jsonc/no-plus-sign": "error",
+      "jsonc/no-regexp-literals": "error",
+      "jsonc/no-sparse-arrays": "error",
+      "jsonc/no-template-literals": "error",
+      "jsonc/no-undefined-value": "error",
+      "jsonc/no-unicode-codepoint-escapes": "error",
+      "jsonc/no-useless-escape": "error",
+      "jsonc/space-unary-ops": "error",
+      "jsonc/valid-json-number": "error",
+
+      "jsonc/array-bracket-spacing": ["error", "never"],
+      "jsonc/comma-dangle": ["error", "never"],
+      "jsonc/comma-style": ["error", "last"],
+      "jsonc/indent": ["error", 2],
+      "jsonc/key-spacing": ["error", {
+        afterColon: true,
+        beforeColon: false,
+      }],
+      "jsonc/object-curly-newline": ["error", {
+        consistent: true,
+        multiline: true,
+      }],
+      "jsonc/object-curly-spacing": ["error", "always"],
+      "jsonc/object-property-newline": ["error", {
+        allowAllPropertiesOnSameLine: true,
+      }],
+      "jsonc/quote-props": "error",
+      "jsonc/quotes": "error",
+    },
+  },
+  // JSON5 は unquoted key とコメントが慣習のため、キーの引用は強制しない（renovate.json5 等）。
+  // trailing comma も JSON5 では有効なので、JS 側のスタイルに合わせて複数行は必須にする。
+  {
+    files: ["**/*.json5"],
+    rules: {
+      "jsonc/quote-props": "off",
+      "jsonc/comma-dangle": ["error", "always-multiline"],
+    },
+  },
+  // --- YAML（.github/workflows 等） ---
+  {
+    files: ["**/*.yml", "**/*.yaml"],
+    languageOptions: {
+      parser: yamlParser,
+    },
+    plugins: {
+      yml: ymlPlugin,
+    },
+    rules: {
+      "yml/block-mapping": "error",
+      "yml/block-sequence": "error",
+      "yml/no-empty-key": "error",
+      "yml/no-empty-sequence-entry": "error",
+      "yml/no-irregular-whitespace": "error",
+      "yml/plain-scalar": "error",
+
+      "yml/block-mapping-question-indicator-newline": "error",
+      "yml/block-sequence-hyphen-indicator-newline": "error",
+      "yml/flow-mapping-curly-newline": "error",
+      "yml/flow-mapping-curly-spacing": "error",
+      "yml/flow-sequence-bracket-newline": "error",
+      "yml/flow-sequence-bracket-spacing": "error",
+      "yml/indent": ["error", 2],
+      "yml/key-spacing": "error",
+      "yml/no-tab-indent": "error",
+      "yml/quotes": ["error", {
+        avoidEscape: true,
+        prefer: "double",
+      }],
+      "yml/spaced-comment": "error",
+    },
+  },
+  // --- Markdown（第一級ドキュメント。整形の実行系統は ESLint 一本に保つ） ---
+  // eslint-plugin-format がファイル全文を Prettier に通し、差分を autofix として適用する。
+  {
+    files: ["**/*.md"],
+    languageOptions: {
+      parser: format.parserPlain,
+    },
+    plugins: {
+      format,
+    },
+    rules: {
+      // proseWrap は preserve 厳守（always は日本語文の途中で改行されレンダリングが崩れる）。
+      // コードフェンス内は @stylistic のスタイルと衝突するため Prettier に触らせない。
+      "format/prettier": [
+        "error",
+        {
+          parser: "markdown",
+          proseWrap: "preserve",
+          embeddedLanguageFormatting: "off",
         },
       ],
     },

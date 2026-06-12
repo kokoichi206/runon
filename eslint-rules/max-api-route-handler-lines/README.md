@@ -1,6 +1,6 @@
 # max-api-route-handler-lines
 
-API route handler（`src/app/api/**​/route.ts`）の行数上限を強制するルール。
+API route handler（`src/app/api/**/route.ts`）の行数上限を強制するルール。
 
 ## なぜ
 
@@ -35,4 +35,4 @@ export async function POST(req: Request) {
 
 ## 対象
 
-`src/app/api/**​/route.ts` のみ。
+`src/app/api/**/route.ts` のみ。
