@@ -339,6 +339,23 @@ const config = [
       "yml/spaced-comment": "error",
     },
   },
+  // --- CSS（globals.css。旧 Prettier と同一の整形を ESLint 経由で当てる） ---
+  {
+    files: ["**/*.css"],
+    languageOptions: {
+      parser: format.parserPlain,
+    },
+    plugins: {
+      format,
+    },
+    rules: {
+      // printWidth は旧 .prettierrc.json と同じ 100（デフォルト 80 だと既存ファイルが巻き直される）。
+      "format/prettier": ["error", {
+        parser: "css",
+        printWidth: 100,
+      }],
+    },
+  },
   // --- Markdown（第一級ドキュメント。整形の実行系統は ESLint 一本に保つ） ---
   // eslint-plugin-format がファイル全文を Prettier に通し、差分を autofix として適用する。
   {
