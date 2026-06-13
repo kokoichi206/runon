@@ -36,7 +36,10 @@ describe("VDOT モデル", () => {
     expect(Math.abs(p.threshold - 255)).toBeLessThan(8);
     expect(Math.abs(p.marathon - 265)).toBeLessThan(8);
     expect(Math.abs(p.easy - 307)).toBeLessThan(12);
-    // 速い→遅い: I < T < M < E
+    // R(レペティション) 3:33/km(213s) 付近、I より速い
+    expect(Math.abs(p.repetition - 213)).toBeLessThan(10);
+    // 速い→遅い: R < I < T < M < E
+    expect(p.repetition).toBeLessThan(p.interval);
     expect(p.interval).toBeLessThan(p.threshold);
     expect(p.threshold).toBeLessThan(p.marathon);
     expect(p.marathon).toBeLessThan(p.easy);
