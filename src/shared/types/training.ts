@@ -314,12 +314,12 @@ export interface BlockPlanInput {
 }
 
 /**
- * 既定の週間設定: 火・木・土を練習日、各 60 分、土は 120 分。
+ * 既定の週間設定: 日・火・木・土を練習日、火・木は各 60 分、日・土は 120 分。
  */
 export const defaultAvailability = (): WeeklyAvailability =>
   [0, 1, 2, 3, 4, 5, 6].map((wd) => {
-    const isPracticeDay = wd === 2 || wd === 4 || wd === 6;
-    const maxMinutes = wd === 6 ? 120 : isPracticeDay ? 60 : 0;
+    const isPracticeDay = wd === 0 || wd === 2 || wd === 4 || wd === 6;
+    const maxMinutes = wd === 0 || wd === 6 ? 120 : isPracticeDay ? 60 : 0;
     return {
       isPracticeDay,
       maxMinutes,
