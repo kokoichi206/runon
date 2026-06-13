@@ -1,12 +1,19 @@
 import { addDays, diffDays, weekday } from "@/shared/training/date";
 import { bpmRange, zoneForWorkout } from "@/shared/training/heart-rate";
-import { trainingPaces, vdotFromPerformance } from "@/shared/training/paces";
+import {
+  predictTimeSec,
+  trainingPaces,
+  vdotFromPerformance,
+  type TrainingPaces,
+} from "@/shared/training/paces";
 import type {
+  BlockPlanInput,
   PlanInput,
   PlannedWorkout,
   RecentLoad,
   TrainingPhase,
   WeeklyAvailability,
+  WorkoutSegment,
   WorkoutType,
 } from "@/shared/types/training";
 
@@ -122,6 +129,10 @@ const workoutTitle = (type: WorkoutType): string => {
       return "テンポ走";
     case "interval":
       return "インターバル";
+    case "repetition":
+      return "レペティション";
+    case "timeTrial":
+      return "3000m TT";
     case "race":
       return "レース";
   }
@@ -311,7 +322,9 @@ export const generatePlan = (input: PlanInput): PlannedWorkout[] => {
 // ワークアウト種別の優先度（週の「ポイント練習」を選ぶ基準。高いほど重要）。
 const KEY_PRIORITY: Record<WorkoutType, number> = {
   race: 5,
+  timeTrial: 5,
   interval: 4,
+  repetition: 4,
   tempo: 3,
   long: 2,
   easy: 1,
@@ -381,4 +394,383 @@ export const summarizeByWeek = (plan: PlannedWorkout[]): WeekSummary[] => {
       totalKm: round1(s.totalKm),
     }))
     .sort((a, b) => a.weekIndex - b.weekIndex);
+};
+
+// ============================================================================
+// 5km 強化ブロック（目標レース無し）
+//
+// 設計（Daniels' Running Formula の 5km–10km の組み立てに寄せる・医学的助言ではない）:
+// - 終端は週数で固定。4 週マイクロサイクルを繰り返す: T(クルーズ) → I → R → 3000m TT。
+// - 質練習は WU/CD を挟み、本数は週間距離からの量上限で決める（T≈10%/I≈8%/R≈5%）。
+// - 各週ロング走 1 本（E ペース、TT 週は軽め）、残りはイージー。
+// - ペースは現在 VDOT から E/M/T/I/R を算出。VDOT 未取得なら強度走は保留し、
+//   まず 3000m TT で計測する（当てずっぽうの強度ペースを置かない）。
+// ============================================================================
+
+const WARMUP_KM = 1.5;
+const COOLDOWN_KM = 1.5;
+
+// つなぎ(リカバリー)の推定ペース。jog はイージー相当、walk はさらに緩い。
+const recoverPace = (easyPace: number, kind: "jog" | "walk"): number =>
+  kind === "jog" ? easyPace : Math.round(easyPace * 1.5);
+
+/**
+ * セッション（segments）の合計距離(km)と推定時間(分)。
+ * reps はつなぎを各本に付く前提で合算する（時間見積りはやや上振れ側で安全）。
+ */
+const sessionTotals = (
+  segments: WorkoutSegment[],
+  easyPace: number
+): {
+  distanceKm: number;
+  estMinutes: number;
+} => {
+  let dist = 0;
+  let sec = 0;
+  for (const s of segments) {
+    if (s.kind === "run") {
+      dist += s.distanceKm;
+      sec += s.distanceKm * s.paceSecPerKm;
+    } else {
+      const recSecPerKm = recoverPace(easyPace, s.recoverKind);
+      dist += (s.reps * (s.repMeters + s.recoverMeters)) / 1000;
+      sec +=
+        s.reps *
+        ((s.repMeters / 1000) * s.paceSecPerKm + (s.recoverMeters / 1000) * recSecPerKm);
+    }
+  }
+  return {
+    distanceKm: dist,
+    estMinutes: sec / 60,
+  };
+};
+
+interface RepsSpec {
+  type: WorkoutType;
+  role: "threshold" | "interval" | "repetition";
+  repMeters: number;
+  recoverMeters: number;
+  recoverKind: "jog" | "walk";
+  pace: number;
+  baseReps: number;
+  minReps: number;
+}
+
+/**
+ * 週サイクルに応じた反復セッションの仕様（Daniels の量上限を週間距離から算出）。
+ * cycleWeek 0=T(クルーズ), 1=I, 2=R。
+ */
+const repsSpecForCycle = (
+  cycleWeek: number,
+  paces: TrainingPaces,
+  weeklyKm: number
+): RepsSpec => {
+  if (cycleWeek === 0) {
+    return {
+      type: "tempo",
+      role: "threshold",
+      repMeters: 1000,
+      recoverMeters: 200,
+      recoverKind: "jog",
+      pace: paces.threshold,
+      baseReps: clamp(Math.round(weeklyKm * 0.1), 3, 6), // T ≤ 週間の約10%
+      minReps: 3,
+    };
+  }
+  if (cycleWeek === 1) {
+    return {
+      type: "interval",
+      role: "interval",
+      repMeters: 1000,
+      recoverMeters: 400,
+      recoverKind: "jog",
+      pace: paces.interval,
+      baseReps: clamp(Math.round(weeklyKm * 0.08), 3, 5), // I ≤ 週間の約8%
+      minReps: 3,
+    };
+  }
+  return {
+    type: "repetition",
+    role: "repetition",
+    repMeters: 200,
+    recoverMeters: 200,
+    recoverKind: "jog",
+    pace: paces.repetition,
+    baseReps: clamp(Math.round((weeklyKm * 0.05 * 1000) / 200), 6, 10), // R ≤ 週間の約5%
+    minReps: 4,
+  };
+};
+
+/**
+ * 反復セッションを WU/CD で挟んで組む。確保時間に収まるよう本数を減らす。
+ */
+const buildRepsSession = (
+  spec: RepsSpec,
+  easyPace: number,
+  maxMinutes: number
+): {
+  segments: WorkoutSegment[];
+  cappedByTime: boolean;
+} => {
+  const make = (reps: number): WorkoutSegment[] => [
+    {
+      kind: "run",
+      role: "warmup",
+      distanceKm: WARMUP_KM,
+      paceSecPerKm: easyPace,
+    },
+    {
+      kind: "reps",
+      role: spec.role,
+      reps,
+      repMeters: spec.repMeters,
+      paceSecPerKm: spec.pace,
+      recoverMeters: spec.recoverMeters,
+      recoverKind: spec.recoverKind,
+    },
+    {
+      kind: "run",
+      role: "cooldown",
+      distanceKm: COOLDOWN_KM,
+      paceSecPerKm: easyPace,
+    },
+  ];
+  let reps = spec.baseReps;
+  while (reps > spec.minReps && sessionTotals(make(reps), easyPace).estMinutes > maxMinutes) {
+    reps -= 1;
+  }
+  const cappedByTime =
+    reps < spec.baseReps || sessionTotals(make(reps), easyPace).estMinutes > maxMinutes;
+  return {
+    segments: make(reps),
+    cappedByTime,
+  };
+};
+
+/**
+ * 3000m TT セッション。WU + 3000m + CD。
+ * 目標ペースは現在 VDOT からの 3000m 予測ペース。VDOT 無しなら全力（ペース非表示）。
+ */
+const buildTimeTrial = (
+  vdot: number | null,
+  easyPace: number
+): {
+  segments: WorkoutSegment[];
+  distanceKm: number;
+  estMinutes: number;
+  pace: number | undefined;
+  note: string;
+} => {
+  const ttPace = vdot !== null ? Math.round(predictTimeSec(vdot, 3) / 3) : null;
+  // 時間見積りのみに使う努力ペース（表示する目標ペースではない）。VDOT 無しは控えめに見積もる。
+  const effortPace = ttPace ?? Math.round(easyPace * 0.85);
+  const wu = 2.0;
+  const cd = 1.5;
+  const distanceKm = wu + 3 + cd;
+  const estMinutes = (wu * easyPace + 3 * effortPace + cd * easyPace) / 60;
+  const segments: WorkoutSegment[] = [
+    {
+      kind: "run",
+      role: "warmup",
+      distanceKm: wu,
+      paceSecPerKm: easyPace,
+    },
+    ...(ttPace !== null
+      ? [
+          {
+            kind: "run",
+            role: "steady",
+            distanceKm: 3,
+            paceSecPerKm: ttPace,
+          } satisfies WorkoutSegment,
+        ]
+      : []),
+    {
+      kind: "run",
+      role: "cooldown",
+      distanceKm: cd,
+      paceSecPerKm: easyPace,
+    },
+  ];
+  return {
+    segments,
+    distanceKm,
+    estMinutes,
+    pace: ttPace ?? undefined,
+    note: ttPace !== null ? "3000m を目標ペースで（VDOT 計測）" : "3000m 全力（初回ベンチマーク・VDOT 計測）",
+  };
+};
+
+interface QualityDayFields {
+  type: WorkoutType;
+  segments: WorkoutSegment[];
+  distanceKm: number;
+  estMinutes: number;
+  pace: number;
+  cappedByTime: boolean;
+}
+
+/**
+ * RepsSpec から 1 日分のフィールド（種別・segments・距離・時間・ペース）を組む。
+ */
+const repsDayFields = (spec: RepsSpec, easyPace: number, maxMinutes: number): QualityDayFields => {
+  const built = buildRepsSession(spec, easyPace, maxMinutes);
+  const totals = sessionTotals(built.segments, easyPace);
+  return {
+    type: spec.type,
+    segments: built.segments,
+    distanceKm: totals.distanceKm,
+    estMinutes: totals.estMinutes,
+    pace: spec.pace,
+    cappedByTime: built.cappedByTime,
+  };
+};
+
+/**
+ * 目標レースを置かない 5km 強化ブロックを生成する純粋関数。
+ */
+export const generateBlockPlan = (input: BlockPlanInput): PlannedWorkout[] => {
+  const { startDate, weeks, targetDistanceKm, fitness, availability } = input;
+  if (weeks <= 0) return [];
+  const skipped = new Set(input.skippedDates ?? []);
+  const totalDays = weeks * 7 - 1;
+
+  const paces = fitness.currentVdot !== null ? trainingPaces(fitness.currentVdot) : null;
+  const easyPace = paces ? paces.easy : fitness.easyPaceSecPerKm;
+
+  // ロング/質曜日の割当は race モードと同じ規則を再利用。
+  const availableWeekdays = [0, 1, 2, 3, 4, 5, 6].filter(
+    (wd) => availability[wd]?.isPracticeDay && (availability[wd]?.maxMinutes ?? 0) > 0
+  );
+  const byTimeDesc = [...availableWeekdays].sort(
+    (a, b) => availability[b]!.maxMinutes - availability[a]!.maxMinutes || b - a
+  );
+  const longRunWeekday = byTimeDesc[0] ?? null;
+  const requestedRuns = input.runsPerWeek ?? availableWeekdays.length;
+  const runDays = clamp(
+    requestedRuns,
+    availableWeekdays.length > 0 ? 1 : 0,
+    availableWeekdays.length
+  );
+  const selectedWeekdays = selectRunWeekdays(
+    availableWeekdays,
+    longRunWeekday,
+    runDays,
+    availability
+  );
+  // 質練習日: ロング走以外で時間が取れる順。練習日数に応じて主 Q（必ず）と副 Q（余裕がある時）を割り当てる。
+  // 1 日しか取れない場合は同じ日で主 Q を回す（副 Q は無し）。
+  const qualityCandidates = [...selectedWeekdays]
+    .filter((wd) => wd !== longRunWeekday)
+    .sort((a, b) => availability[b]!.maxMinutes - availability[a]!.maxMinutes);
+  const primaryQualityWeekday = qualityCandidates[0] ?? longRunWeekday;
+  const secondaryQualityWeekday = qualityCandidates[1] ?? null;
+
+  // ロング走距離（5k 向けに中庸・概ね一定。現状の最長走を大きく超えない）。
+  const longCap = fitness.longestKm > 0 ? fitness.longestKm * 1.1 : targetDistanceKm * 2;
+  const baseLong = clamp(Math.min(targetDistanceKm * 2, fitness.weeklyKm * 0.3), 5, longCap);
+  const easyKm = clamp(0.5 * baseLong, 3, baseLong * 0.8);
+
+  const out: PlannedWorkout[] = [];
+
+  for (let d = 0; d <= totalDays; d++) {
+    const date = addDays(startDate, d);
+    const w = Math.floor(d / 7);
+    const wd = weekday(date);
+    const cycleWeek = w % 4;
+    const isTTWeek = cycleWeek === 3;
+    const maxMin = availability[wd]?.maxMinutes ?? 0;
+
+    let type: WorkoutType = "rest";
+    let distanceKm = 0;
+    let pace: number | undefined = easyPace;
+    let note: string | undefined;
+    let segments: WorkoutSegment[] | undefined;
+    let estMinutes = 0;
+    let cappedByTime = false;
+    let preComputed = false; // segments で距離/時間を確定済みなら連続走キャップを通さない
+
+    if (skipped.has(date)) {
+      type = "rest";
+      note = "スキップ（お休み）";
+    } else if (!selectedWeekdays.has(wd)) {
+      type = "rest";
+    } else if (wd === primaryQualityWeekday) {
+      // 主 Q: TT 週は 3000m TT、その他は rotation（T→I→R）。VDOT 無しは保留。
+      if (isTTWeek) {
+        const tt = buildTimeTrial(fitness.currentVdot, easyPace);
+        type = "timeTrial";
+        segments = tt.segments;
+        distanceKm = tt.distanceKm;
+        estMinutes = tt.estMinutes;
+        pace = tt.pace;
+        note = tt.note;
+        preComputed = true;
+      } else if (paces) {
+        const f = repsDayFields(repsSpecForCycle(cycleWeek, paces, fitness.weeklyKm), easyPace, maxMin);
+        ({ type, segments, distanceKm, estMinutes, pace, cappedByTime } = f);
+        preComputed = true;
+      } else {
+        type = "easy";
+        distanceKm = easyKm;
+        note = "強度走は VDOT 取得後（まず 3000m TT で計測）";
+      }
+    } else if (secondaryQualityWeekday !== null && wd === secondaryQualityWeekday && paces) {
+      // 副 Q: 主 Q を補完。I/R 週は閾値(T)、T 週は流し付きイージー、TT 週は軽め。
+      // いずれも主 Q より KEY_PRIORITY を下げ、週の ★ を主 Q に残す。
+      if (isTTWeek) {
+        type = "easy";
+        distanceKm = easyKm;
+        note = "TT に備えて軽め";
+      } else if (cycleWeek === 0) {
+        type = "easy";
+        distanceKm = easyKm;
+        note = "流し 6×100m（ウィンドスプリント）";
+      } else {
+        const spec = repsSpecForCycle(0, paces, fitness.weeklyKm); // 閾値(T)
+        spec.baseReps = clamp(Math.round(spec.baseReps * 0.7), spec.minReps, spec.baseReps);
+        const f = repsDayFields(spec, easyPace, maxMin);
+        ({ type, segments, distanceKm, estMinutes, pace, cappedByTime } = f);
+        preComputed = true;
+      }
+    } else if (wd === longRunWeekday) {
+      type = "long";
+      distanceKm = isTTWeek ? baseLong * 0.6 : baseLong;
+      pace = easyPace;
+    } else {
+      type = "easy";
+      distanceKm = easyKm;
+    }
+
+    // 連続走(easy/long)の距離→時間・確保時間キャップ。segments 確定分は対象外。
+    if (!preComputed) {
+      estMinutes = (distanceKm * (pace ?? easyPace)) / 60;
+      if (type !== "rest" && maxMin > 0 && estMinutes > maxMin) {
+        distanceKm = (maxMin * 60) / (pace ?? easyPace);
+        estMinutes = maxMin;
+        cappedByTime = true;
+      }
+    }
+
+    const hrZone = type === "rest" ? undefined : zoneForWorkout(type);
+    out.push({
+      date,
+      weekIndex: w,
+      phase: "build",
+      type,
+      distanceKm: round1(distanceKm),
+      estMinutes: Math.round(estMinutes),
+      paceSecPerKm: type === "rest" || pace == null ? undefined : Math.round(pace),
+      hrZone,
+      hrBpmRange:
+        hrZone && fitness.maxHrObserved ? bpmRange(fitness.maxHrObserved, hrZone) : undefined,
+      title: workoutTitle(type),
+      note,
+      cappedByTime: cappedByTime || undefined,
+      segments,
+    });
+  }
+
+  markKeyWorkouts(out);
+  return out;
 };

@@ -48,6 +48,8 @@ const TYPE_ZONE: Record<WorkoutType, number | undefined> = {
   long: 2,
   tempo: 4,
   interval: 5,
+  repetition: 5,
+  timeTrial: 5,
   race: 4,
 };
 

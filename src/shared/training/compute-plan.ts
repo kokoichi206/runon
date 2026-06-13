@@ -1,5 +1,10 @@
 import { buildProgression, type ProgressionSummary } from "@/shared/training/paces";
-import { generatePlan, summarizeByWeek, type WeekSummary } from "@/shared/training/plan";
+import {
+  generateBlockPlan,
+  generatePlan,
+  summarizeByWeek,
+  type WeekSummary,
+} from "@/shared/training/plan";
 import type { PlannedWorkout, TrainingPlanRequest } from "@/shared/types/training";
 
 /**
@@ -19,6 +24,24 @@ export interface TrainingPlanResult {
  * 将来 LLM 等を合成）の双方から再利用する単一エントリ。
  */
 export const computeTrainingPlan = (req: TrainingPlanRequest): TrainingPlanResult => {
+  // 5km 強化ブロック（目標レース無し）。progression は目標が無いので持たない。
+  if (req.mode === "block") {
+    const plan = generateBlockPlan({
+      startDate: req.today,
+      weeks: req.weeks,
+      targetDistanceKm: req.targetDistanceKm,
+      fitness: req.fitness,
+      availability: req.availability,
+      runsPerWeek: req.runsPerWeek,
+      skippedDates: req.skippedDates,
+    });
+    return {
+      plan,
+      weeks: summarizeByWeek(plan),
+      progression: null,
+    };
+  }
+
   const plan = generatePlan({
     startDate: req.today,
     race: req.race,

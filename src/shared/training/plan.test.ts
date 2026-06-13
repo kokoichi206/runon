@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { addDays, diffDays, weekday } from "@/shared/training/date";
 import { estimateFitness } from "@/shared/training/fitness";
-import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
+import { generateBlockPlan, generatePlan, summarizeByWeek } from "@/shared/training/plan";
 import {
   defaultAvailability,
   type Activity,
@@ -439,5 +439,130 @@ describe("generatePlan（ACWR 増量補正）", () => {
       availability: defaultAvailability(),
     });
     expect(a).toEqual(b);
+  });
+});
+
+describe("generateBlockPlan（5km 強化ブロック）", () => {
+  const blockFitness: Fitness = {
+    weeklyKm: 40,
+    longestKm: 12,
+    easyPaceSecPerKm: 300,
+    currentVdot: 50,
+    maxHrObserved: 190,
+    recentLoad: null,
+  };
+  const make = (over: Partial<Parameters<typeof generateBlockPlan>[0]> = {}) =>
+    generateBlockPlan({
+      startDate: START,
+      weeks: 4,
+      targetDistanceKm: 5,
+      fitness: blockFitness,
+      availability: defaultAvailability(),
+      ...over,
+    });
+
+  it("週数×7 日を出力（startDate 起点）", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    expect(plan.length).toBe(4 * 7);
+    expect(plan[0]!.date).toBe(START);
+  });
+
+  it("各週のポイント練習が T→I→R→TT の順に回る", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const keyType = (wk: number) => plan.find((p) => p.weekIndex === wk && p.isKey)!.type;
+    expect(keyType(0)).toBe("tempo");
+    expect(keyType(1)).toBe("interval");
+    expect(keyType(2)).toBe("repetition");
+    expect(keyType(3)).toBe("timeTrial");
+  });
+
+  it("質練習は segments（WU/CD と反復）を持つ", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const interval = plan.find((p) => p.type === "interval")!;
+    expect(interval.segments).toBeDefined();
+    const reps = interval.segments!.find((s) => s.kind === "reps");
+    expect(reps).toBeDefined();
+    if (reps && reps.kind === "reps") {
+      expect(reps.reps).toBeGreaterThanOrEqual(3);
+      expect(reps.repMeters).toBe(1000);
+    }
+  });
+
+  it("3000m TT は WU+3000m+CD を含む（VDOT 有りは目標ペース付き）", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const tt = plan.find((p) => p.type === "timeTrial")!;
+    expect(tt.paceSecPerKm).toBeGreaterThan(0); // VDOT 有り → 目標ペース表示
+    const effort = tt.segments!.find((s) => s.kind === "run" && s.role === "steady");
+    expect(effort).toBeDefined();
+  });
+
+  it("確保時間が短いと反復本数が減り cappedByTime が立つ", () => {
+    // 全練習日を 20 分に絞る（質練習はどの日に置かれても WU/CD で埋まり反復最小化）。
+    const av: WeeklyAvailability = defaultAvailability().map((d) =>
+      d.isPracticeDay
+        ? {
+            isPracticeDay: true,
+            maxMinutes: 20,
+          }
+        : d);
+    const plan = make({
+      weeks: 4,
+      availability: av,
+    });
+    const tempo = plan.find((p) => p.type === "tempo")!;
+    expect(tempo.cappedByTime).toBe(true);
+  });
+
+  it("VDOT 未取得なら強度走を出さず easy/long と TT のみ", () => {
+    const plan = make({
+      weeks: 4,
+      fitness: {
+        ...blockFitness,
+        currentVdot: null,
+      },
+    });
+    const types = new Set(plan.map((p) => p.type));
+    expect(types.has("interval")).toBe(false);
+    expect(types.has("repetition")).toBe(false);
+    expect(types.has("tempo")).toBe(false);
+    expect(types.has("timeTrial")).toBe(true);
+    expect(types.has("long")).toBe(true);
+  });
+
+  it("練習日が3日(火木土)なら I 週は主I＋副T の週2本になる", () => {
+    const plan = make({
+      weeks: 4,
+    }); // 既定は火木土の3日
+    const wk1 = new Set(plan.filter((p) => p.weekIndex === 1).map((p) => p.type));
+    expect(wk1.has("interval")).toBe(true); // 主 Q
+    expect(wk1.has("tempo")).toBe(true); // 副 Q（閾値）
+    // ★ は主 Q（I=優先度4 > T=3）に残る
+    expect(plan.find((p) => p.weekIndex === 1 && p.isKey)!.type).toBe("interval");
+  });
+
+  it("練習日が2日なら副Qは無し（質は週1本）", () => {
+    // 木を非練習日にして 火・土 の2日に。
+    const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
+      wd === 4
+        ? {
+            isPracticeDay: false,
+            maxMinutes: 0,
+          }
+        : d);
+    const plan = make({
+      weeks: 4,
+      availability: av,
+    });
+    const wk1 = new Set(plan.filter((p) => p.weekIndex === 1).map((p) => p.type));
+    expect(wk1.has("interval")).toBe(true);
+    expect(wk1.has("tempo")).toBe(false); // 副 Q は付かない
   });
 });
