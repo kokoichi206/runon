@@ -32,6 +32,9 @@ const config = [
       "design/",
       // 機械生成の YAML は整形対象外。
       "pnpm-lock.yaml",
+      // Chrome 拡張 / API CLI（素のブラウザ・Node JS。アプリの型/lint 体系とは独立）は対象外。
+      "tools/strava-bulk-uploader/",
+      "tools/strava-api-uploader/",
     ],
   },
   js.configs.recommended,

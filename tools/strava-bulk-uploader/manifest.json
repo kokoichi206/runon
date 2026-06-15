@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Strava Bulk Uploader",
+  "version": "2.0.0",
+  "description": "指定フォルダの .fit/.tcx/.gpx を /upload/files へ直接POSTで全件アップロードする(遷移なし・ディスクコピーなし)",
+  "host_permissions": ["https://www.strava.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://www.strava.com/upload/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "world": "MAIN"
+    }
+  ]
+}
