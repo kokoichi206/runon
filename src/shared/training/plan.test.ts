@@ -212,7 +212,7 @@ describe("generatePlan", () => {
       runsPerWeek: 10,
     });
     const wk1 = plan.filter((p) => p.weekIndex === 1 && p.type !== "rest");
-    expect(new Set(wk1.map((p) => weekday(p.date))).size).toBe(3); // 可能日=3
+    expect(new Set(wk1.map((p) => weekday(p.date))).size).toBe(4); // 可能日=4
   });
 
   it("各週にポイント練習(isKey)が1つだけ立つ", () => {
@@ -537,10 +537,10 @@ describe("generateBlockPlan（5km 強化ブロック）", () => {
     expect(types.has("long")).toBe(true);
   });
 
-  it("練習日が3日(火木土)なら I 週は主I＋副T の週2本になる", () => {
+  it("練習日が4日(日火木土)なら I 週は主I＋副T の週2本になる", () => {
     const plan = make({
       weeks: 4,
-    }); // 既定は火木土の3日
+    }); // 既定は日火木土の4日
     const wk1 = new Set(plan.filter((p) => p.weekIndex === 1).map((p) => p.type));
     expect(wk1.has("interval")).toBe(true); // 主 Q
     expect(wk1.has("tempo")).toBe(true); // 副 Q（閾値）
@@ -549,9 +549,9 @@ describe("generateBlockPlan（5km 強化ブロック）", () => {
   });
 
   it("練習日が2日なら副Qは無し（質は週1本）", () => {
-    // 木を非練習日にして 火・土 の2日に。
+    // 既定の日火木土から日と木を非練習日にして 火・土 の2日に。
     const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
-      wd === 4
+      wd === 4 || wd === 0
         ? {
             isPracticeDay: false,
             maxMinutes: 0,
