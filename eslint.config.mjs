@@ -179,8 +179,11 @@ const config = [
         semi: true,
       }).rules,
 
-      // エスケープ回避のための逆クォート（例: 内側に " を含む文字列のシングルクォート）は
-      // 旧 Prettier 同様に許容する（customize は avoidEscape: false 固定のため上書き）。
+      // 改行コードは LF に統一。
+      "@stylistic/linebreak-style": ["error", "unix"],
+
+      // エスケープ回避のための逆クォート（例: 内側に " を含む文字列のシングルクォート）は許容する。
+      // （customize は avoidEscape: false 固定のため上書き）。
       "@stylistic/quotes": ["error", "double", {
         allowTemplateLiterals: "always",
         avoidEscape: true,
