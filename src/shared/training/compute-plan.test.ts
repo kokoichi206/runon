@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { computeTrainingPlan } from "@/shared/training/compute-plan";
 import {
   defaultAvailability,
+  trainingPlanRequestSchema,
   type Fitness,
   type TrainingPlanRequest,
 } from "@/shared/types/training";
@@ -142,5 +143,51 @@ describe("computeTrainingPlan（5km 強化ブロック）", () => {
     expect(types.has("interval")).toBe(false);
     expect(types.has("repetition")).toBe(false);
     expect(types.has("timeTrial")).toBe(true);
+  });
+});
+
+describe("fitness.recentLoad の契約（サーバー検証経路）", () => {
+  const spikingLoad = {
+    acute: 350,
+    chronic: 200,
+    ratio: 1.75,
+  };
+  const raceReq = (recentLoad?: typeof spikingLoad) => ({
+    mode: "race" as const,
+    today: "2026-01-01",
+    race: {
+      id: "r1",
+      name: "テスト 10K",
+      date: ymdPlus("2026-01-01", 70),
+      distanceKm: 10,
+    },
+    fitness: {
+      weeklyKm: 30,
+      longestKm: 12,
+      easyPaceSecPerKm: 360,
+      currentVdot: 45,
+      maxHrObserved: 185,
+      ...(recentLoad
+        ? {
+            recentLoad,
+          }
+        : {}),
+    },
+    availability: defaultAvailability(),
+    runsPerWeek: 3,
+  });
+
+  it("検証(parse)後も recentLoad が保持される（ストリップされない）", () => {
+    const parsed = trainingPlanRequestSchema.parse(raceReq(spikingLoad));
+    expect(parsed.fitness.recentLoad).toEqual(spikingLoad);
+  });
+
+  it("検証経路でも ACWR 急増で序盤ロングが縮む（UI 表示と計画が一致）", () => {
+    const firstLong = (req: unknown) => {
+      const parsed = trainingPlanRequestSchema.parse(req);
+      return computeTrainingPlan(parsed).plan.find((p) => p.type === "long")!.distanceKm;
+    };
+    // recentLoad 無し（factor=1.0）より、急増あり（factor=0.8）の方が小さい。
+    expect(firstLong(raceReq(spikingLoad))).toBeLessThan(firstLong(raceReq()));
   });
 });
