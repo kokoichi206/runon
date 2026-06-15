@@ -327,7 +327,19 @@ export const defaultAvailability = (): WeeklyAvailability =>
   });
 
 /**
+ * 実測負荷（ACWR）の検証スキーマ。
+ */
+export const recentLoadSchema = z.object({
+  acute: z.number(),
+  chronic: z.number(),
+  ratio: z.number(),
+}) satisfies z.ZodType<RecentLoad>;
+
+/**
  * 推定走力（Fitness）の検証スキーマ。サーバー境界（Server Action）で入力を検証する。
+ *
+ * recentLoad は client が算出した ACWR。これを通さないと zod のストリップで欠落し、
+ * サーバー経路で序盤の負荷調整（startVolumeFactor）が効かなくなる（UI 表示と不一致になる）。
  */
 export const fitnessSchema = z.object({
   weeklyKm: z.number(),
@@ -335,6 +347,7 @@ export const fitnessSchema = z.object({
   easyPaceSecPerKm: z.number(),
   currentVdot: z.number().nullable(),
   maxHrObserved: z.number().nullable(),
+  recentLoad: recentLoadSchema.nullable().optional(),
 }) satisfies z.ZodType<Fitness>;
 
 /**
