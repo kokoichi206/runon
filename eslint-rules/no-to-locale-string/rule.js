@@ -32,7 +32,10 @@ export default {
           node.callee.property.type === "Identifier" &&
           node.callee.property.name === "toLocaleString"
         ) {
-          context.report({ node, messageId: "noToLocaleString" });
+          context.report({
+            node,
+            messageId: "noToLocaleString",
+          });
         }
       },
     };

@@ -58,10 +58,24 @@ export interface TrainingPaces {
   marathon: number;
   threshold: number;
   interval: number;
+  /**
+   * レペティション(R)。短い反復で走る最速ゾーン。
+   */
+  repetition: number;
 }
 
 // ゾーンごとの %VO2max（VDOT に対する割合）。I は vVDOT(=100%)。
-const ZONE_PCT = { easy: 0.7, marathon: 0.84, threshold: 0.88, interval: 1.0 };
+const ZONE_PCT = {
+  easy: 0.7,
+  marathon: 0.84,
+  threshold: 0.88,
+  interval: 1.0,
+};
+
+// R(レペティション)は %VO2max では定義されない（脚の速さ基準）。実用上は vVO2max(=I)
+// よりわずかに速い速度で走る。Daniels 表の中域(VDOT~50 で R≈3:33/km)に数秒で合う係数として
+// I 速度の +8% を採用する（公式ベースの近似で、表値の厳密転記ではない）。
+const R_VELOCITY_FACTOR = 1.08;
 
 const paceFromVo2 = (vo2: number): number => 60000 / velocityFromVo2(vo2);
 
@@ -74,6 +88,7 @@ export const trainingPaces = (vdot: number): TrainingPaces => {
     marathon: Math.round(paceFromVo2(ZONE_PCT.marathon * vdot)),
     threshold: Math.round(paceFromVo2(ZONE_PCT.threshold * vdot)),
     interval: Math.round(paceFromVo2(ZONE_PCT.interval * vdot)),
+    repetition: Math.round(60000 / (velocityFromVo2(ZONE_PCT.interval * vdot) * R_VELOCITY_FACTOR)),
   };
 };
 
@@ -97,7 +112,10 @@ const hrFilteredPerformances = (pool: Activity[], maxHr: number | null): Perform
     const hard = pool.filter((a) => a.avgHr !== null && a.avgHr >= 0.8 * maxHr);
     if (hard.length > 0) p = hard;
   }
-  return p.map((a) => ({ distanceKm: a.distanceKm, timeSec: a.durationSec }));
+  return p.map((a) => ({
+    distanceKm: a.distanceKm,
+    timeSec: a.durationSec,
+  }));
 };
 
 /**
@@ -121,11 +139,17 @@ export const estimateCurrentVdot = (
   for (const a of pool) {
     for (const b of a.bestEfforts ?? []) {
       if (b.distanceM >= MIN_EFFORT_M && b.timeSec > 0) {
-        measured.push({ distanceKm: b.distanceM / 1000, timeSec: b.timeSec });
+        measured.push({
+          distanceKm: b.distanceM / 1000,
+          timeSec: b.timeSec,
+        });
       }
     }
     if (a.workoutKind === "race") {
-      measured.push({ distanceKm: a.distanceKm, timeSec: a.durationSec });
+      measured.push({
+        distanceKm: a.distanceKm,
+        timeSec: a.durationSec,
+      });
     }
   }
 

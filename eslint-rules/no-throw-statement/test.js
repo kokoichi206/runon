@@ -3,7 +3,10 @@ import { RuleTester } from "eslint";
 import rule from "./rule.js";
 
 const ruleTester = new RuleTester({
-  languageOptions: { ecmaVersion: 2022, sourceType: "module" },
+  languageOptions: {
+    ecmaVersion: 2022,
+    sourceType: "module",
+  },
 });
 
 ruleTester.run("no-throw-statement", rule, {
@@ -33,7 +36,9 @@ ruleTester.run("no-throw-statement", rule, {
   invalid: [
     {
       code: `throw new Error("boom");`,
-      errors: [{ messageId: "noThrowStatement" }],
+      errors: [{
+        messageId: "noThrowStatement",
+      }],
     },
     {
       code: `
@@ -43,7 +48,11 @@ ruleTester.run("no-throw-statement", rule, {
           return value;
         }
       `,
-      errors: [{ messageId: "noThrowStatement" }, { messageId: "noThrowStatement" }],
+      errors: [{
+        messageId: "noThrowStatement",
+      }, {
+        messageId: "noThrowStatement",
+      }],
     },
     // catch 内での再 throw も禁止。
     {
@@ -54,7 +63,9 @@ ruleTester.run("no-throw-statement", rule, {
           throw cause;
         }
       `,
-      errors: [{ messageId: "noThrowStatement" }],
+      errors: [{
+        messageId: "noThrowStatement",
+      }],
     },
   ],
 });

@@ -12,14 +12,22 @@ export const POST = async (request: Request): Promise<NextResponse> => {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "JSON ボディが不正です。" }, { status: 400 });
+    return NextResponse.json({
+      error: "JSON ボディが不正です。",
+    }, {
+      status: 400,
+    });
   }
 
   const result = await roundTripHandler(body);
   if (!result.ok) {
     return NextResponse.json(
-      { error: result.error.message },
-      { status: httpStatusFor(result.error) }
+      {
+        error: result.error.message,
+      },
+      {
+        status: httpStatusFor(result.error),
+      }
     );
   }
   return NextResponse.json(result.value);

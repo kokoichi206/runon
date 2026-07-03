@@ -14,7 +14,9 @@ const meta = {
     layout: "fullscreen",
     nextjs: {
       appDirectory: true,
-      navigation: { pathname: "/" },
+      navigation: {
+        pathname: "/",
+      },
     },
   },
 } satisfies Meta<typeof SiteNav>;
@@ -33,6 +35,10 @@ export const Home: Story = {};
  */
 export const Training: Story = {
   parameters: {
-    nextjs: { navigation: { pathname: "/training" } },
+    nextjs: {
+      navigation: {
+        pathname: "/training",
+      },
+    },
   },
 };

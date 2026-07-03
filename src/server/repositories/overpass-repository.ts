@@ -4,7 +4,10 @@ import { err, ok, type Result, safeTry } from "@/shared/result";
 import type { OverpassWay, Profile } from "@/shared/types/round-trip";
 
 interface OverpassResponse {
-  elements: { type: string; id?: number }[];
+  elements: {
+    type: string;
+    id?: number;
+  }[];
 }
 
 /**
@@ -109,10 +112,11 @@ export const overpassRepository = {
           "User-Agent": userAgent,
           Accept: "application/json",
         },
-        body: new URLSearchParams({ data: query }).toString(),
+        body: new URLSearchParams({
+          data: query,
+        }).toString(),
         signal: options.signal,
-      })
-    );
+      }));
     const fetchMs = Date.now() - startedAt;
     if (!fetched.ok) {
       return err(appError.upstream("Overpass への接続に失敗しました。", fetched.error));
@@ -141,6 +145,10 @@ export const overpassRepository = {
     for (const e of elements) {
       if (e.type === "node" && typeof e.id === "number") signalNodes.add(e.id);
     }
-    return ok({ ways, fetchMs, signalNodes });
+    return ok({
+      ways,
+      fetchMs,
+      signalNodes,
+    });
   },
 };

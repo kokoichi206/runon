@@ -1,5 +1,5 @@
 /**
- * API route handler（src/app/api/**​/route.ts）の行数上限を強制するルール。
+ * API route handler（src/app/api 配下の route.ts）の行数上限を強制するルール。
  *
  * route は薄く保ち、ロジックは src/server/ 側（handlers/usecases/lib）へ寄せる。
  * 空行・コメント行は数えない。
@@ -23,7 +23,11 @@ export default {
       {
         type: "object",
         properties: {
-          maxLines: { type: "integer", minimum: 1, default: 80 },
+          maxLines: {
+            type: "integer",
+            minimum: 1,
+            default: 80,
+          },
         },
         additionalProperties: false,
       },
@@ -58,8 +62,14 @@ export default {
           context.report({
             node,
             messageId: "tooManyLines",
-            data: { count, max: maxLines },
-            loc: { line: 1, column: 0 },
+            data: {
+              count,
+              max: maxLines,
+            },
+            loc: {
+              line: 1,
+              column: 0,
+            },
           });
         }
       },

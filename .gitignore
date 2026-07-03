@@ -12,3 +12,12 @@ next-env.d.ts
 
 # 誤って作られた pnpm ストアの stray ディレクトリ
 /~/
+
+# Strava API uploader のローカル秘密情報・トークン・実行状態(コミット禁止)
+/tools/strava-api-uploader/secrets.json
+/tools/strava-api-uploader/tokens.json
+/tools/strava-api-uploader/done.json
+/tools/strava-api-uploader/results.csv
+
+# 配布用 zip(ソースから再生成できるビルド成果物)
+/tools/*.zip

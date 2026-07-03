@@ -8,21 +8,35 @@ import { generateTrainingPlanAction } from "@/server/handlers/actions/training";
 import { type TrainingPlanResult } from "@/shared/training/compute-plan";
 import { isoToYmdLocal } from "@/shared/training/date";
 import { estimateFitness } from "@/shared/training/fitness";
-import { type ProgressionSummary } from "@/shared/training/paces";
+import { trainingPaces, type ProgressionSummary } from "@/shared/training/paces";
 import { summarizeByWeek } from "@/shared/training/plan";
 import type {
+  Fitness,
   PlannedWorkout,
   Race,
   TrainingPhase,
   TrainingPlanRequest,
+  WorkoutSegment,
 } from "@/shared/types/training";
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
 const RACE_PRESETS = [
-  { label: "5K", km: 5 },
-  { label: "10K", km: 10 },
-  { label: "ハーフ", km: 21.1 },
-  { label: "フル", km: 42.2 },
+  {
+    label: "5K",
+    km: 5,
+  },
+  {
+    label: "10K",
+    km: 10,
+  },
+  {
+    label: "ハーフ",
+    km: 21.1,
+  },
+  {
+    label: "フル",
+    km: 42.2,
+  },
 ];
 
 const PHASE_LABEL: Record<TrainingPhase, string> = {
@@ -39,6 +53,8 @@ const TYPE_STYLE: Record<string, string> = {
   long: "text-cat-long font-semibold",
   tempo: "text-cat-hard font-semibold",
   interval: "text-cat-hard font-semibold",
+  repetition: "text-cat-hard font-semibold",
+  timeTrial: "text-cat-race font-bold",
   race: "text-cat-race font-bold",
 };
 
@@ -47,6 +63,36 @@ const paceLabel = (secPerKm: number): string => {
   const s = Math.round(secPerKm % 60);
   return `${m}:${String(s).padStart(2, "0")}/km`;
 };
+
+const kmLabel = (km: number): string => `${Math.round(km * 10) / 10}km`;
+
+const SEG_REP_LABEL: Record<"threshold" | "interval" | "repetition", string> = {
+  threshold: "T",
+  interval: "I",
+  repetition: "R",
+};
+
+const SEG_RUN_PREFIX: Record<"warmup" | "cooldown" | "steady" | "easy" | "long", string> = {
+  warmup: "WU ",
+  cooldown: "CD ",
+  steady: "",
+  easy: "",
+  long: "",
+};
+
+/**
+ * Daniels 式セッション（segments）を 1 行の人間可読文に変換する。
+ * 例: "WU 1.5km + 5×1000m I @4:00/km（つなぎ 400m jog） + CD 1.5km"
+ */
+const describeSession = (segments: WorkoutSegment[]): string =>
+  segments
+    .map((s) => {
+      if (s.kind === "run") {
+        return `${SEG_RUN_PREFIX[s.role]}${kmLabel(s.distanceKm)}`;
+      }
+      return `${s.reps}×${s.repMeters}m ${SEG_REP_LABEL[s.role]} @${paceLabel(s.paceSecPerKm)}（つなぎ ${s.recoverMeters}m ${s.recoverKind}）`;
+    })
+    .join(" + ");
 
 /**
  * "h:mm:ss" / "mm:ss" -> 秒。不正なら null。
@@ -97,7 +143,10 @@ export const TrainingPlanner = (): React.JSX.Element => {
   const { setActivities } = store;
   const [today, setToday] = useState(todayYmd());
   const [csvError, setCsvError] = useState<string | null>(null);
-  const [strava, setStrava] = useState({ configured: false, connected: false });
+  const [strava, setStrava] = useState({
+    configured: false,
+    connected: false,
+  });
   const [stravaMsg, setStravaMsg] = useState<string | null>(null);
   const [stravaBusy, setStravaBusy] = useState(false);
 
@@ -122,7 +171,10 @@ export const TrainingPlanner = (): React.JSX.Element => {
       }
       store.setActivities(j.activities ?? []);
       store.setAthleteProfile(j.athlete ?? null);
-      setStrava((s) => ({ ...s, connected: true }));
+      setStrava((s) => ({
+        ...s,
+        connected: true,
+      }));
       const detail =
         j.detailFetched > 0
           ? `（うち ${j.detailFetched} 本は詳細取得${j.detailTruncated ? "・一部のみ" : ""}）`
@@ -139,11 +191,16 @@ export const TrainingPlanner = (): React.JSX.Element => {
 
   const disconnectStrava = useCallback(async () => {
     try {
-      await fetch("/api/strava/activities", { method: "DELETE" });
+      await fetch("/api/strava/activities", {
+        method: "DELETE",
+      });
     } catch {
       // ベストエフォート
     }
-    setStrava((s) => ({ ...s, connected: false }));
+    setStrava((s) => ({
+      ...s,
+      connected: false,
+    }));
     setStravaMsg("Strava 連携を解除しました。");
   }, []);
 
@@ -155,7 +212,10 @@ export const TrainingPlanner = (): React.JSX.Element => {
         const res = await fetch("/api/strava/status");
         const j = await res.json();
         if (!cancelled) {
-          setStrava({ configured: !!j.configured, connected: !!j.connected });
+          setStrava({
+            configured: !!j.configured,
+            connected: !!j.connected,
+          });
         }
       } catch {
         // 状態取得失敗は無視（未設定扱い）
@@ -208,25 +268,42 @@ export const TrainingPlanner = (): React.JSX.Element => {
   const [planError, setPlanError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!selectedRace) {
+    // モードに応じてリクエストを組む。block はレース不要、race は選択中レースが要る。
+    let req: TrainingPlanRequest | null = null;
+    if (store.planMode === "block") {
+      req = {
+        mode: "block",
+        today,
+        weeks: store.blockWeeks,
+        targetDistanceKm: store.targetDistanceKm,
+        fitness,
+        availability: store.availability,
+        runsPerWeek: store.runsPerWeek,
+        skippedDates: store.skippedDates,
+      };
+    } else if (selectedRace) {
+      req = {
+        mode: "race",
+        today,
+        race: selectedRace,
+        fitness,
+        availability: store.availability,
+        runsPerWeek: store.runsPerWeek,
+        skippedDates: store.skippedDates,
+      };
+    }
+    if (!req) {
       setPlanResult(null);
       setPlanError(null);
       setPlanLoading(false);
       return;
     }
-    const req: TrainingPlanRequest = {
-      today,
-      race: selectedRace,
-      fitness,
-      availability: store.availability,
-      runsPerWeek: store.runsPerWeek,
-      skippedDates: store.skippedDates,
-    };
+    const request = req;
     let cancelled = false;
     setPlanLoading(true);
     // 連続編集（曜日トグル / 週回数スライダー）でのサーバー往復を抑えるため軽くデバウンスする。
     const timer = setTimeout(() => {
-      void generateTrainingPlanAction(req).then((result) => {
+      void generateTrainingPlanAction(request).then((result) => {
         if (cancelled) return;
         if (result.ok) {
           setPlanResult(result.value);
@@ -242,11 +319,23 @@ export const TrainingPlanner = (): React.JSX.Element => {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [selectedRace, today, fitness, store.availability, store.runsPerWeek, store.skippedDates]);
+  }, [
+    store.planMode,
+    store.blockWeeks,
+    store.targetDistanceKm,
+    selectedRace,
+    today,
+    fitness,
+    store.availability,
+    store.runsPerWeek,
+    store.skippedDates,
+  ]);
 
   const plan: PlannedWorkout[] = planResult?.plan ?? [];
   const weeks = planResult?.weeks ?? [];
   const progression = planResult?.progression ?? null;
+  // block は常にメニュー対象。race は選択中レースがある時のみ。
+  const planActive = store.planMode === "block" || !!selectedRace;
 
   const onCsv = async (file: File) => {
     setCsvError(null);
@@ -273,7 +362,11 @@ export const TrainingPlanner = (): React.JSX.Element => {
       name: raceName.trim(),
       date: raceDate,
       distanceKm: raceKm,
-      ...(goalSec ? { goalTimeSec: goalSec } : {}),
+      ...(goalSec
+        ? {
+            goalTimeSec: goalSec,
+          }
+        : {}),
     };
     store.addRace(race);
     setRaceName("");
@@ -301,37 +394,41 @@ export const TrainingPlanner = (): React.JSX.Element => {
           <section className="rounded-lg border border-border p-3">
             <h2 className="text-sm font-bold text-fg">1. 練習履歴（CSV / Strava）</h2>
             <div className="mt-2">
-              {!strava.configured ? (
-                <p className="text-[11px] text-faint">
-                  Strava 連携は未設定（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET
-                  を設定で有効化）。
-                </p>
-              ) : strava.connected ? (
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => void importFromStrava()}
-                    disabled={stravaBusy}
-                    className="rounded border border-accent-soft-border bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-soft-fg hover:brightness-105 disabled:opacity-50"
-                  >
-                    {stravaBusy ? "取り込み中…" : "Strava から取り込む"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void disconnectStrava()}
-                    className="text-[11px] text-faint underline hover:text-muted"
-                  >
-                    解除
-                  </button>
-                </div>
-              ) : (
-                <a
-                  href="/api/strava/auth"
-                  className="inline-block rounded border border-accent-soft-border bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-soft-fg hover:brightness-105"
-                >
-                  Strava と連携
-                </a>
-              )}
+              {!strava.configured
+                ? (
+                    <p className="text-[11px] text-faint">
+                      Strava 連携は未設定（.env.local に STRAVA_CLIENT_ID / STRAVA_CLIENT_SECRET
+                      を設定で有効化）。
+                    </p>
+                  )
+                : strava.connected
+                  ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void importFromStrava()}
+                          disabled={stravaBusy}
+                          className="rounded border border-accent-soft-border bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-soft-fg hover:brightness-105 disabled:opacity-50"
+                        >
+                          {stravaBusy ? "取り込み中…" : "Strava から取り込む"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void disconnectStrava()}
+                          className="text-[11px] text-faint underline hover:text-muted"
+                        >
+                          解除
+                        </button>
+                      </div>
+                    )
+                  : (
+                      <a
+                        href="/api/strava/auth"
+                        className="inline-block rounded border border-accent-soft-border bg-accent-soft px-2 py-1 text-xs font-semibold text-accent-soft-fg hover:brightness-105"
+                      >
+                        Strava と連携
+                      </a>
+                    )}
               {stravaMsg && <p className="mt-1 text-[11px] text-accent-soft-fg">{stravaMsg}</p>}
             </div>
             <label className="mt-2 block text-xs text-muted">
@@ -407,93 +504,159 @@ export const TrainingPlanner = (): React.JSX.Element => {
 
           {/* レース */}
           <section className="rounded-lg border border-border p-3">
-            <h2 className="text-sm font-bold text-fg">2. 目標レース</h2>
-            <div className="mt-2 flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="レース名"
-                value={raceName}
-                onChange={(e) => setRaceName(e.target.value)}
-                className="rounded border border-border px-2 py-1 text-base sm:text-sm"
-              />
-              <input
-                type="date"
-                value={raceDate}
-                min={today}
-                onChange={(e) => setRaceDate(e.target.value)}
-                className="rounded border border-border px-2 py-1 text-base sm:text-sm"
-              />
-              <div className="flex flex-wrap items-center gap-1.5">
-                {RACE_PRESETS.map((p) => (
-                  <button
-                    key={p.label}
-                    type="button"
-                    onClick={() => setRaceKm(p.km)}
-                    className={`rounded border px-2 py-1 text-xs ${
-                      raceKm === p.km
-                        ? "border-accent bg-accent-soft text-accent-soft-fg"
-                        : "border-border text-muted"
-                    }`}
-                  >
-                    {p.label}
-                  </button>
-                ))}
-                <input
-                  type="number"
-                  step="0.1"
-                  min="0.5"
-                  value={raceKm}
-                  onChange={(e) => setRaceKm(Number(e.target.value))}
-                  className="w-20 rounded border border-border px-2 py-1 text-base sm:text-sm"
-                />
-                <span className="text-xs text-muted">km</span>
-              </div>
-              <label className="flex items-center gap-2 text-xs text-muted">
-                目標タイム
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  placeholder="任意 例 1:50:00 / 25:00"
-                  value={raceGoal}
-                  onChange={(e) => setRaceGoal(e.target.value)}
-                  className="flex-1 rounded border border-border px-2 py-1 text-base sm:text-sm"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={onAddRace}
-                className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg hover:bg-accent-hover"
+            <div className="flex items-center justify-between gap-2">
+              <h2 className="text-sm font-bold text-fg">2. 目標</h2>
+              <div
+                className="flex rounded border border-border p-0.5 text-[11px]"
+                role="group"
+                aria-label="計画モード"
               >
-                レースを追加
-              </button>
+                <button
+                  type="button"
+                  onClick={() => store.setPlanMode("race")}
+                  className={`rounded px-2 py-0.5 ${
+                    store.planMode === "race"
+                      ? "bg-accent font-semibold text-accent-fg"
+                      : "text-muted"
+                  }`}
+                >
+                  目標レースから
+                </button>
+                <button
+                  type="button"
+                  onClick={() => store.setPlanMode("block")}
+                  className={`rounded px-2 py-0.5 ${
+                    store.planMode === "block"
+                      ? "bg-accent font-semibold text-accent-fg"
+                      : "text-muted"
+                  }`}
+                >
+                  5km強化
+                </button>
+              </div>
             </div>
-            {store.races.length > 0 && (
-              <ul className="mt-2 flex flex-col gap-1">
-                {store.races.map((r) => (
-                  <li key={r.id} className="flex items-center gap-2 text-xs">
-                    <button
-                      type="button"
-                      onClick={() => store.selectRace(r.id)}
-                      className={`flex-1 rounded border px-2 py-1 text-left ${
-                        r.id === store.selectedRaceId
-                          ? "border-accent bg-accent-soft"
-                          : "border-border"
-                      }`}
-                    >
-                      {r.date} {r.name}（{r.distanceKm}km
-                      {r.goalTimeSec ? ` / 目標 ${formatClock(r.goalTimeSec)}` : ""}）
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => store.removeRace(r.id)}
-                      className="grid min-h-6 min-w-6 place-items-center rounded text-faint hover:bg-surface-2 hover:text-danger-fg"
-                      aria-label="レースを削除"
-                    >
-                      ✕
-                    </button>
-                  </li>
-                ))}
-              </ul>
+
+            {store.planMode === "block" && (
+              <div className="mt-2 flex flex-col gap-2">
+                <p className="text-[11px] text-muted">
+                  目標レースを置かず、現在の走力(VDOT)から E/M/T/I/R
+                  ペースで 5km を強化します。4 週ごとに 3000m TT を入れて VDOT を計測します。
+                </p>
+                <label className="flex items-center gap-2 text-sm">
+                  <span className="font-semibold text-fg">計画週数</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={52}
+                    value={store.blockWeeks}
+                    onChange={(e) => store.setBlockWeeks(Number(e.target.value))}
+                    className="w-20 rounded border border-border px-2 py-1 text-base sm:text-sm"
+                  />
+                  <span className="text-xs text-muted">週（4週=1サイクル, 末に3000m TT）</span>
+                </label>
+                {fitness.currentVdot === null && (
+                  <p
+                    aria-live="polite"
+                    className="rounded border border-warn/30 bg-warn-soft px-2 py-1 text-[11px] text-warn-fg"
+                  >
+                    現在 VDOT が未取得です。最初は易しい走と 3000m TT
+                    のみ出します。TT を走って取り込むと、以降の強度走（T/I/R）のペースが入ります。
+                  </p>
+                )}
+              </div>
+            )}
+
+            {store.planMode === "race" && (
+              <>
+                <div className="mt-2 flex flex-col gap-2">
+                  <input
+                    type="text"
+                    placeholder="レース名"
+                    value={raceName}
+                    onChange={(e) => setRaceName(e.target.value)}
+                    className="rounded border border-border px-2 py-1 text-base sm:text-sm"
+                  />
+                  <input
+                    type="date"
+                    value={raceDate}
+                    min={today}
+                    onChange={(e) => setRaceDate(e.target.value)}
+                    className="rounded border border-border px-2 py-1 text-base sm:text-sm"
+                  />
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {RACE_PRESETS.map((p) => (
+                      <button
+                        key={p.label}
+                        type="button"
+                        onClick={() => setRaceKm(p.km)}
+                        className={`rounded border px-2 py-1 text-xs ${
+                          raceKm === p.km
+                            ? "border-accent bg-accent-soft text-accent-soft-fg"
+                            : "border-border text-muted"
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.5"
+                      value={raceKm}
+                      onChange={(e) => setRaceKm(Number(e.target.value))}
+                      className="w-20 rounded border border-border px-2 py-1 text-base sm:text-sm"
+                    />
+                    <span className="text-xs text-muted">km</span>
+                  </div>
+                  <label className="flex items-center gap-2 text-xs text-muted">
+                    目標タイム
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="任意 例 1:50:00 / 25:00"
+                      value={raceGoal}
+                      onChange={(e) => setRaceGoal(e.target.value)}
+                      className="flex-1 rounded border border-border px-2 py-1 text-base sm:text-sm"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={onAddRace}
+                    className="rounded bg-accent px-3 py-1.5 text-sm font-semibold text-accent-fg hover:bg-accent-hover"
+                  >
+                    レースを追加
+                  </button>
+                </div>
+                {store.races.length > 0 && (
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {store.races.map((r) => (
+                      <li key={r.id} className="flex items-center gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => store.selectRace(r.id)}
+                          className={`flex-1 rounded border px-2 py-1 text-left ${
+                            r.id === store.selectedRaceId
+                              ? "border-accent bg-accent-soft"
+                              : "border-border"
+                          }`}
+                        >
+                          {r.date} {r.name}（{r.distanceKm}km
+                          {r.goalTimeSec ? ` / 目標 ${formatClock(r.goalTimeSec)}` : ""}）
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => store.removeRace(r.id)}
+                          className="grid min-h-6 min-w-6 place-items-center rounded text-faint hover:bg-surface-2 hover:text-danger-fg"
+                          aria-label="レースを削除"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
             )}
           </section>
 
@@ -514,7 +677,9 @@ export const TrainingPlanner = (): React.JSX.Element => {
                 onChange={(e) => store.setRunsPerWeek(Number(e.target.value))}
                 className="rounded border border-border px-2 py-1 text-base sm:text-sm"
               >
-                {Array.from({ length: Math.max(1, availableDayCount) }, (_, i) => i + 1).map(
+                {Array.from({
+                  length: Math.max(1, availableDayCount),
+                }, (_, i) => i + 1).map(
                   (n) => (
                     <option key={n} value={n}>
                       {n}
@@ -534,8 +699,7 @@ export const TrainingPlanner = (): React.JSX.Element => {
                       onChange={(e) =>
                         store.setAvailabilityDay(wd, {
                           isPracticeDay: e.target.checked,
-                        })
-                      }
+                        })}
                     />
                     <span>{WEEKDAYS[wd]}</span>
                   </label>
@@ -548,8 +712,7 @@ export const TrainingPlanner = (): React.JSX.Element => {
                     onChange={(e) =>
                       store.setAvailabilityDay(wd, {
                         maxMinutes: Number(e.target.value),
-                      })
-                    }
+                      })}
                     className="w-20 rounded border border-border px-2 py-1 text-base sm:text-sm disabled:bg-surface-2"
                   />
                   <span className="text-xs text-muted">分</span>
@@ -572,13 +735,14 @@ export const TrainingPlanner = (): React.JSX.Element => {
             </button>
           </div>
 
-          {!selectedRace && (
+          {store.planMode === "race" && !selectedRace && (
             <p className="rounded border border-border bg-surface-2 p-4 text-sm text-muted">
               目標レースを追加・選択すると、ここに練習メニューが表示されます。
+              レースを決めていなければ「5km強化」モードに切り替えてください。
             </p>
           )}
 
-          {selectedRace && planLoading && plan.length === 0 && (
+          {planActive && planLoading && plan.length === 0 && (
             <p
               className="rounded border border-border bg-surface-2 p-4 text-sm text-muted"
               aria-live="polite"
@@ -587,29 +751,35 @@ export const TrainingPlanner = (): React.JSX.Element => {
             </p>
           )}
 
-          {selectedRace && planError && (
+          {planActive && planError && (
             <p className="rounded border border-danger/30 bg-danger-soft p-4 text-sm text-danger-fg">
               {planError}
             </p>
           )}
 
-          {selectedRace && !planLoading && !planError && plan.length === 0 && (
+          {store.planMode === "race" && selectedRace && !planLoading && !planError &&
+            plan.length === 0 && (
             <p className="rounded border border-warn/30 bg-warn-soft p-4 text-sm text-warn-fg">
               選択中のレース日が過去です。未来の日付のレースを選んでください。
             </p>
           )}
 
-          {selectedRace && plan.length > 0 && progression && (
+          {store.planMode === "race" && selectedRace && plan.length > 0 && progression && (
             <ProgressionPanel progression={progression} />
           )}
 
-          {selectedRace && plan.length > 0 && !selectedRace.goalTimeSec && (
+          {store.planMode === "race" && selectedRace && plan.length > 0 &&
+            !selectedRace.goalTimeSec && (
             <p className="rounded border border-border bg-surface-2 p-2 text-[11px] text-muted">
               レースに「目標タイム」を設定すると、目標から逆算したペース（VDOT）と、現状からの伸ばし方・実現可能性を表示します。
             </p>
           )}
 
-          {selectedRace && plan.length > 0 && (
+          {store.planMode === "block" && plan.length > 0 && (
+            <CurrentPacesPanel fitness={fitness} />
+          )}
+
+          {planActive && plan.length > 0 && (
             <PlanView
               plan={plan}
               weeks={weeks}
@@ -620,7 +790,7 @@ export const TrainingPlanner = (): React.JSX.Element => {
               onToggleSkip={store.toggleSkip}
               onSkipWeek={store.skipWeek}
               fitness={fitness}
-              race={selectedRace}
+              race={store.planMode === "race" ? (selectedRace ?? undefined) : undefined}
             />
           )}
         </div>
@@ -647,11 +817,26 @@ const ProgressionPanel = ({
 }: {
   progression: ProgressionSummary;
 }): React.JSX.Element => {
-  const zones: { label: string; sec: number }[] = [
-    { label: "E(イージー)", sec: pr.goalPaces.easy },
-    { label: "M(マラソン)", sec: pr.goalPaces.marathon },
-    { label: "T(閾値)", sec: pr.goalPaces.threshold },
-    { label: "I(速い)", sec: pr.goalPaces.interval },
+  const zones: {
+    label: string;
+    sec: number;
+  }[] = [
+    {
+      label: "E(イージー)",
+      sec: pr.goalPaces.easy,
+    },
+    {
+      label: "M(マラソン)",
+      sec: pr.goalPaces.marathon,
+    },
+    {
+      label: "T(閾値)",
+      sec: pr.goalPaces.threshold,
+    },
+    {
+      label: "I(速い)",
+      sec: pr.goalPaces.interval,
+    },
   ];
   return (
     <div className="rounded-lg border border-border p-3 text-xs">
@@ -713,6 +898,69 @@ const ProgressionPanel = ({
   );
 };
 
+/**
+ * block モードの「現在の練習ペース」表示。現在 VDOT から E/M/T/I/R を出す。
+ */
+const CurrentPacesPanel = ({ fitness }: {
+  fitness: Fitness;
+}): React.JSX.Element => {
+  const vdot = fitness.currentVdot;
+  const paces = vdot !== null ? trainingPaces(vdot) : null;
+  const zones = paces
+    ? [
+        {
+          label: "E(イージー)",
+          sec: paces.easy,
+        },
+        {
+          label: "M(マラソン)",
+          sec: paces.marathon,
+        },
+        {
+          label: "T(閾値)",
+          sec: paces.threshold,
+        },
+        {
+          label: "I(速い)",
+          sec: paces.interval,
+        },
+        {
+          label: "R(最速)",
+          sec: paces.repetition,
+        },
+      ]
+    : [];
+  return (
+    <div className="rounded-lg border border-border p-3 text-xs">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-bold text-fg">現在の練習ペース（5km 強化）</h3>
+        <span className="rounded bg-surface-2 px-2 py-0.5 text-[11px] font-semibold text-fg">
+          {vdot !== null ? `VDOT ${vdot}` : "VDOT 未取得"}
+        </span>
+      </div>
+      {paces
+        ? (
+            <div className="mt-2 grid grid-cols-5 gap-1 text-center">
+              {zones.map((z) => (
+                <div key={z.label} className="rounded bg-surface-2 p-1">
+                  <div className="text-[10px] text-faint">{z.label}</div>
+                  <div className="font-mono text-fg tabular-nums">{paceLabel(z.sec)}</div>
+                </div>
+              ))}
+            </div>
+          )
+        : (
+            <p className="mt-2 text-muted">
+              CSV / Strava を取り込むか、まず 3000m TT を走って取り込むと、E/M/T/I/R のペースが出ます。
+            </p>
+          )}
+      <p className="mt-2 text-[10px] text-faint">
+        ※ Jack Daniels の VDOT に基づく推定。R は表中域に合わせた近似です。
+      </p>
+    </div>
+  );
+};
+
 interface PlanViewProps {
   plan: PlannedWorkout[];
   weeks: ReturnType<typeof summarizeByWeek>;
@@ -722,8 +970,13 @@ interface PlanViewProps {
   onToggleDone: (date: string) => void;
   onToggleSkip: (date: string) => void;
   onSkipWeek: (dates: string[]) => void;
-  fitness: { easyPaceSecPerKm: number };
-  race: Race;
+  fitness: {
+    easyPaceSecPerKm: number;
+  };
+  /**
+   * 目標レース。block モード（レース無し）では undefined。
+   */
+  race?: Race;
 }
 
 const PlanView = ({
@@ -744,8 +997,9 @@ const PlanView = ({
   return (
     <div className="flex flex-col gap-3">
       <div className="rounded border border-border bg-surface-2 p-2 text-xs text-muted">
-        {race.name}（{race.date} / {race.distanceKm}km）まで {weeks.length} 週・ 総距離 約{totalKm}
-        km
+        {race
+          ? `${race.name}（${race.date} / ${race.distanceKm}km）まで ${weeks.length} 週・ 総距離 約${totalKm}km`
+          : `5km 強化ブロック ${weeks.length} 週・ 総距離 約${totalKm}km`}
       </div>
       {weeks.map((wk) => {
         const days = plan.filter((p) => p.weekIndex === wk.weekIndex);
@@ -793,31 +1047,39 @@ const PlanView = ({
                       )}
                     </span>
                     <span className="flex-1 text-xs text-muted">
-                      {d.type === "rest" ? (
-                        <span className="text-faint">{d.note ?? "休養"}</span>
-                      ) : (
-                        <>
-                          {d.distanceKm}km・約{d.estMinutes}分
-                          {d.paceSecPerKm && (
-                            <span className="ml-1 text-faint">@{paceLabel(d.paceSecPerKm)}</span>
+                      {d.type === "rest"
+                        ? (
+                            <span className="text-faint">{d.note ?? "休養"}</span>
+                          )
+                        : (
+                            <>
+                              {d.distanceKm}km・約{d.estMinutes}分
+                              {d.paceSecPerKm && (
+                                <span className="ml-1 text-faint">@{paceLabel(d.paceSecPerKm)}</span>
+                              )}
+                              {d.hrZone && (
+                                <span
+                                  className="ml-1 text-hr"
+                                  title={d.hrBpmRange ? `${d.hrBpmRange} bpm` : undefined}
+                                >
+                                  Z{d.hrZone}
+                                  {d.hrBpmRange ? `(${d.hrBpmRange})` : ""}
+                                </span>
+                              )}
+                              {d.cappedByTime && <span className="ml-1 text-warn-fg">(時間調整)</span>}
+                              {d.isKey && d.type !== "race" && (
+                                <span className="ml-1 font-semibold text-warn-fg">
+                                  ・今週のポイント
+                                </span>
+                              )}
+                              {d.note && <span className="ml-1 text-faint">／{d.note}</span>}
+                              {d.segments && (
+                                <span className="mt-0.5 block text-[10px] text-faint">
+                                  {describeSession(d.segments)}
+                                </span>
+                              )}
+                            </>
                           )}
-                          {d.hrZone && (
-                            <span
-                              className="ml-1 text-hr"
-                              title={d.hrBpmRange ? `${d.hrBpmRange} bpm` : undefined}
-                            >
-                              Z{d.hrZone}
-                              {d.hrBpmRange ? `(${d.hrBpmRange})` : ""}
-                            </span>
-                          )}
-                          {d.cappedByTime && <span className="ml-1 text-warn-fg">(時間調整)</span>}
-                          {d.isKey && d.type !== "race" && (
-                            <span className="ml-1 font-semibold text-warn-fg">
-                              ・今週のポイント
-                            </span>
-                          )}
-                        </>
-                      )}
                     </span>
                     {d.type !== "rest" && d.type !== "race" && (
                       <>

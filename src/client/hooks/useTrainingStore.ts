@@ -13,6 +13,11 @@ import {
 
 const KEY = "flrt:training:v1";
 
+/**
+ * 計画モード。race=目標レースから、block=5km 強化（レース無し）。
+ */
+export type PlanMode = "race" | "block";
+
 export interface TrainingState {
   activities: Activity[];
   /**
@@ -28,6 +33,18 @@ export interface TrainingState {
   runsPerWeek: number;
   skippedDates: string[];
   doneDates: string[];
+  /**
+   * 計画モード。
+   */
+  planMode: PlanMode;
+  /**
+   * block モードの計画週数。
+   */
+  blockWeeks: number;
+  /**
+   * block モードの主眼レース距離(km)。当面 5km。
+   */
+  targetDistanceKm: number;
 }
 
 const initialState = (): TrainingState => ({
@@ -39,6 +56,9 @@ const initialState = (): TrainingState => ({
   runsPerWeek: 3,
   skippedDates: [],
   doneDates: [],
+  planMode: "race",
+  blockWeeks: 12,
+  targetDistanceKm: 5,
 });
 
 export interface TrainingStore extends TrainingState {
@@ -53,6 +73,8 @@ export interface TrainingStore extends TrainingState {
   toggleSkip: (date: string) => void;
   toggleDone: (date: string) => void;
   skipWeek: (dates: string[]) => void;
+  setPlanMode: (mode: PlanMode) => void;
+  setBlockWeeks: (n: number) => void;
 }
 
 export const useTrainingStore = (): TrainingStore => {
@@ -65,7 +87,10 @@ export const useTrainingStore = (): TrainingStore => {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as Partial<TrainingState>;
-        setState({ ...initialState(), ...parsed });
+        setState({
+          ...initialState(),
+          ...parsed,
+        });
       }
     } catch {
       // localStorage 不可。メモリ上の既定値で継続。
@@ -85,11 +110,17 @@ export const useTrainingStore = (): TrainingStore => {
   }, [state]);
 
   const setActivities = useCallback((activities: Activity[]) => {
-    setState((s) => ({ ...s, activities }));
+    setState((s) => ({
+      ...s,
+      activities,
+    }));
   }, []);
 
   const setAthleteProfile = useCallback((profile: AthleteProfile | null) => {
-    setState((s) => ({ ...s, athleteProfile: profile }));
+    setState((s) => ({
+      ...s,
+      athleteProfile: profile,
+    }));
   }, []);
 
   const addRace = useCallback((race: Race) => {
@@ -112,18 +143,32 @@ export const useTrainingStore = (): TrainingStore => {
   }, []);
 
   const selectRace = useCallback((id: string | null) => {
-    setState((s) => ({ ...s, selectedRaceId: id }));
+    setState((s) => ({
+      ...s,
+      selectedRaceId: id,
+    }));
   }, []);
 
   const setAvailabilityDay = useCallback((wd: number, patch: Partial<DayAvailability>) => {
     setState((s) => {
-      const availability = s.availability.map((d, i) => (i === wd ? { ...d, ...patch } : d));
-      return { ...s, availability };
+      const availability = s.availability.map((d, i) => (i === wd
+        ? {
+            ...d,
+            ...patch,
+          }
+        : d));
+      return {
+        ...s,
+        availability,
+      };
     });
   }, []);
 
   const setRunsPerWeek = useCallback((n: number) => {
-    setState((s) => ({ ...s, runsPerWeek: Math.max(1, Math.min(7, Math.round(n))) }));
+    setState((s) => ({
+      ...s,
+      runsPerWeek: Math.max(1, Math.min(7, Math.round(n))),
+    }));
   }, []);
 
   const toggleSkip = useCallback((date: string) => {
@@ -149,8 +194,25 @@ export const useTrainingStore = (): TrainingStore => {
   const skipWeek = useCallback((dates: string[]) => {
     setState((s) => {
       const set = new Set([...s.skippedDates, ...dates]);
-      return { ...s, skippedDates: [...set] };
+      return {
+        ...s,
+        skippedDates: [...set],
+      };
     });
+  }, []);
+
+  const setPlanMode = useCallback((mode: PlanMode) => {
+    setState((s) => ({
+      ...s,
+      planMode: mode,
+    }));
+  }, []);
+
+  const setBlockWeeks = useCallback((n: number) => {
+    setState((s) => ({
+      ...s,
+      blockWeeks: Math.max(1, Math.min(52, Math.round(n))),
+    }));
   }, []);
 
   return {
@@ -166,5 +228,7 @@ export const useTrainingStore = (): TrainingStore => {
     toggleSkip,
     toggleDone,
     skipWeek,
+    setPlanMode,
+    setBlockWeeks,
   };
 };

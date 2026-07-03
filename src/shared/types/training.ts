@@ -129,9 +129,50 @@ export type DayAvailability = z.infer<typeof dayAvailabilitySchema>;
  */
 export type WeeklyAvailability = DayAvailability[];
 
-export type WorkoutType = "rest" | "easy" | "long" | "tempo" | "interval" | "race";
+export type WorkoutType =
+  | "rest"
+  | "easy"
+  | "long"
+  | "tempo"
+  | "interval"
+  | "repetition"
+  | "timeTrial"
+  | "race";
 
 export type TrainingPhase = "base" | "build" | "peak" | "taper" | "race";
+
+/**
+ * 練習メニューを構成する区間。Daniels 式セッション（反復・つなぎを含む）を
+ * 文字列でなく構造化して持つ。表示側で人間可読な文言に変換する。
+ */
+export type WorkoutSegment =
+  | {
+    /**
+       * 連続走（WU/CD・イージー・ロング・連続テンポ）。
+       */
+    kind: "run";
+    role: "warmup" | "cooldown" | "steady" | "easy" | "long";
+    distanceKm: number;
+    paceSecPerKm: number;
+  }
+  | {
+    /**
+       * 反復（クルーズインターバル=T / インターバル=I / レペティション=R）。
+       */
+    kind: "reps";
+    role: "threshold" | "interval" | "repetition";
+    reps: number;
+    /**
+       * 1 本の距離(m)。
+       */
+    repMeters: number;
+    paceSecPerKm: number;
+    /**
+       * 1 本ごとのつなぎ（リカバリー）距離(m)。
+       */
+    recoverMeters: number;
+    recoverKind: "jog" | "walk";
+  };
 
 export interface PlannedWorkout {
   /**
@@ -174,6 +215,11 @@ export interface PlannedWorkout {
    * その週の「ポイント練習」（週1つ）。
    */
   isKey?: boolean;
+  /**
+   * メニュー構成（Daniels 式の反復・つなぎを含む）。質練習のみ設定し、
+   * 連続走（easy/long）や rest では省略。distanceKm/estMinutes はこの合計。
+   */
+  segments?: WorkoutSegment[];
 }
 
 /**
@@ -245,17 +291,55 @@ export interface PlanInput {
 }
 
 /**
- * 既定の週間設定: 火・木・土を練習日、各 60 分、土は 120 分。
+ * 目標レースを設定しない「5km 強化ブロック」の入力。
+ * 終端をレース日でなく週数で決め、4 週サイクル（T→I→R→3000m TT）を繰り返す。
+ */
+export interface BlockPlanInput {
+  /**
+   * 計画開始日 YYYY-MM-DD（通常は今日）。
+   */
+  startDate: string;
+  /**
+   * 計画の週数（ユーザー指定）。
+   */
+  weeks: number;
+  /**
+   * 主眼となるレース距離(km)。当面は 5km。ロング走の目安に使う。
+   */
+  targetDistanceKm: number;
+  fitness: Fitness;
+  availability: WeeklyAvailability;
+  runsPerWeek?: number;
+  skippedDates?: string[];
+}
+
+/**
+ * 既定の週間設定: 日・火・木・土を練習日、火・木は各 60 分、日・土は 120 分。
  */
 export const defaultAvailability = (): WeeklyAvailability =>
   [0, 1, 2, 3, 4, 5, 6].map((wd) => {
-    const isPracticeDay = wd === 2 || wd === 4 || wd === 6;
-    const maxMinutes = wd === 6 ? 120 : isPracticeDay ? 60 : 0;
-    return { isPracticeDay, maxMinutes };
+    const isPracticeDay = wd === 0 || wd === 2 || wd === 4 || wd === 6;
+    const maxMinutes = wd === 0 || wd === 6 ? 120 : isPracticeDay ? 60 : 0;
+    return {
+      isPracticeDay,
+      maxMinutes,
+    };
   });
 
 /**
+ * 実測負荷（ACWR）の検証スキーマ。
+ */
+export const recentLoadSchema = z.object({
+  acute: z.number(),
+  chronic: z.number(),
+  ratio: z.number(),
+}) satisfies z.ZodType<RecentLoad>;
+
+/**
  * 推定走力（Fitness）の検証スキーマ。サーバー境界（Server Action）で入力を検証する。
+ *
+ * recentLoad は client が算出した ACWR。これを通さないと zod のストリップで欠落し、
+ * サーバー経路で序盤の負荷調整（startVolumeFactor）が効かなくなる（UI 表示と不一致になる）。
  */
 export const fitnessSchema = z.object({
   weeklyKm: z.number(),
@@ -263,21 +347,46 @@ export const fitnessSchema = z.object({
   easyPaceSecPerKm: z.number(),
   currentVdot: z.number().nullable(),
   maxHrObserved: z.number().nullable(),
+  recentLoad: recentLoadSchema.nullable().optional(),
 }) satisfies z.ZodType<Fitness>;
 
 /**
- * トレーニング計画生成リクエスト。Server Action / handler の入口で検証する。
+ * 計画リクエストの共通部分（モードに依らず必要なもの）。
  * fitness は client 側で算出済みのものを渡す（走力表示と同じ値を使う）。
  */
-export const trainingPlanRequestSchema = z.object({
+const planRequestBase = {
   /**
    * 計画開始日 YYYY-MM-DD（通常は今日）。
    */
   today: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  race: raceSchema,
   fitness: fitnessSchema,
   availability: z.array(dayAvailabilitySchema).length(7),
   runsPerWeek: z.number().int().min(1).max(7).optional(),
   skippedDates: z.array(z.string()).optional(),
-});
+};
+
+/**
+ * トレーニング計画生成リクエスト。Server Action / handler の入口で検証する。
+ * mode で「目標レースから(race)」と「5km 強化ブロック(block)」を判別し、
+ * 各モードで必要なフィールドを型・検証で固定する（任意 race のフォールバックを書かない）。
+ */
+export const trainingPlanRequestSchema = z.discriminatedUnion("mode", [
+  z.object({
+    mode: z.literal("race"),
+    ...planRequestBase,
+    race: raceSchema,
+  }),
+  z.object({
+    mode: z.literal("block"),
+    ...planRequestBase,
+    /**
+     * 計画の週数（ユーザー指定）。
+     */
+    weeks: z.number().int().min(1).max(52),
+    /**
+     * 主眼レース距離(km)。既定 5km。
+     */
+    targetDistanceKm: z.number().positive().max(100).default(5),
+  }),
+]);
 export type TrainingPlanRequest = z.infer<typeof trainingPlanRequestSchema>;

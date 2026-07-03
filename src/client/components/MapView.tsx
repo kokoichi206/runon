@@ -44,7 +44,10 @@ const DEFAULT_CENTER: [number, number] = [139.767, 35.681]; // 東京駅
 const ROUTES_SRC = "routes";
 const ROUTE_GLOW = "routes-glow";
 const ROUTE_LINE = "routes-line";
-const empty: GeoJSON.FeatureCollection = { type: "FeatureCollection", features: [] };
+const empty: GeoJSON.FeatureCollection = {
+  type: "FeatureCollection",
+  features: [],
+};
 
 export default function MapView({
   start,
@@ -69,8 +72,18 @@ export default function MapView({
   onPickRef.current = onPick;
   const onSelectRouteRef = useRef(onSelectRoute);
   onSelectRouteRef.current = onSelectRoute;
-  const stateRef = useRef({ start, candidates, selectedId, view });
-  stateRef.current = { start, candidates, selectedId, view };
+  const stateRef = useRef({
+    start,
+    candidates,
+    selectedId,
+    view,
+  });
+  stateRef.current = {
+    start,
+    candidates,
+    selectedId,
+    view,
+  };
   const themeRef = useRef(theme);
   themeRef.current = theme;
   const basemapRef = useRef(basemap);
@@ -81,7 +94,10 @@ export default function MapView({
   const addRouteLayers = useRef((_map: maplibregl.Map) => {});
   addRouteLayers.current = (map) => {
     if (!map.getSource(ROUTES_SRC)) {
-      map.addSource(ROUTES_SRC, { type: "geojson", data: empty });
+      map.addSource(ROUTES_SRC, {
+        type: "geojson",
+        data: empty,
+      });
     }
     // 発光（選択ルートの下敷き）。filter で selected のみ描く。
     if (!map.getLayer(ROUTE_GLOW)) {
@@ -90,7 +106,10 @@ export default function MapView({
         type: "line",
         source: ROUTES_SRC,
         filter: ["==", ["get", "selected"], true],
-        layout: { "line-join": "round", "line-cap": "round" },
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
         paint: {
           "line-color": ["get", "color"],
           "line-width": 12,
@@ -105,7 +124,10 @@ export default function MapView({
         id: ROUTE_LINE,
         type: "line",
         source: ROUTES_SRC,
-        layout: { "line-join": "round", "line-cap": "round" },
+        layout: {
+          "line-join": "round",
+          "line-cap": "round",
+        },
         paint: {
           "line-color": ["get", "color"],
           "line-width": 3,
@@ -136,7 +158,10 @@ export default function MapView({
           // 比較モードでは誰も選択扱いにしない（全候補を等しく表示）。
           selected: v === "focus" && c.id === selId,
         },
-        geometry: { type: "LineString", coordinates: c.path },
+        geometry: {
+          type: "LineString",
+          coordinates: c.path,
+        },
       })),
     });
 
@@ -163,7 +188,9 @@ export default function MapView({
 
     if (s) {
       if (!startMarkerRef.current) {
-        startMarkerRef.current = new maplibregl.Marker({ color: colors.marker });
+        startMarkerRef.current = new maplibregl.Marker({
+          color: colors.marker,
+        });
       }
       startMarkerRef.current.setLngLat(s).addTo(map);
     } else {
@@ -183,9 +210,16 @@ export default function MapView({
       }
     }
     if (bounds) {
-      map.fitBounds(bounds, { padding: 60, maxZoom: 16, duration: 600 });
+      map.fitBounds(bounds, {
+        padding: 60,
+        maxZoom: 16,
+        duration: 600,
+      });
     } else if (s) {
-      map.easeTo({ center: s, zoom: 14 });
+      map.easeTo({
+        center: s,
+        zoom: 14,
+      });
     }
   };
 
@@ -232,7 +266,9 @@ export default function MapView({
         [e.point.x + d, e.point.y + d],
       ];
       const hit = map.getLayer(ROUTE_LINE)
-        ? map.queryRenderedFeatures(box, { layers: [ROUTE_LINE] })
+        ? map.queryRenderedFeatures(box, {
+            layers: [ROUTE_LINE],
+          })
         : [];
       const id = hit[0]?.properties?.id;
       if (id != null) {

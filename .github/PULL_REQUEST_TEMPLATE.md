@@ -4,7 +4,7 @@
 
 - [ ] ドキュメント（README / docs）を更新しました
 - [ ] 不要なコメントアウトやデバッグコードを削除しました
-- [ ] `pnpm run type-check` / `pnpm run lint` / `pnpm run format:check` / `pnpm run test` / `pnpm run build` が通ることを確認しました
+- [ ] `pnpm run type-check` / `pnpm run lint` / `pnpm run test` / `pnpm run build` が通ることを確認しました
 
 ### 運用ポリシー
 

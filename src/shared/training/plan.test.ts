@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { addDays, diffDays, weekday } from "@/shared/training/date";
 import { estimateFitness } from "@/shared/training/fitness";
-import { generatePlan, summarizeByWeek } from "@/shared/training/plan";
+import { generateBlockPlan, generatePlan, summarizeByWeek } from "@/shared/training/plan";
 import {
   defaultAvailability,
   type Activity,
@@ -77,7 +77,12 @@ describe("estimateFitness", () => {
   });
 });
 
-const RACE: Race = { id: "r1", name: "テストレース", date: "2026-08-24", distanceKm: 21.1 };
+const RACE: Race = {
+  id: "r1",
+  name: "テストレース",
+  date: "2026-08-24",
+  distanceKm: 21.1,
+};
 const START = "2026-06-01"; // 月曜
 const fitness = {
   weeklyKm: 20,
@@ -126,7 +131,12 @@ describe("generatePlan", () => {
 
   it("非練習日は休養", () => {
     const av = defaultAvailability(); // 月は非練習日
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: av,
+    });
     const mondays = plan.filter((p) => weekday(p.date) === 1 && p.date !== RACE.date);
     for (const m of mondays) expect(m.type).toBe("rest");
   });
@@ -148,9 +158,18 @@ describe("generatePlan", () => {
   it("確保時間でキャップされる", () => {
     // 火曜(2)を練習日・10分だけにする → 火曜の練習は約10分に制限。
     const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
-      wd === 2 ? { isPracticeDay: true, maxMinutes: 10 } : d
-    );
-    const plan = generatePlan({ startDate: START, race: RACE, fitness, availability: av });
+      wd === 2
+        ? {
+            isPracticeDay: true,
+            maxMinutes: 10,
+          }
+        : d);
+    const plan = generatePlan({
+      startDate: START,
+      race: RACE,
+      fitness,
+      availability: av,
+    });
     const tue = plan.find((p) => weekday(p.date) === 2 && p.type !== "rest")!;
     expect(tue.estMinutes).toBe(10);
     expect(tue.cappedByTime).toBe(true);
@@ -193,7 +212,7 @@ describe("generatePlan", () => {
       runsPerWeek: 10,
     });
     const wk1 = plan.filter((p) => p.weekIndex === 1 && p.type !== "rest");
-    expect(new Set(wk1.map((p) => weekday(p.date))).size).toBe(3); // 可能日=3
+    expect(new Set(wk1.map((p) => weekday(p.date))).size).toBe(4); // 可能日=4
   });
 
   it("各週にポイント練習(isKey)が1つだけ立つ", () => {
@@ -213,7 +232,10 @@ describe("generatePlan", () => {
   });
 
   it("目標タイム設定時は VDOT ゾーンでペースが付く", () => {
-    const raceWithGoal: Race = { ...RACE, goalTimeSec: 110 * 60 }; // ハーフ 1:50
+    const raceWithGoal: Race = {
+      ...RACE,
+      goalTimeSec: 110 * 60,
+    }; // ハーフ 1:50
     const plan = generatePlan({
       startDate: START,
       race: raceWithGoal,
@@ -299,7 +321,10 @@ describe("estimateFitness（負荷・Strava集計）", () => {
     // 10本中 relativeEffort 持ちは 2本 = 20% < 60%。
     const acts: Activity[] = [];
     for (let i = 0; i < 8; i++) acts.push(re(`2026-05-${10 + i}`, 50));
-    const withoutRE = acts.map((a) => ({ ...a, relativeEffort: undefined }));
+    const withoutRE = acts.map((a) => ({
+      ...a,
+      relativeEffort: undefined,
+    }));
     const mixed = [...withoutRE, re("2026-05-28", 50), re("2026-05-29", 50)];
     expect(estimateFitness(mixed, now).recentLoad).toBeNull();
   });
@@ -349,7 +374,11 @@ describe("estimateFitness（負荷・Strava集計）", () => {
       },
     ];
     const profile: AthleteProfile = {
-      recentRunTotals: { distanceKm: 80, durationSec: 24000, count: 16 }, // 80/4=20km/週
+      recentRunTotals: {
+        distanceKm: 80,
+        durationSec: 24000,
+        count: 16,
+      }, // 80/4=20km/週
     };
     const withoutProfile = estimateFitness(acts, now).weeklyKm; // 16/4=4km/週
     const withProfile = estimateFitness(acts, now, profile).weeklyKm;
@@ -381,7 +410,11 @@ describe("generatePlan（ACWR 増量補正）", () => {
     const normal = firstLongKm(baseFitness);
     const spiking = firstLongKm({
       ...baseFitness,
-      recentLoad: { acute: 350, chronic: 200, ratio: 1.75 },
+      recentLoad: {
+        acute: 350,
+        chronic: 200,
+        ratio: 1.75,
+      },
     });
     expect(spiking).toBeLessThan(normal);
   });
@@ -393,8 +426,12 @@ describe("generatePlan（ACWR 増量補正）", () => {
       fitness: baseFitness,
       availability: defaultAvailability(),
     });
-    const legacy: Fitness = { ...baseFitness };
-    delete (legacy as { recentLoad?: unknown }).recentLoad;
+    const legacy: Fitness = {
+      ...baseFitness,
+    };
+    delete (legacy as {
+      recentLoad?: unknown;
+    }).recentLoad;
     const b = generatePlan({
       startDate: START,
       race: RACE,
@@ -402,5 +439,130 @@ describe("generatePlan（ACWR 増量補正）", () => {
       availability: defaultAvailability(),
     });
     expect(a).toEqual(b);
+  });
+});
+
+describe("generateBlockPlan（5km 強化ブロック）", () => {
+  const blockFitness: Fitness = {
+    weeklyKm: 40,
+    longestKm: 12,
+    easyPaceSecPerKm: 300,
+    currentVdot: 50,
+    maxHrObserved: 190,
+    recentLoad: null,
+  };
+  const make = (over: Partial<Parameters<typeof generateBlockPlan>[0]> = {}) =>
+    generateBlockPlan({
+      startDate: START,
+      weeks: 4,
+      targetDistanceKm: 5,
+      fitness: blockFitness,
+      availability: defaultAvailability(),
+      ...over,
+    });
+
+  it("週数×7 日を出力（startDate 起点）", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    expect(plan.length).toBe(4 * 7);
+    expect(plan[0]!.date).toBe(START);
+  });
+
+  it("各週のポイント練習が T→I→R→TT の順に回る", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const keyType = (wk: number) => plan.find((p) => p.weekIndex === wk && p.isKey)!.type;
+    expect(keyType(0)).toBe("tempo");
+    expect(keyType(1)).toBe("interval");
+    expect(keyType(2)).toBe("repetition");
+    expect(keyType(3)).toBe("timeTrial");
+  });
+
+  it("質練習は segments（WU/CD と反復）を持つ", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const interval = plan.find((p) => p.type === "interval")!;
+    expect(interval.segments).toBeDefined();
+    const reps = interval.segments!.find((s) => s.kind === "reps");
+    expect(reps).toBeDefined();
+    if (reps && reps.kind === "reps") {
+      expect(reps.reps).toBeGreaterThanOrEqual(3);
+      expect(reps.repMeters).toBe(1000);
+    }
+  });
+
+  it("3000m TT は WU+3000m+CD を含む（VDOT 有りは目標ペース付き）", () => {
+    const plan = make({
+      weeks: 4,
+    });
+    const tt = plan.find((p) => p.type === "timeTrial")!;
+    expect(tt.paceSecPerKm).toBeGreaterThan(0); // VDOT 有り → 目標ペース表示
+    const effort = tt.segments!.find((s) => s.kind === "run" && s.role === "steady");
+    expect(effort).toBeDefined();
+  });
+
+  it("確保時間が短いと反復本数が減り cappedByTime が立つ", () => {
+    // 全練習日を 20 分に絞る（質練習はどの日に置かれても WU/CD で埋まり反復最小化）。
+    const av: WeeklyAvailability = defaultAvailability().map((d) =>
+      d.isPracticeDay
+        ? {
+            isPracticeDay: true,
+            maxMinutes: 20,
+          }
+        : d);
+    const plan = make({
+      weeks: 4,
+      availability: av,
+    });
+    const tempo = plan.find((p) => p.type === "tempo")!;
+    expect(tempo.cappedByTime).toBe(true);
+  });
+
+  it("VDOT 未取得なら強度走を出さず easy/long と TT のみ", () => {
+    const plan = make({
+      weeks: 4,
+      fitness: {
+        ...blockFitness,
+        currentVdot: null,
+      },
+    });
+    const types = new Set(plan.map((p) => p.type));
+    expect(types.has("interval")).toBe(false);
+    expect(types.has("repetition")).toBe(false);
+    expect(types.has("tempo")).toBe(false);
+    expect(types.has("timeTrial")).toBe(true);
+    expect(types.has("long")).toBe(true);
+  });
+
+  it("練習日が4日(日火木土)なら I 週は主I＋副T の週2本になる", () => {
+    const plan = make({
+      weeks: 4,
+    }); // 既定は日火木土の4日
+    const wk1 = new Set(plan.filter((p) => p.weekIndex === 1).map((p) => p.type));
+    expect(wk1.has("interval")).toBe(true); // 主 Q
+    expect(wk1.has("tempo")).toBe(true); // 副 Q（閾値）
+    // ★ は主 Q（I=優先度4 > T=3）に残る
+    expect(plan.find((p) => p.weekIndex === 1 && p.isKey)!.type).toBe("interval");
+  });
+
+  it("練習日が2日なら副Qは無し（質は週1本）", () => {
+    // 既定の日火木土から日と木を非練習日にして 火・土 の2日に。
+    const av: WeeklyAvailability = defaultAvailability().map((d, wd) =>
+      wd === 4 || wd === 0
+        ? {
+            isPracticeDay: false,
+            maxMinutes: 0,
+          }
+        : d);
+    const plan = make({
+      weeks: 4,
+      availability: av,
+    });
+    const wk1 = new Set(plan.filter((p) => p.weekIndex === 1).map((p) => p.type));
+    expect(wk1.has("interval")).toBe(true);
+    expect(wk1.has("tempo")).toBe(false); // 副 Q は付かない
   });
 });

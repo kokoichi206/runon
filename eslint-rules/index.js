@@ -4,7 +4,7 @@
  * Result 型によるエラー処理規約をコードで強制する。
  *
  * 各ルールは <name>/ ディレクトリに rule.js / test.js / README.md を持つ。
- * テストは `pnpm test`（vitest, eslint-rules/**​/test.js）で実行する。
+ * テストは `pnpm test`（vitest, 各ルールディレクトリの test.js）で実行する。
  */
 import maxApiRouteHandlerLines from "./max-api-route-handler-lines/rule.js";
 import noBrowserNotifications from "./no-browser-notifications/rule.js";

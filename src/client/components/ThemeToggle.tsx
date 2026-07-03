@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 
 import { applyTheme, readStoredMode, storeMode, type ThemeMode } from "@/client/lib/theme";
 
-const OPTIONS: { mode: ThemeMode; label: string; icon: React.JSX.Element }[] = [
+const OPTIONS: {
+  mode: ThemeMode;
+  label: string;
+  icon: React.JSX.Element;
+}[] = [
   {
     mode: "system",
     label: "端末の設定に合わせる",

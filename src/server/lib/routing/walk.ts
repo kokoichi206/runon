@@ -87,7 +87,11 @@ export const evaluateWalk = (
   }
   const overlapPercent = lengthMeters > 0 ? (100 * repeated) / lengthMeters : 0;
 
-  return { lengthMeters, lengthError, overlapPercent };
+  return {
+    lengthMeters,
+    lengthError,
+    overlapPercent,
+  };
 };
 
 /**
