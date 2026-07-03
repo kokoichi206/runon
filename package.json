@@ -59,8 +59,8 @@
     "storybook": "^10.1.11",
     "tailwindcss": "^4.1.0",
     "tsx": "^4.20.0",
-    "typescript": "^5.7.0",
-    "typescript-eslint": "^8.18.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.62.1",
     "vite": "^7.3.0",
     "vitest": "^4.1.8"
   }
